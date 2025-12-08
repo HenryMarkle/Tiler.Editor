@@ -2,10 +2,12 @@ namespace Tiler.Editor.Rendering.Scripting;
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using NLua;
 using Raylib_cs;
 using Serilog;
+using Tiler.Editor.Managed;
 using Tiler.Editor.Tile;
 
 public class TileRenderingScriptRuntime : IDisposable
@@ -54,8 +56,8 @@ public class TileRenderingScriptRuntime : IDisposable
     {
         [] => new(),
         [Vector2 vector] => new(vector.X, vector.Y),
-        [float x, float y] => new(x, y),
-        [int x, int y] => new(x, y),
+        [long x, long y] => new(x, y),
+        [double x, double y] => new((float)x, (float)y),
         _ => throw new ScriptingException("Invalid arguments"),
     };
 
@@ -75,6 +77,71 @@ public class TileRenderingScriptRuntime : IDisposable
         [Vector2 topLeft, Vector2 topRight, Vector2 bottomRight, Vector2 bottomLeft] => new(topLeft, topRight, bottomRight, bottomLeft),
         _ => throw new ScriptingException("Invalid arguments"),
     };
+
+    public void DrawTexture(params object[] args)
+    {
+        switch (args)
+        {
+            case [ Texture texture, int layer, Rectangle destination, Rectangle source, .. ]:
+            {        
+                Raylib.BeginTextureMode(layers[layer]);
+                Raylib.DrawTexturePro(
+                    texture,
+                    source,
+                    destination,
+                    origin:   Vector2.Zero,
+                    rotation: 0,
+                    tint:     args.Last() is Color4 c ? c : Color.White
+                );
+                Raylib.EndTextureMode();
+            }
+            break;
+
+            case [ Texture texture, int layer, Quad destination, Rectangle source, .. ]:
+            {
+                Raylib.BeginTextureMode(layers[layer]);
+                RlUtils.DrawTextureQuad(
+                    texture, 
+                    source, 
+                    destination, 
+                    tint: args.Last() is Color4 c ? c : Color.White
+                );
+                Raylib.EndTextureMode();
+            }
+            break;
+            
+            case [ Texture texture, int layer, Rectangle destination, .. ]:
+            {
+                Raylib.BeginTextureMode(layers[layer]);
+                Raylib.DrawTexturePro(
+                    texture,
+                    source:   new(0, 0, texture.Width, texture.Height),
+                    destination,
+                    origin:   Vector2.Zero,
+                    rotation: 0,
+                    tint:     args.Last() is Color4 c ? c : Color.White
+                );
+                Raylib.EndTextureMode();
+            }
+            break;
+
+            case [ Texture texture, int layer, Quad destination, .. ]:
+            {
+                    
+                Raylib.BeginTextureMode(layers[layer]);
+                RlUtils.DrawTextureQuad(
+                    texture, 
+                    source: new(0, 0, texture.Width, texture.Height), 
+                    destination,
+                    tint:   args.Last() is Color4 c ? c : Color.White
+                );
+                Raylib.EndTextureMode();
+            }
+            break;
+
+            default: throw new ScriptingException("Invalid arguments");
+        }
+    }
 
     public TileRenderingScriptRuntime(
         TileDef tile, 
@@ -136,6 +203,12 @@ public class TileRenderingScriptRuntime : IDisposable
             "Quad",
             this,
             typeof(TileRenderingScriptRuntime).GetMethod("CreateQuad")
+        );
+
+        lua.RegisterFunction(
+            "Draw",
+            this,
+            typeof(TileRenderingScriptRuntime).GetMethod("DrawTexture")
         );
 
         lua.DoFile(file);

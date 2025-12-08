@@ -9,6 +9,35 @@ public static class RlUtils
     public static void DrawTextureQuad(
         in Texture2D texture,
         in Rectangle source,
+        in Quad quad,
+        Color4 tint
+    )
+    {
+        Rlgl.SetTexture(texture.Id);
+
+        Rlgl.Begin(DrawMode.Quads);
+
+        Rlgl.Color4ub(tint.R, tint.G, tint.B, tint.A);
+
+        Rlgl.TexCoord2f((source.X + source.Width) / texture.Width, source.Y / texture.Height);
+        Rlgl.Vertex2f(quad.TopRight.X, quad.TopRight.Y);
+     
+        Rlgl.TexCoord2f(source.X / texture.Width, source.Y / texture.Height);
+        Rlgl.Vertex2f(quad.TopLeft.X, quad.TopLeft.Y);
+     
+        Rlgl.TexCoord2f(source.X / texture.Width, (source.Y + source.Height) / texture.Height);
+        Rlgl.Vertex2f(quad.BottomLeft.X, quad.BottomLeft.Y);
+     
+        Rlgl.TexCoord2f((source.X + source.Width) / texture.Width, (source.Y + source.Height) / texture.Height);
+        Rlgl.Vertex2f(quad.BottomRight.X, quad.BottomRight.Y);
+    
+        Rlgl.End();
+
+        Rlgl.SetTexture(0);
+    }
+    public static void DrawTextureQuad(
+        in Texture2D texture,
+        in Rectangle source,
         in Quad quad
     )
     {

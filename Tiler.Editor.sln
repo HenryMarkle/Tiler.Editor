@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tiler.Editor", "Tiler.Editor.csproj", "{C2D3BFD1-304A-CD53-A071-C5C06D76F49B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2D3BFD1-304A-CD53-A071-C5C06D76F49B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2D3BFD1-304A-CD53-A071-C5C06D76F49B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2D3BFD1-304A-CD53-A071-C5C06D76F49B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2D3BFD1-304A-CD53-A071-C5C06D76F49B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E92B4067-C2CE-4A24-BDBE-731F2735B039}
+	EndGlobalSection
+EndGlobal
