@@ -1,0 +1,93 @@
+using System.Collections.Generic;
+using System.Linq;
+using Raylib_cs;
+
+namespace Tiler.Editor.Rendering;
+
+public class Renderer
+{
+    public const int Width = 1400;
+    public const int Height = 800;
+
+    public Level Level { get; init; }
+    public TileDex Tiles { get; init; }
+    public int SublayersPerLayer { get; init; } = 10;
+    public int LayerMargin { get; init; } = 100;
+
+    public LevelCamera SelectedCamera { get; private set; }
+
+    public Managed.RenderTexture[] Layers { get; private set; }
+    public Managed.RenderTexture Lightmap { get; private set; }
+    public Managed.RenderTexture ComposedLightmap { get; private set; }
+    public Managed.RenderTexture FinalLightmap { get; private set; }
+    public Managed.RenderTexture Final { get; private set; }
+
+    private TileRenderer TileRenderer { get; init; }
+
+    public Renderer(Level level, TileDex tiles, LevelCamera? camera = null)
+    {
+        Level = level;
+        Tiles = tiles;
+
+        Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
+        for (var l = 0; l < Layers.Length; l++) Layers[l] = 
+            new(Width + LayerMargin*2, Height + LayerMargin*2, Color.White, true);
+        
+        Lightmap = new(level.Lightmap.Width, level.Lightmap.Height, new Color4(0, 0, 0, 0), true);
+    
+        ComposedLightmap = new(Width, Height);
+        FinalLightmap = new(Width, Height);
+        Final = new(Width, Height);
+
+        SelectedCamera = camera ?? level.Cameras.FirstOrDefault() 
+            ?? throw new RenderException("Level must have at least one camera");
+
+        TileRenderer = new TileRenderer(Layers, Level, Tiles, SelectedCamera);
+    }
+
+    public enum RenderState
+    {
+        Idle,
+        Tiles,
+        Props,
+        Effects,
+        Lighting,
+        Done,
+        Aborted
+    }
+
+    public RenderState State { get; private set; }
+
+    public void Next()
+    {
+        if (State is RenderState.Done or RenderState.Aborted) return;
+
+        switch (State)
+        {
+            case RenderState.Done: return;
+            case RenderState.Idle: State = RenderState.Tiles; return;
+            case RenderState.Tiles:
+            {
+                TileRenderer.Next();
+                if (TileRenderer.IsDone) State = RenderState.Done;
+            } break;
+            case RenderState.Props:
+            {
+                
+            } break;
+            case RenderState.Effects:
+            {
+                
+            } break;
+            case RenderState.Lighting:
+            {
+                
+            } break;
+        }
+    }
+
+    public void Abort()
+    {
+        State = RenderState.Aborted;
+    }
+}
