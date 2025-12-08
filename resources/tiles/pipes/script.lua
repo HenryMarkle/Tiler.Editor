@@ -1,7 +1,4 @@
-local q = Quad(Point(0, 0), Point(10, 0), Point(10, 10), Point(0, 10))
-
-print(q:Rotate(100))
-
+-- Required function signature
 function Render(x, y, z)
     print('' .. x .. ' ' .. y .. ' ' .. z)
 end

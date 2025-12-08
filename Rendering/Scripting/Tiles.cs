@@ -211,12 +211,12 @@ public class TileRenderingScriptRuntime : IDisposable
             typeof(TileRenderingScriptRuntime).GetMethod("DrawTexture")
         );
 
-        lua.DoFile(file);
-        
         var enumCount = 0;
         foreach (var name in Enum.GetNames(typeof(Geo))) lua[name] = enumCount++;
 
         lua["level"] = level;
+
+        lua.DoFile(file);
 
         renderFunc = (LuaFunction) lua["Render"];
     }
