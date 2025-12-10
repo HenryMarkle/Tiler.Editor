@@ -53,6 +53,7 @@ public class TileRenderer
 
                         var cell = level.Tiles[mx, my, l] ??= level.DefaultTile;
                         if (cell is null) continue;
+                        if (level.Geos[mx, my, l] is Geo.Air) continue;
 
                         if (!layerCells.TryAdd(cell, [(mx, my)]))
                             layerCells[cell].Add((mx, my));

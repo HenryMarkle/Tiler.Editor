@@ -13,8 +13,13 @@ local mapping = {
 
 function Render(x, y, z)
     Draw(graphic, z, Rect(x * 20, y * 20, 20, 20))
+
+    local geo = Level.Geos:StrAt(x, y, z)
+    local posx = mapping[geo]
+
+    if not posx then return end
     
     for l = 1, 9 do
-        Draw(base, (z*10)+l, Rect(x * 20, y * 20, 20, 20), Rect(mapping[Level.Geos:StrAt(x, y, z)] * 20, 0, 20, 20))
+        Draw(base, (z*10)+l, Rect(x * 20, y * 20, 20, 20), Rect(posx * 20, 0, 20, 20))
     end
 end

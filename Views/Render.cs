@@ -23,6 +23,7 @@ public class Render : BaseView
             #version 330
             
             uniform sampler2D texture0;
+            uniform float tintAccum;
 
             in vec2 fragTexCoord;
             in vec4 fragColor;
@@ -33,7 +34,7 @@ public class Render : BaseView
                 vec4 pixel = texture(texture0, fragTexCoord);
                 if (pixel == vec4(1, 1, 1, 1)) { discard; }
 
-                finalColor = pixel;
+                finalColor = clamp(vec4(pixel.r + tintAccum, pixel.g + tintAccum, pixel.b + tintAccum, pixel.a), vec4(0,0,0,0), vec4(1,1,1,1));
             }
             "
         );
@@ -89,12 +90,21 @@ public class Render : BaseView
                 texture:  renderer.Layers[l].Raw.Texture
             );
 
+            float tint = l / (renderer.Layers.Length + 1.0f);
+
+            SetShaderValue(
+                shader:   composeShader,
+                locIndex: GetShaderLocation(composeShader, "tintAccum"),
+                value:    tint,
+                ShaderUniformDataType.Float
+            );
+
             RlUtils.DrawTextureRT(
                 rt:          preview, 
                 texture:     renderer.Layers[l].Raw.Texture, 
                 source:      new Rectangle(renderer.LayerMargin, renderer.LayerMargin, Renderer.Width, Renderer.Height),
                 destination: new Rectangle(-l + 6, -l + 6, preview.Width, preview.Height)
-            );    
+            );
         }
         EndShaderMode();
     }
