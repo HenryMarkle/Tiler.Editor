@@ -10,6 +10,8 @@ public class Viewer
     public Start start;
     public Geos geos;
     public Tiles tiles;
+    public Cameras cameras;
+    public Light light;
     public Render render;
 
     public BaseView SelectedView;
@@ -35,11 +37,15 @@ public class Viewer
         start = new(context);
         geos = new(context);
         tiles = new(context);
+        cameras = new(context);
+        light = new(context);
         render = new(context);
 
         context.LevelSelected += start.OnLevelSelected;
         context.LevelSelected += geos.OnLevelSelected;
         context.LevelSelected += tiles.OnLevelSelected;
+        context.LevelSelected += cameras.OnLevelSelected;
+        context.LevelSelected += light.OnLevelSelected;
         context.LevelSelected += render.OnLevelSelected;
 
         SelectedView = start;
@@ -50,6 +56,8 @@ public class Viewer
         context.LevelSelected -= start.OnLevelSelected;
         context.LevelSelected -= geos.OnLevelSelected;
         context.LevelSelected -= tiles.OnLevelSelected;
+        context.LevelSelected -= cameras.OnLevelSelected;
+        context.LevelSelected -= light.OnLevelSelected;
         context.LevelSelected -= render.OnLevelSelected;
     }
 }

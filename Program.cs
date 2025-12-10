@@ -99,11 +99,11 @@ public class Program {
 				if (ImGui.MenuItem("Tiles", "", viewer.SelectedView.GetType() == typeof(Views.Tiles))) {
 					viewer.Select<Views.Tiles>();
 				}
-				if (ImGui.MenuItem("Cameras")) {
-					// viewer.SelectCameras();
+				if (ImGui.MenuItem("Cameras", "", viewer.SelectedView.GetType() == typeof(Views.Cameras))) {
+					viewer.Select<Views.Cameras>();
 				}
-				if (ImGui.MenuItem("Light")) {
-					// viewer.SelectLight();
+				if (ImGui.MenuItem("Light", "",  viewer.SelectedView.GetType() == typeof(Views.Light))) {
+					viewer.Select<Views.Light>();
 				}
 				if (ImGui.MenuItem("Dimensions", null, false, false)) {
 				}
