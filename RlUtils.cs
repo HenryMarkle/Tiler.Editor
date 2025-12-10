@@ -1,6 +1,7 @@
 namespace Tiler.Editor;
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Raylib_cs;
 using static Raylib_cs.Raylib;
 
@@ -72,13 +73,14 @@ public static class RlUtils
         in RenderTexture2D rt, 
         in Texture2D texture, 
         in Rectangle source, 
-        in Rectangle destination
+        in Rectangle destination,
+        Color4 tint
     )
     {
         BeginTextureMode(rt);
         DrawTexturePro(
             texture,
-            source,
+            source: source with { Height = -source.Height },
             dest: new Rectangle(
                 destination.X,
                 rt.Texture.Height - destination.Height - destination.Y,
@@ -87,10 +89,22 @@ public static class RlUtils
             ),
             origin: Vector2.Zero,
             rotation: 0,
-            tint: Color.White
+            tint
         );
         EndTextureMode();
     }
+
+    /// <summary>
+    /// Draws a rectangular portion of a texture into a framebuffer inside a 
+    /// rectangle avoiding the vertical flip of the drawing.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void DrawTextureRT(
+        in RenderTexture2D rt, 
+        in Texture2D texture, 
+        in Rectangle source, 
+        in Rectangle destination
+    ) => DrawTextureRT(rt, texture, source, destination, Color.White);
 
     /// <summary>
     /// Draws a rectangular portion of a texture into a framebuffer inside a 
@@ -100,7 +114,8 @@ public static class RlUtils
         in RenderTexture2D rt, 
         in Texture2D texture, 
         in Rectangle source, 
-        in Quad destination
+        in Quad destination,
+        Color4 tint
     )
     {
         Quad quad = new(
@@ -111,7 +126,19 @@ public static class RlUtils
         );
 
         BeginTextureMode(rt);
-        DrawTextureQuad(texture, source, quad);
+        DrawTextureQuad(texture, source: source with { Height = -source.Height }, quad, tint);
         EndTextureMode();
     }
+
+    /// <summary>
+    /// Draws a rectangular portion of a texture into a framebuffer inside a 
+    /// quad avoiding the vertical flip of the drawing.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    public static void DrawTextureRT(
+        in RenderTexture2D rt, 
+        in Texture2D texture, 
+        in Rectangle source, 
+        in Quad destination
+    ) => DrawTextureRT(rt, texture, source, destination, Color.White);
 }

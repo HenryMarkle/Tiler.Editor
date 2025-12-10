@@ -92,8 +92,8 @@ public class Render : BaseView
             RlUtils.DrawTextureRT(
                 rt:          preview, 
                 texture:     renderer.Layers[l].Raw.Texture, 
-                source:      new Rectangle(100, 100, Renderer.Width, Renderer.Height),
-                destination: new Rectangle(0, 0, preview.Width, preview.Height)
+                source:      new Rectangle(renderer.LayerMargin, renderer.LayerMargin, Renderer.Width, Renderer.Height),
+                destination: new Rectangle(-l + 6, -l + 6, preview.Width, preview.Height)
             );    
         }
         EndShaderMode();
@@ -126,7 +126,13 @@ public class Render : BaseView
 
             ImGui.NextColumn();
 
-            rlImGui_cs.rlImGui.ImageRenderTextureFit(preview, false);
+            var space = ImGui.GetContentRegionAvail();
+            var ratio = space / new Vector2(preview.Width, preview.Height);
+            var minRatio = MathF.Min(ratio.X, ratio.Y);
+
+            // rlImGui_cs.rlImGui.ImageRenderTextureFit(preview, false);
+            rlImGui_cs.rlImGui.ImageSize(preview.Raw.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+            // if (renderer is not null) rlImGui_cs.rlImGui.ImageRenderTextureFit(renderer.Layers[0], false);
         }
 
         ImGui.End();

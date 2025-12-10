@@ -31,7 +31,7 @@ public class Renderer
 
         Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
         for (var l = 0; l < Layers.Length; l++) Layers[l] = 
-            new(Width + LayerMargin*2, Height + LayerMargin*2, Color.White, true);
+            new(Width + LayerMargin*2, Height + LayerMargin*2, new Color4(0, 0, 0, 0), true);
         
         Lightmap = new(level.Lightmap.Width, level.Lightmap.Height, new Color4(0, 0, 0, 0), true);
     

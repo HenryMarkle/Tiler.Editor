@@ -17,7 +17,9 @@ public class TileRenderingScriptRuntime : IDisposable
     public TileDef Tile { get; init; }
     public string File { get; init; }
     private readonly Level level;
+    private readonly int layerMargin;
     private readonly LuaFunction renderFunc;
+    private readonly LevelCamera camera;
     private readonly Managed.RenderTexture[] layers;
 
     public void Print(params object[] args)
@@ -58,6 +60,7 @@ public class TileRenderingScriptRuntime : IDisposable
         [Vector2 vector] => new(vector.X, vector.Y),
         [long x, long y] => new(x, y),
         [double x, double y] => new((float)x, (float)y),
+        [ var x, var y] => new((float)x, (float)y),
         _ => throw new ScriptingException("Invalid arguments"),
     };
 
@@ -65,7 +68,14 @@ public class TileRenderingScriptRuntime : IDisposable
     {
         [] => new(),
         [Rectangle rect] => new(rect.Position, rect.Size),
-        [float x, float y, float width, float height] => new(x, y, width, height),
+        [long x, long y, long width, long height] => new(x, y, width, height),
+        [double x, double y, double width, double height] => new((float)x, (float)y, (float)width, (float)height),
+        [var x, var y, var width, var height] => new(
+            Convert.ToSingle(x), 
+            Convert.ToSingle(y), 
+            Convert.ToSingle(width), 
+            Convert.ToSingle(height)
+        ),
         _ => throw new ScriptingException("Invalid arguments"),
     };
     
@@ -77,62 +87,77 @@ public class TileRenderingScriptRuntime : IDisposable
         [Vector2 topLeft, Vector2 topRight, Vector2 bottomRight, Vector2 bottomLeft] => new(topLeft, topRight, bottomRight, bottomLeft),
         _ => throw new ScriptingException("Invalid arguments"),
     };
+    
+    public Color4 CreateColor(params object[] args) => args switch
+    {
+        [] => new(),
+        [Color4 color] => new(color.R, color.G, color.B, color.A),
+        [long r, long g, long b] => new((byte)r, (byte)g, (byte)b, 255),
+        [long r, long g, long b, long a] => new((byte)r, (byte)g, (byte)b, (byte)a),
+        _ => throw new ScriptingException("Invalid arguments"),
+    };
 
     public void DrawTexture(params object[] args)
     {
         switch (args)
         {
-            case [ Texture texture, int layer, Rectangle destination, Rectangle source, .. ]:
+            case [ Texture texture, long layer, Rectangle destination, Rectangle source, .. ]:
             {        
                 Raylib.BeginTextureMode(layers[layer]);
-                Raylib.DrawTexturePro(
+                RlUtils.DrawTextureRT(
+                    rt:   layers[layer],
                     texture,
                     source,
-                    destination,
-                    origin:   Vector2.Zero,
-                    rotation: 0,
-                    tint:     args.Last() is Color4 c ? c : Color.White
+                    destination with { 
+                        X = destination.X + layerMargin - camera.Position.X, 
+                        Y = destination.Y + layerMargin - camera.Position.Y 
+                    },
+                    tint: args.Last() is Color4 c ? c : Color.White
                 );
                 Raylib.EndTextureMode();
             }
             break;
 
-            case [ Texture texture, int layer, Quad destination, Rectangle source, .. ]:
+            case [ Texture texture, long layer, Quad destination, Rectangle source, .. ]:
             {
                 Raylib.BeginTextureMode(layers[layer]);
-                RlUtils.DrawTextureQuad(
+                RlUtils.DrawTextureRT(
+                    rt:   layers[layer],
                     texture, 
                     source, 
-                    destination, 
+                    destination + (Vector2.One * layerMargin) - camera.Position, 
                     tint: args.Last() is Color4 c ? c : Color.White
                 );
                 Raylib.EndTextureMode();
             }
             break;
             
-            case [ Texture texture, int layer, Rectangle destination, .. ]:
+            case [ Texture texture, long layer, Rectangle destination, .. ]:
             {
                 Raylib.BeginTextureMode(layers[layer]);
-                Raylib.DrawTexturePro(
+                RlUtils.DrawTextureRT(
+                    rt:       layers[layer],
                     texture,
                     source:   new(0, 0, texture.Width, texture.Height),
-                    destination,
-                    origin:   Vector2.Zero,
-                    rotation: 0,
+                    destination with { 
+                        X = destination.X + layerMargin - camera.Position.X, 
+                        Y = destination.Y + layerMargin - camera.Position.Y 
+                    },
                     tint:     args.Last() is Color4 c ? c : Color.White
                 );
                 Raylib.EndTextureMode();
             }
             break;
 
-            case [ Texture texture, int layer, Quad destination, .. ]:
+            case [ Texture texture, long layer, Quad destination, .. ]:
             {
                     
                 Raylib.BeginTextureMode(layers[layer]);
-                RlUtils.DrawTextureQuad(
+                RlUtils.DrawTextureRT(
+                    layers[layer],
                     texture, 
                     source: new(0, 0, texture.Width, texture.Height), 
-                    destination,
+                    destination + (Vector2.One * layerMargin) - camera.Position,
                     tint:   args.Last() is Color4 c ? c : Color.White
                 );
                 Raylib.EndTextureMode();
@@ -147,11 +172,15 @@ public class TileRenderingScriptRuntime : IDisposable
         TileDef tile, 
         string file, 
         Level level,
-        Managed.RenderTexture[] layers
+        LevelCamera camera,
+        Managed.RenderTexture[] layers,
+        int layerMargin
     ) {
         Tile = tile;
         File = file;
+        this.camera = camera;
         this.layers = layers; 
+        this.layerMargin = layerMargin;
 
         this.level = level;
 
@@ -159,8 +188,11 @@ public class TileRenderingScriptRuntime : IDisposable
 
         lua.DoString(
             "package.path = package.path .. \";" 
-            + Directory.GetParent(file) + "/?.lua;" 
-            + Directory.GetParent(file) + "/?/?.lua\""
+            + Directory.GetParent(file)!.FullName + "/?.lua;" 
+            + Directory.GetParent(file)!.FullName + "/?/?.lua;"
+            + Path.GetFullPath(
+                Path.Combine(Directory.GetParent(file)!.FullName, "..", "..", "scripts")
+              ) + "/?.lua\""
         );
 
         lua.RegisterFunction(
@@ -211,10 +243,25 @@ public class TileRenderingScriptRuntime : IDisposable
             typeof(TileRenderingScriptRuntime).GetMethod("DrawTexture")
         );
 
-        var enumCount = 0;
-        foreach (var name in Enum.GetNames(typeof(Geo))) lua[name] = enumCount++;
+        lua.RegisterFunction(
+            "Color",
+            this,
+            typeof(TileRenderingScriptRuntime).GetMethod("CreateColor")
+        );
 
-        lua["level"] = level;
+        foreach (var name in Enum.GetNames(typeof(Geo))) lua[name] = name;
+
+        lua["White"] = new Color4(255, 255, 255);
+        lua["Black"] = new Color4(0, 0, 0);
+        lua["Red"] = new Color4(255, 0, 0);
+        lua["Green"] = new Color4(0, 255, 0);
+        lua["Blue"] = new Color4(0, 0, 255);
+        lua["Purple"] = new Color4(255, 0, 255);
+        lua["Gray"] = Color.Gray;
+
+        lua["Level"] = level;
+
+        lua["Tile"] = Tile;
 
         lua.DoFile(file);
 

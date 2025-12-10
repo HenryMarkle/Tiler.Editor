@@ -41,6 +41,34 @@ public class Quad
         BottomLeft = new Vector2(rectangle.X, rectangle.Y + rectangle.Height);
     }
 
+    public static Quad operator+(Quad lhs, Quad rhs) => new(
+        lhs.TopLeft + rhs.TopLeft, 
+        lhs.TopRight + rhs.TopRight, 
+        lhs.BottomRight + rhs.BottomRight, 
+        lhs.BottomLeft + rhs.BottomLeft
+    );
+
+    public static Quad operator-(Quad lhs, Quad rhs) => new(
+        lhs.TopLeft - rhs.TopLeft, 
+        lhs.TopRight - rhs.TopRight, 
+        lhs.BottomRight - rhs.BottomRight, 
+        lhs.BottomLeft - rhs.BottomLeft
+    );
+
+    public static Quad operator+(Quad lhs, Vector2 rhs) => new(
+        lhs.TopLeft + rhs, 
+        lhs.TopRight + rhs, 
+        lhs.BottomRight + rhs, 
+        lhs.BottomLeft + rhs
+    );
+
+    public static Quad operator-(Quad lhs, Vector2 rhs) => new(
+        lhs.TopLeft - rhs, 
+        lhs.TopRight - rhs, 
+        lhs.BottomRight - rhs, 
+        lhs.BottomLeft - rhs
+    );
+
     public Vector2 Center => (TopLeft + TopRight + BottomRight + BottomLeft) / 4;
 
     public Quad Rotate(int degrees, Vector2 center)

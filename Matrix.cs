@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Tiler.Editor;
@@ -12,6 +13,9 @@ public class Matrix<T>
         get => array[x, y, z];
         set => array[x, y, z] = value;
     }
+
+    public T At(int x, int y, int z) => array[x, y, z];
+    public string? StrAt(int x, int y, int z) => array[x, y, z]?.ToString();
 
     public int Width => array.GetLength(0);
     public int Height => array.GetLength(1);
@@ -42,7 +46,11 @@ public class Matrix<T>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsInBounds(int x, int y, int z) => 
-        x >= 0 && x < Width && y >= 0 && y < Height && z >= 0 && z < Depth; 
+        x >= 0 && x < Width && y >= 0 && y < Height && z >= 0 && z < Depth;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsInBounds(Vector2 pos) => 
+        pos.X >= 0 && pos.X < Width && pos.Y >= 0 && pos.Y < Height;
 
     public override string ToString() => $"Matrix({Width}, {Height}, {Depth})";
 }

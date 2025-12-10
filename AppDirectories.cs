@@ -12,6 +12,7 @@ public class AppDirectories
     public string Assets { get; init; }
     public string Resources { get; init; }
     public string Tiles { get; init; }
+    public string Scripts { get; init; }
     public string Light { get; init; }
     public string Textures { get; init; }
     public string Fonts { get; init; }
@@ -41,6 +42,7 @@ public class AppDirectories
         Resources = Combine(Executable, "resources");
 
         Tiles = Combine(Resources, "tiles");
+        Scripts = Combine(Resources, "scripts");
         Light = Combine(Resources, "light");
 
         Textures = Combine(Assets, "textures");

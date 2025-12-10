@@ -32,8 +32,8 @@ public class TileRenderer
         sublayersPerLayer = 10;
         IsDone = false;
 
-        var columns = (Width + layerMargin) / 20;
-        var rows = (Height + layerMargin) / 20;
+        var columns = (Width + layerMargin*2) / 20;
+        var rows = (Height + layerMargin*2) / 20;
 
         cells = Enumerable
             .Range(0, layers.Length / sublayersPerLayer)
@@ -43,19 +43,19 @@ public class TileRenderer
 
                 for (var y = 0; y < rows; y++)
                 {
-                    var my = y + (int)(camera.Position.Y/20);
+                    var my = y + (int)(camera.Position.Y/20) - (layerMargin/20);
                     if (my < 0 || my >= level.Height) continue;
 
                     for (var x = 0; x < columns; x++)
                     {
-                        var mx = x + (int)(camera.Position.X/20);
+                        var mx = x + (int)(camera.Position.X/20) - (layerMargin/20);
                         if (mx < 0 || mx >= level.Width) continue;
 
-                        var cell = level.Tiles[x, y, l] ??= level.DefaultTile;
+                        var cell = level.Tiles[mx, my, l] ??= level.DefaultTile;
                         if (cell is null) continue;
 
-                        if (!layerCells.TryAdd(cell, [(x, y)]))
-                            layerCells[cell].Add((x, y));
+                        if (!layerCells.TryAdd(cell, [(mx, my)]))
+                            layerCells[cell].Add((mx, my));
                     }
                 }
 
@@ -76,7 +76,14 @@ public class TileRenderer
                 {
                     case CustomTileDef custom:
                     {
-                        var script = new TileRenderingScriptRuntime(tile, custom.ScriptFile, level, layers);
+                        var script = new TileRenderingScriptRuntime(
+                            tile, 
+                            custom.ScriptFile, 
+                            level,
+                            camera, 
+                            layers, 
+                            layerMargin
+                        );
 
                         foreach (var (mx, my) in positions)
                         {
