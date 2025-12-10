@@ -15,16 +15,20 @@ local mapping = {
 ---@param y integer
 ---@param z integer
 ---@param layer integer?
-function M.Render(tileset, x, y, z, layer)
+---@param options table?
+function M.Render(tileset, x, y, z, layer, options)
     local geo = Level.Geos:StrAt(x, y, z)
 
     if not mapping[geo] then return end
 
+    local buffer = (options or {}).buffer or 0
+    local variations = (options or {}).variations or 1
+
     Draw(
         tileset,
         layer or z * 10,
-        Rect(x * 20, y * 20, 20, 20),
-        Rect(mapping[geo] * 20, 0, 20, 20)
+        Rect((x - buffer) * 20, (y - buffer) * 20, 20 + (buffer*2*20), 20 + (buffer*2*20)),
+        Rect((mapping[geo] * buffer * 3) * 20, (math.random(variations)-1) * (buffer * 3 * 20), buffer*3*20, buffer*3*20)
     )
 end
 
