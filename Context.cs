@@ -33,11 +33,16 @@ public class Context
         var level = levels[index];
 
         SelectedLevel = level;
+
+        Viewports.Resize(level.Width * 20, level.Height * 20);
+
         LevelSelected?.Invoke(level);
     }
     public void SelectLevel(Level level)
     {
         if (!levels.Contains(level)) return;
+
+        Viewports.Resize(level.Width * 20, level.Height * 20);
 
         SelectedLevel = level;
         LevelSelected?.Invoke(level);
@@ -56,5 +61,6 @@ public class Context
 
     public Camera2D Camera = new() { Zoom = 1, Target = Vector2.Zero };
     public int Layer { get; set; } = 0;
+    public required AppConfiguration Config { get; set; }
     public required DebugPrinter DebugPrinter { get; set; }
 }

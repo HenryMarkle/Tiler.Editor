@@ -17,6 +17,16 @@ public class Cameras : BaseView
 {
     private readonly Texture cameraSprite;
     private readonly Cursor cursor;
+    private LevelCamera? selectedCamera;
+    private static readonly Color[] cameraColors = [
+        Color.Green with { A = 80 },
+        Color.Red with { A = 80 },
+        Color.Blue with { A = 80 },
+        Color.Magenta with { A = 80 },
+        Color.Orange with { A = 80 },
+        Color.Gold with { A = 80 },
+        Color.Gray with { A = 80 },
+    ];
 
     public Cameras(Context context) : base(context)
     {
@@ -41,6 +51,53 @@ public class Cameras : BaseView
         if (!cursor.IsInWindow)
         {
             cursor.ProcessCursor();
+
+            if (Context.SelectedLevel is { } level)
+            {
+                if (selectedCamera is null)
+                {
+                    if (IsKeyPressed(KeyboardKey.N))
+                    {
+                        var ncam = new LevelCamera(new Vector2(LevelCamera.Width/2 - cursor.X, LevelCamera.Height/2 - cursor.Y));
+
+                        level.Cameras.Add(ncam);
+                        selectedCamera = ncam;
+                    }
+
+                    for (var c = level.Cameras.Count - 1; c >= 0; --c)
+                    {
+                        var cam = level.Cameras[c];
+
+                        var center = cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2);
+
+                        if (selectedCamera is null)
+                        {
+                            if (
+                                CheckCollisionPointCircle(new Vector2(cursor.X, cursor.Y), center, 110) && 
+                                IsMouseButtonPressed(MouseButton.Left)
+                            ) {
+                                selectedCamera = cam;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    selectedCamera.Position.X = cursor.X - LevelCamera.Width / 2;
+                    selectedCamera.Position.Y = cursor.Y - LevelCamera.Height / 2;
+                
+                    if (IsMouseButtonPressed(MouseButton.Left))
+                    {
+                        selectedCamera = null;
+                    }
+                    else if (IsKeyPressed(KeyboardKey.D))
+                    {
+                        level.Cameras.Remove(selectedCamera);
+                        selectedCamera = null;
+                    }
+                }
+            }
+
         }
     }
 
@@ -57,6 +114,7 @@ public class Cameras : BaseView
         {
             var cam = level.Cameras[c];
 
+            DrawRectangleV(cam.Position, new Vector2(LevelCamera.Width, LevelCamera.Height), cameraColors[c % cameraColors.Length]);
             DrawTextureV(cameraSprite, cam.Position, Color.White);
             DrawText($"{c}", (int)(cam.Position.X + 25), (int)(cam.Position.Y + 20), 20, Color.White);
         }
@@ -71,5 +129,9 @@ public class Cameras : BaseView
     public override void Debug()
     {
         cursor.PrintDebug();
+
+        var printer = Context.DebugPrinter;
+
+        printer.PrintlnLabel("Selected", selectedCamera?.Position, Color.Magenta);
     }
 }

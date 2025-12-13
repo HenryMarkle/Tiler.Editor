@@ -28,6 +28,9 @@ public struct LevelCameraVertex
 
 public class LevelCamera
 {
+    public const int Width = 1400;
+    public const int Height = 800;
+    
     public Vector2 Position;
 
     public LevelCameraVertex TopLeft;

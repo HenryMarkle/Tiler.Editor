@@ -153,11 +153,38 @@ public class Geos : BaseView
 
     private void DrawMainViewport()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         BeginTextureMode(Context.Viewports.Main);
-        ClearBackground(Color.Gray);
-        DrawTexture(Context.Viewports.Geos[0].Raw.Texture, 0, 0, new Color(0, 0, 0, 255));
-        DrawTexture(Context.Viewports.Geos[1].Raw.Texture, 0, 0, new Color(0, 255, 0, 80));
-        DrawTexture(Context.Viewports.Geos[2].Raw.Texture, 0, 0, new Color(255, 0, 0, 80));
+        switch (Context.Config.GeoColoring)
+        {
+            case GeometryLayerColoring.Purple:
+                ClearBackground(Color.Gray);
+                DrawTexture(Context.Viewports.Geos[0].Raw.Texture, 0, 0, new Color(0, 255, 255, 255));
+                DrawTexture(Context.Viewports.Geos[1].Raw.Texture, 0, 0, new Color(255, 0, 255, 80));
+                DrawTexture(Context.Viewports.Geos[2].Raw.Texture, 0, 0, new Color(255, 0, 0, 80));
+            break;
+
+            case GeometryLayerColoring.RGB:
+                ClearBackground(Color.Gray);
+                DrawTexture(Context.Viewports.Geos[0].Raw.Texture, 0, 0, new Color(0, 0, 0, 255));
+                DrawTexture(Context.Viewports.Geos[1].Raw.Texture, 0, 0, new Color(0, 255, 0, 80));
+                DrawTexture(Context.Viewports.Geos[2].Raw.Texture, 0, 0, new Color(255, 0, 0, 80));
+            break;
+
+            case GeometryLayerColoring.Gray:
+                ClearBackground(new Color(0, 0, 0, 0));
+                for (int l = 0; l < Context.Viewports.Depth; l++)
+                {
+                    if (l == Context.Layer) continue;
+                    DrawTexture(Context.Viewports.Geos[l].Raw.Texture, 0, 0, Color.Black with { A = 120 });
+                }
+                
+                DrawRectangle(0, 0, level.Width * 20, level.Height * 20, Color.Red with { A = 40 });
+
+                DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, 0, 0, Color.Black with { A = 210 });
+            break;
+        }
         EndTextureMode();
     }
 
@@ -172,7 +199,6 @@ public class Geos : BaseView
         var sourceRect = GeoAtlas.GetRect(atlas.GetIndex(geo));
 
         BeginBlendMode(BlendMode.Custom);
-        Rlgl.SetBlendMode(BlendMode.Custom);
         Rlgl.SetBlendFactors(1, 0, 1);
         DrawTextureRec(
             atlas.Texture, 
@@ -217,6 +243,8 @@ public class Geos : BaseView
             if (IsKeyPressed(KeyboardKey.L))
             {
                 Context.Layer = ++Context.Layer % 3;
+
+                if (Context.Config.GeoColoring == GeometryLayerColoring.Gray) redrawMain = true;
             }
 
             if (cursor.IsInMatrix)
@@ -317,6 +345,21 @@ public class Geos : BaseView
     public override void GUI()
     {
         cursor.ProcessGUI();
+
+        if (ImGui.Begin("Options##GeosOptions"))
+        {
+            ImGui.SeparatorText("View");
+            foreach (var mode in Enum.GetValues<GeometryLayerColoring>())
+            {
+                if (ImGui.RadioButton($"{mode}", mode == Context.Config.GeoColoring))
+                {
+                    Context.Config.GeoColoring = mode;
+                    redrawMain = true;
+                }
+            }
+
+        }
+        ImGui.End();
 
         if (ImGui.Begin("Geos Menu"))
         {

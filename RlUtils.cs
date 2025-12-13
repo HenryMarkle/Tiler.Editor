@@ -98,6 +98,37 @@ public static class RlUtils
     /// Draws a rectangular portion of a texture into a framebuffer inside a 
     /// rectangle avoiding the vertical flip of the drawing.
     /// </summary>
+    public static void DrawTextureRT(
+        in RenderTexture2D rt, 
+        in Texture2D texture, 
+        in Rectangle source, 
+        in Rectangle destination,
+        in Vector2 origin,
+        float rotation,
+        Color4 tint
+    )
+    {
+        BeginTextureMode(rt);
+        DrawTexturePro(
+            texture,
+            source: source with { Height = -source.Height },
+            dest: new Rectangle(
+                destination.X,
+                rt.Texture.Height - destination.Height - destination.Y,
+                destination.Width,
+                destination.Height
+            ),
+            origin,
+            rotation: -rotation,
+            tint
+        );
+        EndTextureMode();
+    }
+
+    /// <summary>
+    /// Draws a rectangular portion of a texture into a framebuffer inside a 
+    /// rectangle avoiding the vertical flip of the drawing.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void DrawTextureRT(
         in RenderTexture2D rt, 

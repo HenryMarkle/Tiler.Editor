@@ -16,10 +16,10 @@ public class Viewports
     public RenderTexture[] Geos { get; private set; }
     public RenderTexture[] Tiles { get; private set; }
 
-    void Resize(int width, int height)
+    public void Resize(int width, int height)
     {
         Main.Resize(width, height);
-        Main.Resize(width + LightmapMargin*2, height + LightmapMargin*2);
+        Lightmap.Resize(width + LightmapMargin*2, height + LightmapMargin*2);
 
         for (int l = 0; l < Depth; l++)
         {

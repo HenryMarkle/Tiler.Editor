@@ -7,6 +7,7 @@ using ImGuiNET;
 
 using Tiler.Editor.Managed;
 using System.Linq;
+using System;
 
 public class Program {
 	public static void Main(string[] args) {
@@ -18,6 +19,21 @@ public class Program {
 			.CreateLogger();
 
 		Log.Information("---------------------------------- Starting program");
+
+		Log.Information("Loading configuration");
+
+		AppConfiguration config;
+
+		try
+		{
+			config = AppConfiguration.FromFile(paths.Files.Config);
+		}
+		catch (Exception e)
+		{
+			Log.Error("Failed to load configuration file\n{Exception}", e);
+
+			config = new AppConfiguration();
+		}
 
 		Log.Information("Initializing window");
 
@@ -58,6 +74,7 @@ public class Program {
 			Dirs = paths,
 			Viewports = new(70 * 20, 40 * 20, 3),
 			Tiles = tiledex,
+			Config = config,
 			DebugPrinter = printer
         };
 
@@ -90,7 +107,11 @@ public class Program {
 			ImGui.BeginMainMenuBar();
 			if (viewer.SelectedView.GetType() != typeof(Views.Start))
             {
-                if (ImGui.BeginMenu("Project", false)) {
+                if (ImGui.BeginMenu("Project")) {
+					ImGui.MenuItem("Save", "CTRL + S", false, false);
+					ImGui.MenuItem("Save As", "CTRL + SHIFT + S", false, false);
+					if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select<Views.Start>();
+					ImGui.MenuItem("Create", "CTRL + N", false, false);
 					ImGui.EndMenu();
 				}
 				if (ImGui.MenuItem("Geometry", "", viewer.SelectedView.GetType() == typeof(Views.Geos))) {

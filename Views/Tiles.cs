@@ -484,6 +484,8 @@ public class Tiles : BaseView
         {
             var tile = level.Tiles[cursor.MX, cursor.MY, Context.Layer];
 
+            printer.PrintlnLabel("Layer", Context.Layer, Color.Magenta);
+            
             printer.PrintlnLabel("Tile", tile?.ToString() ?? "NULL", Color.Gold);
         }
     }
