@@ -67,3 +67,23 @@ public sealed class DuplicateTileException(string tileId) : TilerException($"Dup
 {
     public readonly string TileID = tileId;
 }
+
+public class PropParseException : ParseException
+{
+    public PropParseException()
+    {
+    }
+
+    public PropParseException(string? message) : base(message)
+    {
+    }
+
+    public PropParseException(string? message, Exception? innerException) : base(message, innerException)
+    {
+    }
+}
+
+public sealed class DuplicatePropException(string propId) : TilerException($"Duplicate prop '{propId}'")
+{
+    public readonly string PropID = propId;
+}

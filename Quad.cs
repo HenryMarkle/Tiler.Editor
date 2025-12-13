@@ -20,6 +20,14 @@ public class Quad
         BottomLeft = Vector2.Zero;
     }
 
+    public Quad(Quad quad)
+    {
+        TopLeft = quad.TopLeft;
+        TopRight = quad.TopRight;
+        BottomRight = quad.BottomRight;
+        BottomLeft = quad.BottomLeft;
+    }
+
     public Quad(
         Vector2 topLeft,
         Vector2 topRight,

@@ -3,15 +3,9 @@ namespace Tiler.Editor.Tile;
 using System.IO;
 using IniParser;
 
-public enum TileType : byte
-{
-    Custom
-}
-
-public abstract class TileDef(string id, TileType type, string resourceDir)
+public abstract class TileDef(string id, string resourceDir)
 {
     public string ID { get; private set; } = id;
-    public TileType Type { get; init; } = type;
     public string ResourceDir { get; set; } = resourceDir;
 
     public string? Name { get; set; }
@@ -19,6 +13,11 @@ public abstract class TileDef(string id, TileType type, string resourceDir)
     public Color4 Color { get; set; }
     public int Depth { get; set; } = 10;
 
+    public static bool operator==(TileDef lhs, TileDef? rhs) => lhs.Equals(rhs);
+    public static bool operator!=(TileDef lhs, TileDef? rhs) => !lhs.Equals(rhs);
+
+    public override bool Equals(object? obj) => obj is TileDef tile && GetHashCode() == tile.GetHashCode();
+    public override int GetHashCode() => ID.GetHashCode();
     public override string ToString() => $"Tile({ID})";
 
     /// <summary>
@@ -37,15 +36,21 @@ public abstract class TileDef(string id, TileType type, string resourceDir)
 
         var data = parser.ReadFile(file)["tile"];
 
-        var id = data["id"] ?? throw new TileParseException("Required 'id' key");
+        if (!data.ContainsKey("id"))
+            throw new TileParseException("Required 'id' key");
+        
+        if (!data.ContainsKey("type"))
+            throw new TileParseException("Required 'type' key");
+
+        var id = data["id"];
         var name = data["name"];
         var category = data["category"];
         Color4 color = data["color"]?.ToColor4() ?? new Color4(120, 120, 120);
         var depth = data["depth"]?.ToInt() ?? 10;
 
-        var typeStr = data["type"];
+        var type = data["type"];
 
-        switch (typeStr)
+        switch (type)
         {
             case "Custom":
             {
@@ -63,12 +68,12 @@ public abstract class TileDef(string id, TileType type, string resourceDir)
                 };
             }
 
-            default: throw new TileParseException($"Unknown tile type '{typeStr}'");
+            default: throw new TileParseException($"Unknown tile type '{type}'");
         }
     }
 }
 
-public sealed class CustomTileDef(string id, string resourceDir) : TileDef(id, TileType.Custom, resourceDir)
+public sealed class CustomTileDef(string id, string resourceDir) : TileDef(id, resourceDir)
 {
     public string ScriptFile { get; init; } = Path.Combine(resourceDir, "script.lua");
 

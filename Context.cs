@@ -58,6 +58,7 @@ public class Context
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
     public TileDex Tiles { get; set; } = new();
+    public PropDex Props { get; set; } = new();
 
     public Camera2D Camera = new() { Zoom = 1, Target = Vector2.Zero };
     public int Layer { get; set; } = 0;

@@ -88,3 +88,86 @@ public class TileDex
         return dex;
     }
 }
+
+public class PropDex
+{
+    public readonly Dictionary<string, PropDef> Props = [];
+    public readonly Dictionary<string, List<PropDef>> CategoryProps = [];
+    public readonly List<string> Categories = [];
+    public readonly List<PropDef> UnCategorizedProps = [];
+
+    /// <summary>
+    /// Registers a tile.
+    /// </summary>
+    /// <returns>Returns true if added successfully, false if already exists.</returns>
+    /// <exception cref="DuplicateTileException"></exception>
+    public void Register(PropDef tile)
+    {
+        if (!Props.TryAdd(tile.ID, tile))
+            throw new DuplicateTileException(tile.ID);
+
+        if (string.IsNullOrEmpty(tile.Category))
+            UnCategorizedProps.Add(tile);
+        else
+        {
+            if (!CategoryProps.TryGetValue(tile.Category, out var props))
+            {
+                CategoryProps.Add(tile.Category, [ tile ]);
+                Categories.Add(tile.Category);
+            }
+            else
+                props.Add(tile);
+        }
+    }
+
+    public void Register(string dir)
+    {
+        if (!Directory.Exists(dir))
+            throw new TilerException($"Prop directory not found");
+
+        try
+        {
+            var prop = PropDef.FromDir(dir);
+            Register(prop);
+        }
+        catch (TilerException pe)
+        {
+            throw new TileParseException($"Failed to parse prop", pe);
+        }
+    }
+
+    public static PropDex FromPropsDir(string dir)
+    {
+        if (!Directory.Exists(dir))
+            throw new DirectoryNotFoundException();
+
+        var dex = new PropDex();
+
+        foreach (var folder in Directory.GetDirectories(dir))
+        {
+            var iniFile = Path.Combine(folder, "prop.ini");
+            if (!File.Exists(iniFile)) continue;
+
+            try
+            {
+                dex.Register(folder);
+            }
+            catch (DuplicatePropException dpe)
+            {
+                Log.Warning("Skipping duplicate prop {Prop}", dpe.PropID);
+                continue;
+            }
+            catch (TilerException te)
+            {
+                Log.Error(
+                    "Failed to load prop in directory '{Name}'\n{Exception}", 
+                    Path.GetFileNameWithoutExtension(folder), 
+                    te
+                );
+                continue;
+            }
+        }
+
+        return dex;
+    }
+}

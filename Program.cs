@@ -66,6 +66,7 @@ public class Program {
 		Log.Information("Loading resources");
 
 		var tiledex = TileDex.FromTilesDir(paths.Tiles);
+		var propdex = PropDex.FromPropsDir(paths.Props);
 
 		Log.Information("Loading context");
 
@@ -74,6 +75,7 @@ public class Program {
 			Dirs = paths,
 			Viewports = new(70 * 20, 40 * 20, 3),
 			Tiles = tiledex,
+			Props = propdex,
 			Config = config,
 			DebugPrinter = printer
         };
@@ -130,7 +132,9 @@ public class Program {
 				}
 				if (ImGui.MenuItem("Effects", null, false, false)) {
 				}
-				if (ImGui.MenuItem("Props", null, false, false)) {
+				if (ImGui.MenuItem("Props", "", viewer.SelectedView.GetType() == typeof(Views.Props)))
+				{
+					viewer.Select<Views.Props>();
 				}
 				if (ImGui.MenuItem("Render", "", viewer.SelectedView.GetType() == typeof(Views.Render))) {
 					viewer.Select<Views.Render>();

@@ -12,6 +12,7 @@ public class Viewer
     public Tiles tiles;
     public Cameras cameras;
     public Light light;
+    public Props props;
     public Render render;
 
     public BaseView SelectedView;
@@ -39,6 +40,7 @@ public class Viewer
         tiles = new(context);
         cameras = new(context);
         light = new(context);
+        props = new(context);
         render = new(context);
 
         context.LevelSelected += start.OnLevelSelected;
@@ -46,6 +48,7 @@ public class Viewer
         context.LevelSelected += tiles.OnLevelSelected;
         context.LevelSelected += cameras.OnLevelSelected;
         context.LevelSelected += light.OnLevelSelected;
+        context.LevelSelected += props.OnLevelSelected;
         context.LevelSelected += render.OnLevelSelected;
 
         SelectedView = start;
@@ -58,6 +61,7 @@ public class Viewer
         context.LevelSelected -= tiles.OnLevelSelected;
         context.LevelSelected -= cameras.OnLevelSelected;
         context.LevelSelected -= light.OnLevelSelected;
+        context.LevelSelected -= props.OnLevelSelected;
         context.LevelSelected -= render.OnLevelSelected;
     }
 }
