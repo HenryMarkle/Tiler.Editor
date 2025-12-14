@@ -11,6 +11,7 @@ using System.Threading;
 using System.Globalization;
 
 using Tiler.Editor.Managed;
+using Serilog.Core;
 
 public class Program {
 	public static void Main(string[] args) {
@@ -18,9 +19,17 @@ public class Program {
 
 		var paths = new AppDirectories();
 
+		#if DEBUG
+		Log.Logger = new LoggerConfiguration()
+			.MinimumLevel.Debug()
+			.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+			.CreateLogger();
+		#else
 		Log.Logger = new LoggerConfiguration()
 			.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
 			.CreateLogger();
+		#endif
+
 
 		Log.Information("---------------------------------- Starting program");
 
@@ -42,7 +51,7 @@ public class Program {
 		Log.Information("Initializing window");
 
 		Raylib.SetTargetFPS(45);
-		Raylib.InitWindow(1000, 800, "Tiler Editor");
+		Raylib.InitWindow(1400, 800, "Tiler Editor");
 		Raylib.SetWindowState(ConfigFlags.ResizableWindow);
 		Raylib.SetWindowMinSize(1200, 800);
 

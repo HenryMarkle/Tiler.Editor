@@ -127,8 +127,11 @@ public class Render : BaseView
             if (isDisabled) ImGui.BeginDisabled();
             if (ImGui.Button("Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
-                if (renderer is null or { State: Renderer.RenderState.Done }) 
+                if (renderer is null or { State: Renderer.RenderState.Done })
+                {
                     renderer = new(Context.SelectedLevel!, Context.Tiles);
+                    GC.Collect();
+                }
             }
             if (isDisabled) ImGui.EndDisabled();
 

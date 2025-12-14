@@ -27,6 +27,7 @@ RLPoint = {}
 ---@field TopRight RLPoint
 ---@field BottomRight RLPoint
 ---@field BottomLeft RLPoint
+---@field Rotate function
 RLQuad = {}
 
 ---Creates an image from a file path
@@ -53,7 +54,18 @@ LevelType = {}
 ---@type Level
 Level = {}
 
----Creates a rectangle
+---@param r integer
+---@param g integer
+---@param b integer
+---@param a integer?
+---@return RLColor
+function Color(r, g, b, a) return {} end
+
+---@param x number?
+---@param y number?
+---@return RLPoint
+function Point(x, y) return {} end
+
 ---@param x number
 ---@param y number
 ---@param width number
@@ -67,3 +79,10 @@ function Rect(x, y, width, height) return {} end
 ---@param source RLRect?
 ---@param tint RLColor?
 function Draw(image, layer, dest, source, tint) end
+
+---@param tl RLPoint?
+---@param tr RLPoint?
+---@param br RLPoint?
+---@param bl RLPoint?
+---@return RLQuad
+function Quad(tl, tr, br, bl) return {} end

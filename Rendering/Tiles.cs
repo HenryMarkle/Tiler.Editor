@@ -77,7 +77,7 @@ public class TileRenderer
                 {
                     case CustomTileDef custom:
                     {
-                        var script = new TileRenderingScriptRuntime(
+                        using var script = new TileRenderingScriptRuntime(
                             tile, 
                             custom.ScriptFile, 
                             level,

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Raylib_cs;
+using Serilog;
 
 namespace Tiler.Editor.Managed;
 
@@ -14,10 +15,14 @@ public static class Unloader
     {
         int capacity = 0;
 
-        while (capacity++ < cap && textures.Count != 0) 
+        while (capacity++ < cap && textures.Count != 0)
+        {
             Raylib.UnloadTexture(textures.Dequeue());
+        }
         
         while (capacity++ < cap && renderTextures.Count != 0) 
+        {
             Raylib.UnloadRenderTexture(renderTextures.Dequeue());
+        }
     }
 }

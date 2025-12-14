@@ -189,6 +189,7 @@ public class Level
         var width = data["width"]?.ToInt() ?? DefaultWidth;
         var height = data["height"]?.ToInt() ?? DefaultHeight;
         var depth = data["depth"]?.ToInt() ?? 3;
+        _ = tiles.Tiles.TryGetValue(data["default_tile"] ?? "", out TileDef? defaultTile);
 
         var geosTask = Task.Run(() =>
         {
@@ -368,7 +369,7 @@ public class Level
             Width = width,
             Height = height,
             Depth = depth,
-
+            DefaultTile = defaultTile,
             Lightmap = image,
 
             Geos = geosTask.Result,

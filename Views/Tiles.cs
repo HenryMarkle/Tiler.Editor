@@ -402,7 +402,7 @@ public class Tiles : BaseView
 
             if (ImGui.Checkbox("Default Tile", ref isDefault))
             {
-                if (isDefault)
+                if (level!.DefaultTile is null)
                 {
                     level!.DefaultTile = selectedTile;
                 }
