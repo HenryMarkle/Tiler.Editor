@@ -12,7 +12,7 @@ local mapping = {
 }
 
 function Render(x, y, z)
-    Draw(graphic, z, Rect(x * 20, y * 20, 20, 20))
+    Draw(graphic, z * 10, Rect(x * 20, y * 20, 20, 20))
 
     local geo = Level.Geos:StrAt(x, y, z)
     local posx = mapping[geo]

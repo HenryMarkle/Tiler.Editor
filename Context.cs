@@ -32,11 +32,11 @@ public class Context
 
         var level = levels[index];
 
-        SelectedLevel = level;
-
         Viewports.Resize(level.Width * 20, level.Height * 20);
 
         LevelSelected?.Invoke(level);
+
+        SelectedLevel = level;
     }
     public void SelectLevel(Level level)
     {
@@ -44,8 +44,8 @@ public class Context
 
         Viewports.Resize(level.Width * 20, level.Height * 20);
 
-        SelectedLevel = level;
         LevelSelected?.Invoke(level);
+        SelectedLevel = level;
     }
 
     //

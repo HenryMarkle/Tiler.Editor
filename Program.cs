@@ -5,12 +5,16 @@ using Raylib_cs;
 using rlImGui_cs;
 using ImGuiNET;
 
-using Tiler.Editor.Managed;
-using System.Linq;
 using System;
+using System.Linq;
+using System.Threading;
+using System.Globalization;
+
+using Tiler.Editor.Managed;
 
 public class Program {
 	public static void Main(string[] args) {
+		Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
 
 		var paths = new AppDirectories();
 
@@ -85,6 +89,10 @@ public class Program {
 		var viewer = new Viewer(context);
 		context.Viewer = viewer;
 
+		// Stored exceptions
+
+		Exception? levelSaveExcep = null;
+
 		// --------------------------------------------------------------
 		// -------------------------- LOOP ------------------------------
 		while (!Raylib.WindowShouldClose()) {
@@ -110,7 +118,23 @@ public class Program {
 			if (viewer.SelectedView.GetType() != typeof(Views.Start))
             {
                 if (ImGui.BeginMenu("Project")) {
-					ImGui.MenuItem("Save", "CTRL + S", false, false);
+					if (ImGui.MenuItem("Save", "CTRL + S", false, context.SelectedLevel is not null))
+					{
+						context.SelectedLevel!.Lightmap = new Managed.Image(
+							Raylib.LoadImageFromTexture(context.Viewports.Lightmap.Raw.Texture)
+						);
+						
+						try
+						{
+							context.SelectedLevel!.Save(paths.Projects);
+						}
+						catch (Exception e)
+						{
+							Log.Error("Failed to save level '{Name}'\n{Exception}", context.SelectedLevel!.Name, e);
+							levelSaveExcep = e;
+						}
+					}
+
 					ImGui.MenuItem("Save As", "CTRL + SHIFT + S", false, false);
 					if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select<Views.Start>();
 					ImGui.MenuItem("Create", "CTRL + N", false, false);
@@ -143,6 +167,23 @@ public class Program {
 			ImGui.EndMainMenuBar();
 
 			viewer.SelectedView.GUI();
+
+			{ // Error message
+				if (levelSaveExcep is not null) ImGui.OpenPopup("Error##LevelSaveError");
+				
+				if (ImGui.BeginPopupModal("Error##LevelSaveError", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize))
+				{
+					ImGui.Text("Failed to save level. View logs for more information");
+					if (ImGui.Button("Ok"))
+					{
+						levelSaveExcep = null;
+						ImGui.CloseCurrentPopup();
+					}
+					
+					ImGui.EndPopup();
+				}
+			}
+
 			rlImGui.End();
 
 			// -------------------------------------------------------------

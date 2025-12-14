@@ -11,6 +11,8 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using Serilog;
 
 public class Start : BaseView
 {
@@ -19,8 +21,11 @@ public class Start : BaseView
     private readonly string basePath = "";
     private string currentPath = "";
 
-    private List<string> projectDirs = [];
+    private List<string> entries = [];
+    private List<bool> isDir = [];
     private List<string> projectNames = [];
+
+    private int selectedEntryIndex;
 
     public Start(Context context) : base(context)
     {
@@ -36,8 +41,9 @@ public class Start : BaseView
         urlBuffer = Encoding.UTF8.GetBytes(path);
         currentPath = path;
 
-        projectDirs = [ ..Directory.GetDirectories(path).Where(f => File.Exists(Path.Combine(f, "tile.ini"))) ];
-        projectNames = [ ..projectDirs.Select((f) =>Path.GetFileNameWithoutExtension(f)!) ];
+        entries = [ ..Directory.GetDirectories(path).OrderBy((f) => !File.Exists(Path.Combine(f, "level.ini"))) ];
+        isDir = [ ..entries.Select(d => !File.Exists(Path.Combine(d, "level.ini"))) ];
+        projectNames = [ ..entries.Select((f) =>Path.GetFileNameWithoutExtension(f)!) ];
     }
 
     public void GoHome() => GoTo(basePath);
@@ -72,6 +78,23 @@ public class Start : BaseView
 
     public override void GUI()
     {
+        if (ImGui.IsKeyPressed(ImGuiKey.UpArrow))
+        {
+            selectedEntryIndex--;
+
+            if (selectedEntryIndex < 0) 
+                selectedEntryIndex = entries.Count - 1;
+        }
+        else if (ImGui.IsKeyPressed(ImGuiKey.DownArrow))
+        {
+            selectedEntryIndex++;
+
+            if (selectedEntryIndex >= entries.Count) 
+                selectedEntryIndex = 0;
+        }
+
+        Exception? loadExcep = null;
+
         if (Begin(
             "Project Explorer", 
             ImGuiWindowFlags.NoMove | 
@@ -88,9 +111,48 @@ public class Start : BaseView
 
             if (BeginListBox("##Projects", GetContentRegionAvail()))
             {
-                for (int i = 0; i < projectDirs.Count; i++)
+                for (int i = 0; i < entries.Count; i++)
                 {
-                    Selectable(projectNames[i]);
+                    var selected = Selectable(
+                        projectNames[i], 
+                        selectedEntryIndex == i, 
+                        ImGuiSelectableFlags.None, 
+                        GetContentRegionAvail() with { Y = 20 }
+                    );
+
+                    if (selected)
+                    {
+                        if (selectedEntryIndex == i)
+                        {
+                            if (isDir[i])
+                            {
+                                GoTo(entries[i]);
+                            }
+                            else
+                            {
+                                Log.Information("Loading level {Name}", projectNames[i]);
+
+                                try
+                                {
+                                    var level = Level.FromDir(entries[i], Context.Tiles);
+                                    Context.AddLevel(level);
+                                    Context.SelectLevel(level);
+                                    Context.Viewer.Select<Geos>();
+
+                                    Log.Information("Level loaded successfully");
+                                }
+                                catch (Exception e)
+                                {
+                                    Log.Error("Failed to load level at {Dir}\n{Exception}", entries[i], e);
+                                    loadExcep = e;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            selectedEntryIndex = i;
+                        }
+                    }
                 }
 
                 EndListBox();
@@ -98,5 +160,18 @@ public class Start : BaseView
         }
 
         End();
+
+        if (loadExcep is not null) OpenPopup("Error##LevelLoadError");
+
+        if (BeginPopupModal("Error##LevelLoadError", ImGuiWindowFlags.NoCollapse))
+        {
+            Text("Failed to load level. View logs for more information");
+            if (Button("Ok"))
+            {
+                loadExcep = null; // Ineffective
+                CloseCurrentPopup();
+            }
+            EndPopup();
+        }
     }
 }

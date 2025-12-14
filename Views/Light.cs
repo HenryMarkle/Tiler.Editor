@@ -80,6 +80,11 @@ public class Light : BaseView
 
     public override void OnLevelSelected(Level level)
     {
+        if (Context.SelectedLevel is not null)
+            Context.SelectedLevel.Lightmap = new Managed.Image(
+                LoadImageFromTexture(Context.Viewports.Lightmap.Raw.Texture)
+            );
+
         var lightmap = new Texture(LoadTextureFromImage(level.Lightmap));
 
         BeginTextureMode(Context.Viewports.Lightmap);
