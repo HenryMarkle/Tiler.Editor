@@ -21,7 +21,7 @@ public class Program {
 
 		#if DEBUG
 		Log.Logger = new LoggerConfiguration()
-			.MinimumLevel.Debug()
+			.MinimumLevel.Verbose()
 			.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
 			.CreateLogger();
 		#else
@@ -49,6 +49,12 @@ public class Program {
 		}
 
 		Log.Information("Initializing window");
+
+		#if DEBUG
+		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
+		#else
+		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
+		#endif
 
 		Raylib.SetTargetFPS(45);
 		Raylib.InitWindow(1400, 800, "Tiler Editor");

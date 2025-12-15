@@ -116,6 +116,8 @@ public abstract class PropDef(string id, string resourceDir)
 
                 return new VoxelStruct(id, dir)
                 {
+                    Name = name,
+                    Category = category,
                     Width = width.Value,
                     Height = height.Value,
                     Layers = layers.Value,
@@ -136,6 +138,8 @@ public abstract class PropDef(string id, string resourceDir)
 
                 return new Soft(id, dir)
                 {
+                    Name = name,
+                    Category = category,
                     DefaultDepth = depth,
                     Image = image
                 };
@@ -155,6 +159,8 @@ public abstract class PropDef(string id, string resourceDir)
 
                 return new Custom(id, dir)
                 {
+                    Name = name,
+                    Category = category,
                     Image = image,
                     ScriptFile = scriptPath
                 };

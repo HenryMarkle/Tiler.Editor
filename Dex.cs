@@ -101,22 +101,32 @@ public class PropDex
     /// </summary>
     /// <returns>Returns true if added successfully, false if already exists.</returns>
     /// <exception cref="DuplicateTileException"></exception>
-    public void Register(PropDef tile)
+    public void Register(PropDef prop)
     {
-        if (!Props.TryAdd(tile.ID, tile))
-            throw new DuplicateTileException(tile.ID);
+        if (!Props.TryAdd(prop.ID, prop))
+            throw new DuplicateTileException(prop.ID);
 
-        if (string.IsNullOrEmpty(tile.Category))
-            UnCategorizedProps.Add(tile);
+        if (string.IsNullOrEmpty(prop.Category))
+        {
+            Log.Verbose("[PropDex.Register] Prop is uncategorized");
+            
+            UnCategorizedProps.Add(prop);
+        }
         else
         {
-            if (!CategoryProps.TryGetValue(tile.Category, out var props))
+            if (!CategoryProps.TryGetValue(prop.Category, out var props))
             {
-                CategoryProps.Add(tile.Category, [ tile ]);
-                Categories.Add(tile.Category);
+                Log.Verbose("[PropDex.Register] Creating a new category for the prop");
+                
+                CategoryProps.Add(prop.Category, [ prop ]);
+                Categories.Add(prop.Category);
             }
             else
-                props.Add(tile);
+            {
+                Log.Verbose("[PropDex.Register] Prop categorized");
+
+                props.Add(prop);
+            }
         }
     }
 
@@ -138,27 +148,42 @@ public class PropDex
 
     public static PropDex FromPropsDir(string dir)
     {
+        Log.Verbose("[PropDex.FromPropsDir] Registering props from directory '{Path}'", dir);
+
         if (!Directory.Exists(dir))
+        {
+            Log.Verbose("[PropDex.FromPropsDir] Directory was not found; throwing an exception.");
             throw new DirectoryNotFoundException();
+        }
 
         var dex = new PropDex();
+
+        Log.Verbose("[PropDex.FromPropsDir] Iterating over designated prop directory:");
 
         foreach (var folder in Directory.GetDirectories(dir))
         {
             var iniFile = Path.Combine(folder, "prop.ini");
-            if (!File.Exists(iniFile)) continue;
+            if (!File.Exists(iniFile))
+            {
+                Log.Verbose("[PropDex.FromPropsDir] \t-> Skipping {Name}/ (no prop.ini)", Path.GetFileName(folder));
+                continue;
+            }
 
             try
             {
+                Log.Verbose("[PropDex.FromPropsDir] \t-> Trying {Name}/", Path.GetFileName(folder));
                 dex.Register(folder);
+                Log.Verbose("[PropDex.FromPropsDir] \t   Succeeded");
             }
             catch (DuplicatePropException dpe)
             {
+                Log.Verbose("[PropDex.FromPropsDir] \t   Failed");
                 Log.Warning("Skipping duplicate prop {Prop}", dpe.PropID);
                 continue;
             }
             catch (TilerException te)
             {
+                Log.Verbose("[PropDex.FromPropsDir] \t   Failed");
                 Log.Error(
                     "Failed to load prop in directory '{Name}'\n{Exception}", 
                     Path.GetFileNameWithoutExtension(folder), 
