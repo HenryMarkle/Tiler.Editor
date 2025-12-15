@@ -17,6 +17,7 @@ local solidMap = {
         [ '3'] = 2,
         [ '6'] = 2,
         [ '1'] = 3,
+        [ '2'] = 3,
         ['42'] = 4
     },
     { -- topright
@@ -26,6 +27,7 @@ local solidMap = {
         [ '2'] = 2,
         [ '6'] = 2,
         [ '1'] = 3,
+        [ '3'] = 3,
         ['42'] = 4,
         ['30'] = 4
     },
@@ -35,6 +37,7 @@ local solidMap = {
         [  '7'] = 1,
         [  '3'] = 2,
         [ '15'] = 2,
+        [  '5'] = 3,
         [  '1'] = 3,
         ['105'] = 4
     },
@@ -45,6 +48,7 @@ local solidMap = {
         [ '2'] = 2,
         ['14'] = 2,
         [ '1'] = 3,
+        [ '7'] = 3,
         ['70'] = 4
     },
 }
@@ -75,18 +79,18 @@ function M.Render(tileset, x, y, z)
                     if Level.Geos:IsInBounds(offsetPos) and
                         Level.Geos:StrAt(offsetPos.X, offsetPos.Y, z) == Solid and
                         Level.Tiles:At(offsetPos.X, offsetPos.Y, z) == Tile then
-                        
+
                         product = product * primes[p]
                     end
                 end
             end
-            
+
             local ycorner = yCornerOrder[q]
             local xcorner = solidMap[q][tostring(product)]
-            
+
             local destination = Rect((x * 20) + (quarters[q].X * 10), (y * 20) + (quarters[q].Y * 10), 10, 10)
             local source = Rect(ycorner * 10, xcorner * 10, 10, 10)
-            
+
             Draw(
                 tileset,
                 z * 10,
