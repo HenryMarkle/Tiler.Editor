@@ -8,6 +8,7 @@ public class RenderTexture(RenderTexture2D rt) : IDisposable
     public RenderTexture2D Raw = rt;
     public int Width => Raw.Texture.Width;
     public int Height => Raw.Texture.Height;
+    public Texture2D Texture => Raw.Texture;
 
     public Color4 ClearColor = new(255, 255, 255);
 

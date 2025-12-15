@@ -30,6 +30,18 @@ public class SoftConfig : PropConfig
         };
     }
 }
+public class AntimatterConfig : PropConfig
+{
+    public int Depth;
+
+    public override AntimatterConfig Clone()
+    {
+        return new()
+        {
+            Depth = Depth
+        };
+    }
+}
 public class CustomPropConfig : PropConfig
 {
     public override CustomPropConfig Clone()
@@ -107,11 +119,7 @@ public abstract class PropDef(string id, string resourceDir)
                 if (layers != repeat.Length)
                     throw new PropParseException($"{type} 'layers' does not match 'repeat' length");
 
-                if ((height / 20) % layers != 0)
-                    throw new PropParseException($"{type} 'height' is not evenly divisible by 'layers' value");
-
-
-                if (height != image.Height)
+                if (height != image.Height / layers)
                     throw new PropParseException($"{type}'s image height does not match 'height' value");
 
                 return new VoxelStruct(id, dir)
@@ -137,6 +145,25 @@ public abstract class PropDef(string id, string resourceDir)
                 var image = new Managed.Image(Raylib.LoadImage(imagePath));
 
                 return new Soft(id, dir)
+                {
+                    Name = name,
+                    Category = category,
+                    DefaultDepth = depth,
+                    Image = image
+                };
+            }
+
+            case "Antimatter":
+            {
+                var depth = data["depth"]?.ToInt() ?? 10;
+
+                var imagePath = Path.Combine(dir, "image.png");
+                if (!File.Exists(imagePath))
+                    throw new PropParseException($"{type}'s 'image.png' not found");
+
+                var image = new Managed.Image(Raylib.LoadImage(imagePath));
+
+                return new Antimatter(id, dir)
                 {
                     Name = name,
                     Category = category,
@@ -210,6 +237,22 @@ public class Soft(string id, string resourceDir) : PropDef(id, resourceDir)
     }
 
     public override string ToString() => $"SoftProp({ID})";
+}
+
+public class Antimatter(string id, string resourceDir) : PropDef(id, resourceDir)
+{
+    public int Width => Image.Width;
+    public int Height => Image.Height;
+    public int DefaultDepth { get; init; } = 10;
+
+    public required Managed.Image Image { get; init; }
+
+    public override AntimatterConfig CreateConfig()
+    {
+        return new AntimatterConfig();
+    }
+
+    public override string ToString() => $"AntimatterProp({ID})";
 }
 
 public class Custom(string id, string resourceDir) : PropDef(id, resourceDir)

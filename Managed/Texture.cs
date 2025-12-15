@@ -9,6 +9,8 @@ public class Texture(Texture2D texture) : IDisposable
     public int Width => Raw.Width;
     public int Height => Raw.Height;
 
+    public Texture(Image image) : this(Raylib.LoadTextureFromImage(image)) {}
+
     public static implicit operator Texture2D(Texture t) => t.Raw;
 
     public bool IsDisposed { get; private set; }
