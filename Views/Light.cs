@@ -284,7 +284,7 @@ public class Light : BaseView
                 -Context.SelectedLevel!.LightDistance * MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
                 Context.SelectedLevel!.LightDistance * MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
             ) - (Vector2.One * Viewports.LightmapMargin), 
-            tint:    Color.Black with { A = 50 }
+            tint:    Color.Black with { A = 50, G = 50 }
         );
 
         // Actual map
