@@ -92,7 +92,7 @@ public class Program {
 		var context = new Context()
         {
 			Dirs = paths,
-			Viewports = new(70 * 20, 40 * 20, 3),
+			Viewports = new(70 * 20, 40 * 20, 5),
 			Tiles = tiledex,
 			Props = propdex,
 			Config = config,

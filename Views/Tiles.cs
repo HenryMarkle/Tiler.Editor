@@ -275,7 +275,7 @@ public class Tiles : BaseView
         
             if (IsKeyPressed(KeyboardKey.L))
             {
-                Context.Layer = ++Context.Layer % 3;
+                Context.Layer = ++Context.Layer % Context.SelectedLevel!.Depth;
 
                 redrawMain = true;
             }

@@ -20,12 +20,13 @@ public class Level
 {
     public const int DefaultWidth = 70;
     public const int DefaultHeight = 40;
+    public const int DefaultDepth = 5;
 
     public string? Name = "New Level";
     public string? Directory;
     public int Width { get; private set; } = DefaultWidth;
     public int Height { get; private set; } = DefaultHeight;
-    public int Depth { get; private set; } = 3;
+    public int Depth { get; private set; } = DefaultDepth;
 
     /// TODO: Use Either<> instead 
     public TileDef? DefaultTile;
@@ -37,8 +38,11 @@ public class Level
         )
     );
 
-    public Matrix<Geo> Geos = new(DefaultWidth, DefaultHeight, 3);
-    public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, 30);
+    public int LightDistance { get; set; } = 1;
+    public int LightDirection { get; set; } = 90;
+
+    public Matrix<Geo> Geos = new(DefaultWidth, DefaultHeight, DefaultDepth);
+    public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, DefaultDepth);
     public List<LevelCamera> Cameras = [ new LevelCamera(new Vector2(20, 20)) ];
     public List<Prop> Props = [];
 
@@ -83,7 +87,6 @@ public class Level
         levelSec.AddKey("name", asName);
         levelSec.AddKey("width", $"{Width}");
         levelSec.AddKey("height", $"{Height}");
-        levelSec.AddKey("depth", $"{Depth}");
 
         var parser = new FileIniDataParser();
 
@@ -195,12 +198,13 @@ public class Level
         var name = data["name"];
         var width = data["width"]?.ToInt() ?? DefaultWidth;
         var height = data["height"]?.ToInt() ?? DefaultHeight;
-        var depth = data["depth"]?.ToInt() ?? 3;
+        var lightDistance = Math.Clamp(data["light_distance"]?.ToInt() ?? 1, 1, 10);
+        var lightDirection = Math.Clamp(data["light_direction"]?.ToInt() ?? 90, 0, 360);
         _ = tiles.Tiles.TryGetValue(data["default_tile"] ?? "", out TileDef? defaultTile);
 
         var geosTask = Task.Run(() =>
         {
-            var matrix = new Matrix<Geo>(width, height, depth);
+            var matrix = new Matrix<Geo>(width, height, DefaultDepth);
 
             var geosFile = Path.Combine(dir, "geometry.txt");
 
@@ -227,7 +231,7 @@ public class Level
 
         var tilesTask = Task.Run(() =>
         {
-            var matrix = new Matrix<TileDef?>(width, height, depth);
+            var matrix = new Matrix<TileDef?>(width, height, DefaultDepth);
 
             var tilesFile = Path.Combine(dir, "tiles.txt");
 
@@ -381,8 +385,9 @@ public class Level
             Directory = dir,
             Width = width,
             Height = height,
-            Depth = depth,
             DefaultTile = defaultTile,
+            LightDistance = lightDistance,
+            LightDirection = lightDirection,
             Lightmap = new Managed.Image(Raylib.LoadImageFromTexture(lightmapRT.Texture)),
 
             Geos = geosTask.Result,

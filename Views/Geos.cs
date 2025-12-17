@@ -163,6 +163,8 @@ public class Geos : BaseView
                 DrawTexture(Context.Viewports.Geos[0].Raw.Texture, 0, 0, new Color(0, 255, 255, 255));
                 DrawTexture(Context.Viewports.Geos[1].Raw.Texture, 0, 0, new Color(255, 0, 255, 80));
                 DrawTexture(Context.Viewports.Geos[2].Raw.Texture, 0, 0, new Color(255, 0, 0, 80));
+                DrawTexture(Context.Viewports.Geos[3].Raw.Texture, 0, 0, new Color(255, 255, 0, 80));
+                DrawTexture(Context.Viewports.Geos[4].Raw.Texture, 0, 0, new Color(0, 255, 255, 80));
             break;
 
             case GeometryLayerColoring.RGB:
@@ -170,6 +172,8 @@ public class Geos : BaseView
                 DrawTexture(Context.Viewports.Geos[0].Raw.Texture, 0, 0, new Color(0, 0, 0, 255));
                 DrawTexture(Context.Viewports.Geos[1].Raw.Texture, 0, 0, new Color(0, 255, 0, 80));
                 DrawTexture(Context.Viewports.Geos[2].Raw.Texture, 0, 0, new Color(255, 0, 0, 80));
+                DrawTexture(Context.Viewports.Geos[3].Raw.Texture, 0, 0, new Color(0, 0, 255, 80));
+                DrawTexture(Context.Viewports.Geos[4].Raw.Texture, 0, 0, new Color(200, 200, 255, 80));
             break;
 
             case GeometryLayerColoring.Gray:
@@ -242,7 +246,7 @@ public class Geos : BaseView
 
             if (IsKeyPressed(KeyboardKey.L))
             {
-                Context.Layer = ++Context.Layer % 3;
+                Context.Layer = ++Context.Layer % Context.SelectedLevel!.Depth;
 
                 if (Context.Config.GeoColoring == GeometryLayerColoring.Gray) redrawMain = true;
             }
@@ -376,13 +380,14 @@ public class Geos : BaseView
         var printer = Context.DebugPrinter;
 
         printer.PrintlnLabel("Layer", Context.Layer, Color.Magenta);
+        printer.PrintlnLabel("Selected", selectedGeo, Color.SkyBlue);
 
         if (Context.SelectedLevel is { } level)
         {
             if (cursor.IsInMatrix)
             {
                 printer.PrintlnLabel(
-                    "Geo", 
+                    "Hovered", 
                     level.Geos[cursor.MX, cursor.MY, Context.Layer],
                     Color.Gold
                 ); 

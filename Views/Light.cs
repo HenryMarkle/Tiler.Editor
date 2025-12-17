@@ -24,6 +24,7 @@ public class Light : BaseView
     private bool isRotatingBrushWithCursor;
     private Vector2 pinnedBrushPos;
     private readonly Shader eraseShader;
+    private Rectangle lightConfigBkgRect = new(10, GetScreenHeight() - 210, 200, 200);
 
     public Light(Context context) : base(context)
     {
@@ -101,6 +102,8 @@ public class Light : BaseView
 
     public override void Process()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         if (!cursor.IsInWindow)
         {
             cursor.ProcessCursor();
@@ -155,6 +158,24 @@ public class Light : BaseView
         {
             brushRotation -= multiplier;
         }
+
+        if (IsKeyDown(KeyboardKey.I))
+        {
+            level.LightDirection = (level.LightDirection + multiplier) % 360;
+        } else if (IsKeyDown(KeyboardKey.O))
+        {
+            level.LightDirection = (level.LightDirection - multiplier) % 360;
+            if (level.LightDirection <= 0) level.LightDirection = 360;
+        }
+        
+        if (IsKeyDown(KeyboardKey.K))
+        {
+            level.LightDistance = Math.Clamp(level.LightDistance + multiplier, 1, 10);
+        } else if (IsKeyDown(KeyboardKey.J))
+        {
+            level.LightDistance = Math.Clamp(level.LightDistance - multiplier, 1, 10);
+        }
+
 
         if (isRotatingBrushWithCursor)
         {
@@ -243,7 +264,7 @@ public class Light : BaseView
 
         BeginMode2D(Context.Camera);
         DrawTexture(
-            texture: Context.Viewports.Main.Raw.Texture, 
+            texture: Context.Viewports.Main.Texture, 
             posX:    0, 
             posY:    0, 
             tint:    Color.White
@@ -255,11 +276,23 @@ public class Light : BaseView
             height: Context.Viewports.Lightmap.Height,
             color:  Color.White with { A = 80 }
         );
+        
+        // Projection
+        DrawTextureV(
+            texture: Context.Viewports.Lightmap.Texture, 
+            position: new Vector2(
+                -Context.SelectedLevel!.LightDistance * MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
+                Context.SelectedLevel!.LightDistance * MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
+            ) - (Vector2.One * Viewports.LightmapMargin), 
+            tint:    Color.Black with { A = 50 }
+        );
+
+        // Actual map
         DrawTexture(
-            texture: Context.Viewports.Lightmap.Raw.Texture, 
+            texture: Context.Viewports.Lightmap.Texture, 
             posX:    -Viewports.LightmapMargin, 
             posY:    -Viewports.LightmapMargin, 
-            tint:    Color.Black
+            tint:    Color.Black with { A = 100 }
         );
 
         if (selectedBrush is not null)
@@ -274,6 +307,30 @@ public class Light : BaseView
                 tint:     new Color(200, 0, 0, 90)
             );
         EndMode2D();
+
+        DrawRectangleRounded(
+            rec:       lightConfigBkgRect,
+            roundness: 0.1f,
+            segments:  10,
+            color:     new Color(80, 80, 80, 80)
+        );
+
+        var mainCircleCenter = lightConfigBkgRect.Position + lightConfigBkgRect.Size/2;
+
+        DrawCircleLinesV(
+            center: mainCircleCenter,
+            radius: Context.SelectedLevel!.LightDistance * 10,
+            color:  Color.Red
+        );
+
+        DrawCircleV(
+            center: mainCircleCenter + new Vector2(
+                Context.SelectedLevel!.LightDistance * 10 * MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
+                -Context.SelectedLevel!.LightDistance * 10 * MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
+            ),
+            radius: 10,
+            color:  Color.Red
+        );
     }
 
     public override void GUI()
@@ -338,11 +395,15 @@ public class Light : BaseView
 
     public override void Debug()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         cursor.PrintDebug();
 
         var printer = Context.DebugPrinter;
 
         printer.PrintlnLabel("Size", brushSize, Color.SkyBlue);
         printer.PrintlnLabel("Rotation", brushRotation, Color.SkyBlue);
+        printer.PrintlnLabel("Light Distance", level.LightDistance, Color.SkyBlue);
+        printer.PrintlnLabel("Light Direction", level.LightDirection, Color.SkyBlue);
     }
 }
