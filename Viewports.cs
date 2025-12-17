@@ -9,7 +9,7 @@ public class Viewports
     public int Height { get; private set; }
     public int Depth { get; private set; }
 
-    public static int LightmapMargin { get; set; } = 100;
+    public static int LightmapMargin { get; set; } = 200;
 
     public RenderTexture Main { get; private set; }
     public RenderTexture Lightmap { get; private set; }

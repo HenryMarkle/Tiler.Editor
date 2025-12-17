@@ -12,6 +12,7 @@ using Raylib_cs;
 using Serilog;
 using System.Linq;
 using System;
+using Tiler.Editor.Managed;
 
 namespace Tiler.Editor;
 
@@ -28,7 +29,13 @@ public class Level
 
     /// TODO: Use Either<> instead 
     public TileDef? DefaultTile;
-    public Managed.Image Lightmap = new(Raylib.GenImageColor(DefaultWidth + 200, DefaultHeight + 200, new Color(0,0,0,0)));
+    public Managed.Image Lightmap = new(
+        Raylib.GenImageColor(
+            DefaultWidth + Viewports.LightmapMargin*2, 
+            DefaultHeight + Viewports.LightmapMargin*2, 
+            new Color(0,0,0,0)
+        )
+    );
 
     public Matrix<Geo> Geos = new(DefaultWidth, DefaultHeight, 3);
     public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, 30);
@@ -351,16 +358,22 @@ public class Level
         if (undefinedTiles is not null)
             foreach (var und in undefinedTiles) Log.Warning("Undefined tile '{Name}'", und);
 
-        var lightmapFile = Path.Combine(dir, "lightmap.png");
-        var image = File.Exists(lightmapFile) 
-            ? new Managed.Image(Raylib.LoadImage(lightmapFile)) 
-            : new Managed.Image(
-                Raylib.GenImageColor(
-                    width * 20 + Viewports.LightmapMargin*2, 
-                    height * 20 + Viewports.LightmapMargin*2, 
-                    new Color(0, 0, 0, 0)
-                )
+        using var lightmapRT = new RenderTexture(
+                width * 20 + Viewports.LightmapMargin*2, 
+                height * 20 + Viewports.LightmapMargin*2,
+                new Color4(0,0,0,0),
+                true
             );
+
+        var lightmapFile = Path.Combine(dir, "lightmap.png");
+        if (File.Exists(lightmapFile))
+        {
+            using var lightmapTexture = new Texture(Raylib.LoadTexture(lightmapFile));
+
+            Raylib.BeginTextureMode(lightmapRT);
+            Raylib.DrawTexture(lightmapTexture, 0, 0, Color.White);
+            Raylib.EndTextureMode();
+        }
 
         return new Level
         {
@@ -370,7 +383,7 @@ public class Level
             Height = height,
             Depth = depth,
             DefaultTile = defaultTile,
-            Lightmap = image,
+            Lightmap = new Managed.Image(Raylib.LoadImageFromTexture(lightmapRT.Texture)),
 
             Geos = geosTask.Result,
             Tiles = tilesTask.Result,

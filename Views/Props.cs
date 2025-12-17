@@ -27,6 +27,16 @@ public class Props : BaseView
     RenderTexture propPreview;
     RenderTexture propTooltip;
 
+    private bool redrawMain;
+
+    public enum Precision
+    {
+        Free, Half, One
+    }
+
+    private Precision transformPrecision;
+    private Precision gridPrecision;
+
     public Props(Context context) : base(context)
     {
         cursor = new Cursor(context);
@@ -109,16 +119,169 @@ public class Props : BaseView
         }
     }
 
+public void DrawTilesViewport(int layer)
+    {
+        if (Context.SelectedLevel is not { } level) return;
+        if (layer < 0 || layer >= Context.Viewports.Depth) return;
+
+        BeginTextureMode(Context.Viewports.Tiles[layer]);
+        ClearBackground(new Color(0, 0, 0, 0));
+        for (int y = 0; y < level.Height; y++)
+        {
+            for (int x = 0; x < level.Width; x++)
+            {
+                var tile = level.Tiles[x, y, layer];
+                if (tile is null) continue;
+
+                var geo = level.Geos[x, y, layer];
+
+                // BeginBlendMode(BlendMode.Custom);
+                // Rlgl.SetBlendMode(BlendMode.Custom);
+                // Rlgl.SetBlendFactors(1, 0, 1);
+                
+                switch (geo)
+                {
+                    case Geo.Solid:
+                    case Geo.Wall:
+                        DrawRectangle(x * 20 + 4, y * 20 + 4, 20 - 8, 20 - 8, tile.Color);
+                    break;
+
+                    case Geo.Slab:
+                        DrawRectangle(x * 20 + 4, y * 20 + 10 + 4, 20 - 8, 10 - 8, tile.Color);
+                    break;
+
+                    case Geo.Platform:
+                        DrawRectangle(x * 20 + 4, y * 20 + 4, 20 - 8, 10 - 8, tile.Color);
+                    break;
+
+                    case Geo.SlopeNW:
+                        DrawTriangle(
+                            new Vector2((x + 1) * 20, y * 20),
+                            new Vector2(x * 20, (y + 1) * 20),
+                            new Vector2((x + 1) * 20, (y + 1) * 20),
+                            tile.Color
+                        );
+                    break;                    
+
+                    case Geo.SlopeNE:
+                        DrawTriangle(
+                            new Vector2(x * 20, y * 20),
+                            new Vector2(x * 20, (y + 1) * 20),
+                            new Vector2((x + 1) * 20, (y + 1) * 20),
+                            tile.Color
+                        );
+                    break;
+
+                    case Geo.SlopeSE:
+                        DrawTriangle(
+                            new Vector2((x + 1) * 20, y * 20),
+                            new Vector2(x * 20, y * 20),
+                            new Vector2(x * 20, (y + 1) * 20),
+                            tile.Color
+                        );
+                    break;
+
+                    case Geo.SlopeSW:
+                        DrawTriangle(
+                            new Vector2(x * 20, y * 20),
+                            new Vector2((x + 1) * 20, (y + 1) * 20),
+                            new Vector2((x + 1) * 20, y * 20),
+                            tile.Color
+                        );
+                    break;
+                }
+                // EndBlendMode();
+            }
+        }
+        EndTextureMode();
+    }
+
+    public void DrawMainViewport()
+    {
+        if (Context.SelectedLevel is not { } level) return;
+
+        BeginTextureMode(Context.Viewports.Main);
+        ClearBackground(new Color(0, 0, 0, 0));
+        for (int l = 0; l < Context.Viewports.Depth; l++)
+        {
+            if (l == Context.Layer) continue;
+            DrawTexture(Context.Viewports.Geos[l].Raw.Texture, 0, 0, Color.Black with { A = 120 });
+            DrawTexture(Context.Viewports.Tiles[l].Raw.Texture, 0, 0, Color.White with { A = 120 });
+        }
+        
+        DrawRectangle(0, 0, level.Width * 20, level.Height * 20, Color.Red with { A = 40 });
+
+        DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, 0, 0, Color.Black with { A = 210 });
+        DrawTexture(Context.Viewports.Tiles[Context.Layer].Raw.Texture, 0, 0, Color.White with { A = 210 });
+        EndTextureMode();
+    }
+
+    public void UpdatePlacedPropPreview(Prop prop)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void DrawPlacedProps()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void OnViewSelected()
+    {
+        redrawMain = true;
+    }
+
     public override void Process()
     {
         if (!cursor.IsInWindow)
         {
             cursor.ProcessCursor();
+
+            if (IsKeyPressed(KeyboardKey.L))
+            {
+                Context.Layer = ++Context.Layer % Context.SelectedLevel?.Depth ?? 3;
+                redrawMain = true;
+            }
+
+            if (IsKeyPressed(KeyboardKey.P))
+            {
+                transformPrecision = transformPrecision switch
+                {
+                    Precision.Free => Precision.Half,
+                    Precision.Half => Precision.One,
+                    Precision.One => Precision.Free,
+                
+                    _ => Precision.Free
+                };
+            }
+
+            if (IsKeyPressed(KeyboardKey.G))
+            {
+                gridPrecision = gridPrecision switch
+                {
+                    Precision.Free => Precision.One,
+                    Precision.One => Precision.Half,
+                    Precision.Half => Precision.Free,
+                
+                    _ => Precision.Free
+                };
+            }
         }
     }
 
     public override void Draw()
     {
+        if (Context.SelectedLevel is not { } level) return;
+        if (redrawMain)
+        {
+            DrawTilesViewport(0);
+            DrawTilesViewport(1);
+            DrawTilesViewport(2);
+            DrawMainViewport();
+
+            redrawMain = false;    
+        }
+
         BeginMode2D(Context.Camera);
         DrawTexture(
             texture: Context.Viewports.Main.Raw.Texture, 
@@ -126,6 +289,23 @@ public class Props : BaseView
             posY:    0, 
             tint:    Color.White
         );
+
+        switch (gridPrecision)
+        {
+            case Precision.One:
+                for (var x = 0; x < level.Width; x++)
+                    DrawLineEx(new Vector2(x * 20, 0), new Vector2(x * 20, level.Height * 20), x % 2 == 0 ? 2 : 1, Color.White with { A = 80 });
+                for (var y = 0; y < level.Height; y++)
+                    DrawLineEx(new Vector2(0, y * 20), new Vector2(level.Width * 20, y * 20), y % 2 == 0 ? 2 : 1, Color.White with { A = 80 });
+                break;
+
+            case Precision.Half:
+                for (var x = 0; x < level.Width*2; x++)
+                    DrawLineEx(new Vector2(x * 10, 0), new Vector2(x * 10, level.Height * 20), x % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
+                for (var y = 0; y < level.Height*2; y++)
+                    DrawLineEx(new Vector2(0, y * 10), new Vector2(level.Width * 20, y * 10), y % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
+                break;
+        }
         EndMode2D();
     }
 
@@ -186,7 +366,7 @@ public class Props : BaseView
                             }
 
                             ImGui.BeginTooltip();
-                            rlImGui_cs.rlImGui.ImageSize(propTooltip.Texture, new Vector2(100, 100));
+                            rlImGui_cs.rlImGui.Image(propTooltip.Texture);
                             ImGui.EndTooltip();
                         }
                     }
@@ -207,6 +387,7 @@ public class Props : BaseView
 
         printer.PrintlnLabel("Layer", Context.Layer, Color.Magenta);
 
+        printer.PrintlnLabel("Precision", transformPrecision, Color.Magenta);
         printer.PrintlnLabel("Selected Category", selectedPropMenuCategory, Color.Gold);
         printer.PrintlnLabel("Selected Prop", selectedProp, Color.Gold);
     }

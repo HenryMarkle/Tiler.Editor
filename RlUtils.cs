@@ -118,7 +118,7 @@ public static class RlUtils
                 destination.Width,
                 destination.Height
             ),
-            origin,
+            origin: origin with { Y = -origin.Y },
             rotation: -rotation,
             tint
         );

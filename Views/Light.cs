@@ -192,7 +192,11 @@ public class Light : BaseView
                         rt:          Context.Viewports.Lightmap, 
                         texture:     selectedBrush, 
                         source:      new Rectangle(0, 0, selectedBrush.Width, selectedBrush.Height),
-                        destination: new Rectangle(cursor.X + Viewports.LightmapMargin, cursor.Y - Viewports.LightmapMargin, brushSize),
+                        destination: new Rectangle(
+                            cursor.X + Viewports.LightmapMargin, 
+                            cursor.Y + Viewports.LightmapMargin, 
+                            brushSize
+                        ),
                         origin:      brushSize/2,
                         rotation:    brushRotation,
                         tint:        Color.White
@@ -220,7 +224,11 @@ public class Light : BaseView
                         rt:          Context.Viewports.Lightmap, 
                         texture:     selectedBrush, 
                         source:      new Rectangle(0, 0, selectedBrush.Width, selectedBrush.Height),
-                        destination: new Rectangle(cursor.X + Viewports.LightmapMargin, cursor.Y - Viewports.LightmapMargin, brushSize),
+                        destination: new Rectangle(
+                            cursor.X + Viewports.LightmapMargin, 
+                            cursor.Y + Viewports.LightmapMargin, 
+                            brushSize
+                        ),
                         origin:      brushSize/2,
                         rotation:    brushRotation,
                         tint:        Color.White
