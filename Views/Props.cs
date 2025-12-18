@@ -31,15 +31,35 @@ public class Props : BaseView
 
     public enum Precision
     {
-        Free, Half, One
+        Free,
+        Half,
+        One
     }
 
     private Precision transformPrecision;
     private Precision gridPrecision;
 
+    private Vector2 TransPos => transformPrecision switch
+    {
+        Precision.Half => new((int)(cursor.X / 10) * 10, (int)(cursor.Y / 10) * 10),
+        Precision.One => new((int)(cursor.X / 20) * 20, (int)(cursor.Y / 20) * 20),
+        _ => cursor.Pos,
+    };
+
+    private enum EditMode
+    {
+        Selection,
+        Placement
+    }
+
+    private EditMode editMode;
+
     public Props(Context context) : base(context)
     {
         cursor = new Cursor(context);
+
+        transformPrecision = gridPrecision = Precision.Free;
+        editMode = EditMode.Placement;
 
         propPreview = new RenderTexture(
             width:      1, 
@@ -53,6 +73,34 @@ public class Props : BaseView
             clearColor: new Color4(0, 0, 0, 0), 
             clear:      true
         );
+
+        SelectPropCategory(0);
+        if (selectedProp is not null) DrawPropRT(propPreview, selectedProp);
+    }
+
+    private void SelectPropCategory(int index)
+    {
+        if (index >= Context.Props.Categories.Count) return;
+        selectedPropMenuCategoryIndex = index;
+        selectedPropMenuCategory = Context.Props.Categories[index];
+        selectedPropMenuCategoryProps = Context.Props.CategoryProps[selectedPropMenuCategory];
+        SelectPropFromCategory(0);
+    }
+    private void SelectPropCategory(string category)
+    {
+        if (!Context.Props.CategoryProps.TryGetValue(category, out selectedPropMenuCategoryProps)) return;
+        selectedPropMenuCategoryIndex = Context.Props.Categories.IndexOf(category);
+        selectedPropMenuCategory = category;
+        SelectPropFromCategory(0);
+    }
+
+    private void SelectPropFromCategory(int index)
+    {
+        if (selectedPropMenuCategoryProps is null or { Count: 0 }) return;
+        if (index >= selectedPropMenuCategoryProps.Count) return;
+
+        selectedPropMenuIndex = index;
+        selectedProp = selectedPropMenuCategoryProps[index];
     }
 
     public void DrawPropRT(RenderTexture rt, PropDef prop)
@@ -119,7 +167,7 @@ public class Props : BaseView
         }
     }
 
-public void DrawTilesViewport(int layer)
+    public void DrawTilesViewport(int layer)
     {
         if (Context.SelectedLevel is not { } level) return;
         if (layer < 0 || layer >= Context.Viewports.Depth) return;
@@ -233,6 +281,8 @@ public void DrawTilesViewport(int layer)
 
     public override void Process()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         if (!cursor.IsInWindow)
         {
             cursor.ProcessCursor();
@@ -265,6 +315,59 @@ public void DrawTilesViewport(int layer)
                 
                     _ => Precision.Free
                 };
+            }
+
+            switch (editMode)
+            {
+            case EditMode.Placement:
+            placement_mode_case:
+            {
+                // Avoid loop
+                if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right))
+                {
+                    editMode = EditMode.Selection;
+                    goto selection_mode_case;
+                }
+
+                if (IsMouseButtonPressed(MouseButton.Right))
+                {
+                    if (selectedProp is null) break;
+
+                    var previewSize = new Vector2(propPreview.Width, propPreview.Height);
+
+                    var quad = new Quad(
+                        TransPos - (previewSize/2),
+                        TransPos + (Vector2.UnitX * (previewSize.X/2)),
+                        TransPos + (previewSize/2),
+                        TransPos + (Vector2.UnitY * (previewSize.Y/2))
+                    );
+
+                    var prop = new Prop
+                    {
+                        Def = selectedProp,
+                        Config = selectedProp.CreateConfig(),
+                        Quad = quad,
+                        Preview = level.Props.Find(p => p.Def == selectedProp) is {} replica 
+                            ? replica.Preview 
+                            : new Managed.Image(propPreview.Texture)
+                    };
+
+                    level.Props.Add(prop);
+                }
+            }
+            break;
+
+            case EditMode.Selection:
+            selection_mode_case:
+            {
+                // Avoid loop
+                if (IsMouseButtonPressed(MouseButton.Right) && !IsMouseButtonDown(MouseButton.Left))
+                {
+                    editMode = EditMode.Placement;
+                    break;
+                }
+            }
+            break;
             }
         }
     }
@@ -306,11 +409,41 @@ public void DrawTilesViewport(int layer)
                     DrawLineEx(new Vector2(0, y * 10), new Vector2(level.Width * 20, y * 10), y % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
                 break;
         }
+
+        switch (editMode)
+        {
+        case EditMode.Placement:
+        {
+            if (selectedProp is not null)
+            {
+                var previewSize = new Vector2(propPreview.Width, propPreview.Height);
+
+                DrawTexturePro(
+                    texture:  propPreview.Texture,
+                    source:   new Rectangle(0, 0, previewSize),
+                    dest:     new Rectangle(TransPos, previewSize),
+                    origin:   previewSize/2,
+                    rotation: 0,
+                    tint:     Color.White
+                );
+            }
+        }
+        break;
+
+        case EditMode.Selection:
+        {
+            
+        }
+        break;
+        }
+
         EndMode2D();
     }
 
     public override void GUI()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         cursor.ProcessGUI();
 
         if (ImGui.Begin("Props"))
@@ -350,7 +483,7 @@ public void DrawTilesViewport(int layer)
                         {
                             if (prop != selectedProp)
                             {
-                                DrawPropRT(propPreview, prop);    
+                                DrawPropRT(propPreview, prop);
                             }
 
                             selectedPropMenuIndex = p;
@@ -369,6 +502,26 @@ public void DrawTilesViewport(int layer)
                             rlImGui_cs.rlImGui.Image(propTooltip.Texture);
                             ImGui.EndTooltip();
                         }
+                    }
+                }
+
+                ImGui.EndListBox();
+            }
+        }
+
+        ImGui.End();
+
+        if (ImGui.Begin("Placed##PlacedProps"))
+        {
+            if (ImGui.BeginListBox("##List", ImGui.GetContentRegionAvail()))
+            {
+                for (var p = 0; p < level.Props.Count; p++)
+                {
+                    var prop = level.Props[p];
+
+                    if (ImGui.Selectable($"{prop.Def.ID}##{p}"))
+                    {
+                        
                     }
                 }
 

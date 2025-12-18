@@ -9,6 +9,8 @@ public class Image(Raylib_cs.Image image) : IDisposable
     public int Width => Raw.Width;
     public int Height => Raw.Height;
 
+    public Image(Texture2D texture) : this(Raylib.LoadImageFromTexture(texture)) {}
+
     public static implicit operator Raylib_cs.Image(Image i) => i.Raw;
 
     public bool IsDisposed { get; private set; }

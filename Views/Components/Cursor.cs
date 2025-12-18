@@ -16,8 +16,12 @@ public class Cursor(Context context)
     public float X { get; private set; }
     public float Y { get; private set; }
 
+    public Vector2 Pos => new(X, Y);
+
     public int MX { get; private set; }
     public int MY { get; private set; }
+
+    public Vector2 MXPos => new(MX, MY);
 
     public bool IsInMatrix { get; private set; }
     public bool IsInWindow { get; private set; }
