@@ -54,9 +54,23 @@ public class Props : BaseView
 
     private EditMode editMode;
 
+    private enum SelectionAction
+    {
+        Nothing,
+        Translate,
+        Rotate,
+        Scale,
+        Deform
+    }
+
+    private SelectionAction selectionAction;
+
     private bool isSelecting;
     private Vector2 initialSelectionPos;
     private Rectangle selectionRect;
+
+    private Queue<Prop> redrawPlacedProps;
+    
 
     public Props(Context context) : base(context)
     {
@@ -64,6 +78,9 @@ public class Props : BaseView
 
         transformPrecision = gridPrecision = Precision.Free;
         editMode = EditMode.Placement;
+        selectionAction = SelectionAction.Nothing;
+
+        redrawPlacedProps = [];
 
         propPreview = new RenderTexture(
             width: 1,
@@ -340,17 +357,15 @@ public class Props : BaseView
                             var previewSize = new Vector2(propPreview.Width, propPreview.Height);
 
                             var quad = new Quad(
-                                TransPos - (previewSize / 2),
-                                TransPos + (Vector2.UnitX * (previewSize.X / 2)),
-                                TransPos + (previewSize / 2),
-                                TransPos + (Vector2.UnitY * (previewSize.Y / 2))
-                            );
+                                new Rectangle(Vector2.Zero, previewSize)
+                            ) + cursor.Pos - (previewSize/2);
 
                             var prop = new Prop
                             {
                                 Def = selectedProp,
                                 Config = selectedProp.CreateConfig(),
                                 Quad = quad,
+                                Depth = Context.Layer * 10,
                                 Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
                                     ? replica.Preview
                                     : new Managed.Image(propPreview.Texture)
@@ -388,23 +403,29 @@ public class Props : BaseView
                             }
                             else if (IsMouseButtonReleased(MouseButton.Left))
                             {
+                                foreach (var prop in level.Props)
+                                {
+                                    prop.IsSelected = CheckCollisionRecs(
+                                        selectionRect, 
+                                        prop.Quad.Enclosed()
+                                    );
+                                }
+
                                 isSelecting = false;
                                 initialSelectionPos = -Vector2.One;
                                 selectionRect = new Rectangle(-1, -1, -1, -1);
                             }
                         }
-                        else
+                        else if (IsMouseButtonDown(MouseButton.Left))
                         {
-                            if (IsMouseButtonDown(MouseButton.Left))
-                            {
-                                isSelecting = true;
-                                initialSelectionPos = cursor.Pos;
-                                selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
-                            }
-                            else if (IsMouseButtonReleased(MouseButton.Left))
-                            {
+                            isSelecting = true;
+                            initialSelectionPos = cursor.Pos;
+                            selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
+                        }
 
-                            }
+                        if (IsKeyPressed(KeyboardKey.X))
+                        {
+                            level.Props = [..level.Props.Where(p => !p.IsSelected)];
                         }
                     }
                     break;
@@ -448,6 +469,59 @@ public class Props : BaseView
                 for (var y = 0; y < level.Height * 2; y++)
                     DrawLineEx(new Vector2(0, y * 10), new Vector2(level.Width * 20, y * 10), y % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
                 break;
+        }
+
+        Dictionary<PropDef, Texture> textureCache = [];
+
+        foreach (var prop in level.Props)
+        {
+            if (prop.IsHidden) continue;
+
+            if (prop.Preview is not null)
+            {
+                if (!textureCache.TryGetValue(prop.Def, out var texture))
+                {
+                    texture = new Texture(prop.Preview);
+                    textureCache.Add(prop.Def, texture);
+                }
+
+                var layerTint = (byte)(255 - Math.Abs(prop.Depth - Context.Layer*10)/40.0f*230);
+
+                RlUtils.DrawTextureQuad(
+                    texture,
+                    source: new Rectangle(0, 0, texture.Width, texture.Height),
+                    quad:   prop.Quad,
+                    tint:   new Color4(layerTint, layerTint, layerTint, layerTint)
+                );
+            }
+
+            if (prop.IsSelected)
+            {
+                DrawLineEx(
+                    startPos: prop.Quad.TopLeft, 
+                    endPos: prop.Quad.TopRight, 
+                    thick: 1, 
+                    color: Color.SkyBlue
+                );
+                DrawLineEx(
+                    endPos: prop.Quad.TopRight, 
+                    startPos: prop.Quad.BottomRight, 
+                    thick: 1, 
+                    color: Color.SkyBlue
+                );
+                DrawLineEx(
+                    startPos: prop.Quad.BottomRight, 
+                    endPos: prop.Quad.BottomLeft, 
+                    thick: 1, 
+                    color: Color.SkyBlue
+                );
+                DrawLineEx(
+                    endPos: prop.Quad.BottomLeft, 
+                    startPos: prop.Quad.TopLeft, 
+                    thick: 1, 
+                    color: Color.SkyBlue
+                );
+            }
         }
 
         switch (editMode)
@@ -566,9 +640,9 @@ public class Props : BaseView
                 {
                     var prop = level.Props[p];
 
-                    if (ImGui.Selectable($"{prop.Def.ID}##{p}"))
+                    if (ImGui.Selectable($"{prop.Def.ID}##{p}", prop.IsSelected))
                     {
-
+                        prop.IsSelected = !prop.IsSelected;
                     }
                 }
 
@@ -587,7 +661,12 @@ public class Props : BaseView
 
         printer.PrintlnLabel("Layer", Context.Layer, Color.Magenta);
 
-        printer.PrintlnLabel("Precision", transformPrecision, Color.Magenta);
+        printer.PrintlnLabel("Transform Precision", transformPrecision, Color.Magenta);
+        printer.PrintlnLabel("Grid Precision", gridPrecision, Color.Magenta);
+        
+        printer.PrintlnLabel("Edit Mode", editMode, Color.Magenta);
+        printer.PrintlnLabel("Selection Action", selectionAction, Color.Magenta);
+
         printer.PrintlnLabel("Selected Category", selectedPropMenuCategory, Color.Gold);
         printer.PrintlnLabel("Selected Prop", selectedProp, Color.Gold);
     }

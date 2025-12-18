@@ -137,5 +137,17 @@ public class Quad
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Quad Rotate(int degrees) => Rotate(degrees, Center);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Rectangle Enclosed()
+    {
+        var minX = MathF.Min(MathF.Min(TopLeft.X, TopRight.X), MathF.Min(BottomRight.X, BottomLeft.X));
+        var minY = MathF.Min(MathF.Min(TopLeft.Y, TopRight.Y), MathF.Min(BottomRight.Y, BottomLeft.Y));
+        
+        var maxX = MathF.Max(MathF.Max(TopLeft.X, TopRight.X), MathF.Max(BottomRight.X, BottomLeft.X));
+        var maxY = MathF.Max(MathF.Max(TopLeft.Y, TopRight.Y), MathF.Max(BottomRight.Y, BottomLeft.Y));
+
+        return new(minX, minY, maxX - minX, maxY - minY);
+    }
+
     public override string ToString() => $"Quad({TopLeft}, {TopRight}, {BottomRight}, {BottomLeft})";
 }
