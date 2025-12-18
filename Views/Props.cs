@@ -54,6 +54,10 @@ public class Props : BaseView
 
     private EditMode editMode;
 
+    private bool isSelecting;
+    private Vector2 initialSelectionPos;
+    private Rectangle selectionRect;
+
     public Props(Context context) : base(context)
     {
         cursor = new Cursor(context);
@@ -62,16 +66,16 @@ public class Props : BaseView
         editMode = EditMode.Placement;
 
         propPreview = new RenderTexture(
-            width:      1, 
-            height:     1, 
-            clearColor: new Color4(0, 0, 0, 0), 
-            clear:      true
+            width: 1,
+            height: 1,
+            clearColor: new Color4(0, 0, 0, 0),
+            clear: true
         );
         propTooltip = new RenderTexture(
-            width:      1, 
-            height:     1, 
-            clearColor: new Color4(0, 0, 0, 0), 
-            clear:      true
+            width: 1,
+            height: 1,
+            clearColor: new Color4(0, 0, 0, 0),
+            clear: true
         );
 
         SelectPropCategory(0);
@@ -110,58 +114,58 @@ public class Props : BaseView
         switch (prop)
         {
             case VoxelStruct voxels:
-            {
-                if (rt.Width != voxels.Width || rt.Height != voxels.Height)
-                    rt.CleanResize(voxels.Width, voxels.Height);
-
-                using var texture = new Texture(voxels.Image);
-
-                for (var l = voxels.Layers - 1; l > -1; l--)
                 {
+                    if (rt.Width != voxels.Width || rt.Height != voxels.Height)
+                        rt.CleanResize(voxels.Width, voxels.Height);
+
+                    using var texture = new Texture(voxels.Image);
+
+                    for (var l = voxels.Layers - 1; l > -1; l--)
+                    {
+                        RlUtils.DrawTextureRT(
+                            rt,
+                            texture,
+                            source: new Rectangle(0, l * voxels.Height, voxels.Width, voxels.Height),
+                            destination: new Rectangle(0, 0, voxels.Width, voxels.Height),
+                            tint: Color.White with { A = (byte)(255 - l) }
+                        );
+                    }
+                }
+                break;
+
+            case Soft soft:
+                {
+                    if (rt.Width != soft.Width || rt.Height != soft.Height)
+                        rt.CleanResize(soft.Width, soft.Height);
+
+                    using var texture = new Texture(soft.Image);
+
                     RlUtils.DrawTextureRT(
                         rt,
                         texture,
-                        source:      new Rectangle(0, l * voxels.Height, voxels.Width, voxels.Height),
-                        destination: new Rectangle(0, 0, voxels.Width, voxels.Height),
-                        tint:        Color.White with { A = (byte)(255 - l) }
+                        source: new Rectangle(0, 0, soft.Width, soft.Height),
+                        destination: new Rectangle(0, 0, soft.Width, soft.Height),
+                        tint: Color.White
                     );
                 }
-            }
-            break;
+                break;
 
-            case Soft soft:
-            {
-                if (rt.Width != soft.Width || rt.Height != soft.Height)
-                    rt.CleanResize(soft.Width, soft.Height);
-
-                using var texture = new Texture(soft.Image);
-
-                RlUtils.DrawTextureRT(
-                    rt,
-                    texture,
-                    source:      new Rectangle(0, 0, soft.Width, soft.Height),
-                    destination: new Rectangle(0, 0, soft.Width, soft.Height),
-                    tint:        Color.White
-                );
-            }
-            break;
-            
             case Antimatter antimatter:
-            {
-                if (rt.Width != antimatter.Width || rt.Height != antimatter.Height)
-                    rt.CleanResize(antimatter.Width, antimatter.Height);
+                {
+                    if (rt.Width != antimatter.Width || rt.Height != antimatter.Height)
+                        rt.CleanResize(antimatter.Width, antimatter.Height);
 
-                using var texture = new Texture(antimatter.Image);
+                    using var texture = new Texture(antimatter.Image);
 
-                RlUtils.DrawTextureRT(
-                    rt,
-                    texture,
-                    source:      new Rectangle(0, 0, antimatter.Width, antimatter.Height),
-                    destination: new Rectangle(0, 0, antimatter.Width, antimatter.Height),
-                    tint:        Color.White
-                );
-            }
-            break;
+                    RlUtils.DrawTextureRT(
+                        rt,
+                        texture,
+                        source: new Rectangle(0, 0, antimatter.Width, antimatter.Height),
+                        destination: new Rectangle(0, 0, antimatter.Width, antimatter.Height),
+                        tint: Color.White
+                    );
+                }
+                break;
 
             default: return;
         }
@@ -186,21 +190,21 @@ public class Props : BaseView
                 // BeginBlendMode(BlendMode.Custom);
                 // Rlgl.SetBlendMode(BlendMode.Custom);
                 // Rlgl.SetBlendFactors(1, 0, 1);
-                
+
                 switch (geo)
                 {
                     case Geo.Solid:
                     case Geo.Wall:
                         DrawRectangle(x * 20 + 4, y * 20 + 4, 20 - 8, 20 - 8, tile.Color);
-                    break;
+                        break;
 
                     case Geo.Slab:
                         DrawRectangle(x * 20 + 4, y * 20 + 10 + 4, 20 - 8, 10 - 8, tile.Color);
-                    break;
+                        break;
 
                     case Geo.Platform:
                         DrawRectangle(x * 20 + 4, y * 20 + 4, 20 - 8, 10 - 8, tile.Color);
-                    break;
+                        break;
 
                     case Geo.SlopeNW:
                         DrawTriangle(
@@ -209,7 +213,7 @@ public class Props : BaseView
                             new Vector2((x + 1) * 20, (y + 1) * 20),
                             tile.Color
                         );
-                    break;                    
+                        break;
 
                     case Geo.SlopeNE:
                         DrawTriangle(
@@ -218,7 +222,7 @@ public class Props : BaseView
                             new Vector2((x + 1) * 20, (y + 1) * 20),
                             tile.Color
                         );
-                    break;
+                        break;
 
                     case Geo.SlopeSE:
                         DrawTriangle(
@@ -227,7 +231,7 @@ public class Props : BaseView
                             new Vector2(x * 20, (y + 1) * 20),
                             tile.Color
                         );
-                    break;
+                        break;
 
                     case Geo.SlopeSW:
                         DrawTriangle(
@@ -236,7 +240,7 @@ public class Props : BaseView
                             new Vector2((x + 1) * 20, y * 20),
                             tile.Color
                         );
-                    break;
+                        break;
                 }
                 // EndBlendMode();
             }
@@ -256,7 +260,7 @@ public class Props : BaseView
             DrawTexture(Context.Viewports.Geos[l].Raw.Texture, 0, 0, Color.Black with { A = 120 });
             DrawTexture(Context.Viewports.Tiles[l].Raw.Texture, 0, 0, Color.White with { A = 120 });
         }
-        
+
         DrawRectangle(0, 0, level.Width * 20, level.Height * 20, Color.Red with { A = 40 });
 
         DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, 0, 0, Color.Black with { A = 210 });
@@ -300,7 +304,7 @@ public class Props : BaseView
                     Precision.Free => Precision.Half,
                     Precision.Half => Precision.One,
                     Precision.One => Precision.Free,
-                
+
                     _ => Precision.Free
                 };
             }
@@ -312,62 +316,98 @@ public class Props : BaseView
                     Precision.Free => Precision.One,
                     Precision.One => Precision.Half,
                     Precision.Half => Precision.Free,
-                
+
                     _ => Precision.Free
                 };
             }
 
             switch (editMode)
             {
-            case EditMode.Placement:
-            placement_mode_case:
-            {
-                // Avoid loop
-                if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right))
-                {
-                    editMode = EditMode.Selection;
-                    goto selection_mode_case;
-                }
-
-                if (IsMouseButtonPressed(MouseButton.Right))
-                {
-                    if (selectedProp is null) break;
-
-                    var previewSize = new Vector2(propPreview.Width, propPreview.Height);
-
-                    var quad = new Quad(
-                        TransPos - (previewSize/2),
-                        TransPos + (Vector2.UnitX * (previewSize.X/2)),
-                        TransPos + (previewSize/2),
-                        TransPos + (Vector2.UnitY * (previewSize.Y/2))
-                    );
-
-                    var prop = new Prop
+                case EditMode.Placement:
+                placement_mode_case:
                     {
-                        Def = selectedProp,
-                        Config = selectedProp.CreateConfig(),
-                        Quad = quad,
-                        Preview = level.Props.Find(p => p.Def == selectedProp) is {} replica 
-                            ? replica.Preview 
-                            : new Managed.Image(propPreview.Texture)
-                    };
+                        // Avoid loop
+                        if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right))
+                        {
+                            editMode = EditMode.Selection;
+                            goto selection_mode_case;
+                        }
 
-                    level.Props.Add(prop);
-                }
-            }
-            break;
+                        if (IsMouseButtonPressed(MouseButton.Right))
+                        {
+                            if (selectedProp is null) break;
 
-            case EditMode.Selection:
-            selection_mode_case:
-            {
-                // Avoid loop
-                if (IsMouseButtonPressed(MouseButton.Right) && !IsMouseButtonDown(MouseButton.Left))
-                {
-                    editMode = EditMode.Placement;
+                            var previewSize = new Vector2(propPreview.Width, propPreview.Height);
+
+                            var quad = new Quad(
+                                TransPos - (previewSize / 2),
+                                TransPos + (Vector2.UnitX * (previewSize.X / 2)),
+                                TransPos + (previewSize / 2),
+                                TransPos + (Vector2.UnitY * (previewSize.Y / 2))
+                            );
+
+                            var prop = new Prop
+                            {
+                                Def = selectedProp,
+                                Config = selectedProp.CreateConfig(),
+                                Quad = quad,
+                                Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
+                                    ? replica.Preview
+                                    : new Managed.Image(propPreview.Texture)
+                            };
+
+                            level.Props.Add(prop);
+                        }
+                    }
                     break;
-                }
-            }
-            break;
+
+                case EditMode.Selection:
+                selection_mode_case:
+                    {
+                        // Avoid loop
+                        if (IsMouseButtonPressed(MouseButton.Right) && !IsMouseButtonDown(MouseButton.Left))
+                        {
+                            editMode = EditMode.Placement;
+                            break;
+                        }
+
+                        if (isSelecting)
+                        {
+                            if (IsMouseButtonDown(MouseButton.Left))
+                            {
+                                var minX = MathF.Min(initialSelectionPos.X, cursor.X);
+                                var minY = MathF.Min(initialSelectionPos.Y, cursor.Y);
+                                
+                                var maxX = MathF.Max(initialSelectionPos.X, cursor.X);
+                                var maxY = MathF.Max(initialSelectionPos.Y, cursor.Y);
+
+                                selectionRect.X = minX;
+                                selectionRect.Y = minY;
+                                selectionRect.Width = maxX - minX;
+                                selectionRect.Height = maxY - minY;
+                            }
+                            else if (IsMouseButtonReleased(MouseButton.Left))
+                            {
+                                isSelecting = false;
+                                initialSelectionPos = -Vector2.One;
+                                selectionRect = new Rectangle(-1, -1, -1, -1);
+                            }
+                        }
+                        else
+                        {
+                            if (IsMouseButtonDown(MouseButton.Left))
+                            {
+                                isSelecting = true;
+                                initialSelectionPos = cursor.Pos;
+                                selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
+                            }
+                            else if (IsMouseButtonReleased(MouseButton.Left))
+                            {
+
+                            }
+                        }
+                    }
+                    break;
             }
         }
     }
@@ -382,15 +422,15 @@ public class Props : BaseView
             DrawTilesViewport(2);
             DrawMainViewport();
 
-            redrawMain = false;    
+            redrawMain = false;
         }
 
         BeginMode2D(Context.Camera);
         DrawTexture(
-            texture: Context.Viewports.Main.Raw.Texture, 
-            posX:    0, 
-            posY:    0, 
-            tint:    Color.White
+            texture: Context.Viewports.Main.Raw.Texture,
+            posX: 0,
+            posY: 0,
+            tint: Color.White
         );
 
         switch (gridPrecision)
@@ -403,38 +443,45 @@ public class Props : BaseView
                 break;
 
             case Precision.Half:
-                for (var x = 0; x < level.Width*2; x++)
+                for (var x = 0; x < level.Width * 2; x++)
                     DrawLineEx(new Vector2(x * 10, 0), new Vector2(x * 10, level.Height * 20), x % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
-                for (var y = 0; y < level.Height*2; y++)
+                for (var y = 0; y < level.Height * 2; y++)
                     DrawLineEx(new Vector2(0, y * 10), new Vector2(level.Width * 20, y * 10), y % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
                 break;
         }
 
         switch (editMode)
         {
-        case EditMode.Placement:
-        {
-            if (selectedProp is not null)
-            {
-                var previewSize = new Vector2(propPreview.Width, propPreview.Height);
+            case EditMode.Placement:
+                {
+                    if (selectedProp is not null)
+                    {
+                        var previewSize = new Vector2(propPreview.Width, propPreview.Height);
 
-                DrawTexturePro(
-                    texture:  propPreview.Texture,
-                    source:   new Rectangle(0, 0, previewSize),
-                    dest:     new Rectangle(TransPos, previewSize),
-                    origin:   previewSize/2,
-                    rotation: 0,
-                    tint:     Color.White
-                );
-            }
-        }
-        break;
+                        DrawTexturePro(
+                            texture: propPreview.Texture,
+                            source: new Rectangle(0, 0, previewSize),
+                            dest: new Rectangle(TransPos, previewSize),
+                            origin: previewSize / 2,
+                            rotation: 0,
+                            tint: Color.White
+                        );
+                    }
+                }
+                break;
 
-        case EditMode.Selection:
-        {
-            
-        }
-        break;
+            case EditMode.Selection:
+                {
+                    if (isSelecting)
+                    {
+                        DrawRectangleLinesEx(
+                            rec:       selectionRect,
+                            lineThick: 1f,
+                            color:     Color.SkyBlue
+                        );
+                    }
+                }
+                break;
         }
 
         EndMode2D();
@@ -461,11 +508,11 @@ public class Props : BaseView
                         selectedPropMenuCategory = category;
                         selectedPropMenuCategoryProps = Context.Props.CategoryProps[category];
                         selectedPropMenuIndex = 0;
-                        if (selectedPropMenuCategoryProps.Count > 0) 
+                        if (selectedPropMenuCategoryProps.Count > 0)
                             selectedProp = selectedPropMenuCategoryProps[0];
                     }
                 }
-                
+
                 ImGui.EndListBox();
             }
 
@@ -474,7 +521,7 @@ public class Props : BaseView
             if (ImGui.BeginListBox("##Props", ImGui.GetContentRegionAvail()))
             {
                 if (selectedPropMenuCategoryProps is not null)
-                {    
+                {
                     for (var p = 0; p < selectedPropMenuCategoryProps.Count; p++)
                     {
                         var prop = selectedPropMenuCategoryProps[p];
@@ -521,7 +568,7 @@ public class Props : BaseView
 
                     if (ImGui.Selectable($"{prop.Def.ID}##{p}"))
                     {
-                        
+
                     }
                 }
 
