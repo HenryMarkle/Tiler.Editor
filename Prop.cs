@@ -275,8 +275,8 @@ public class Prop
 {
     private PropConfig _config;
 
-    public required PropDef Def { get; init; }
-    public required PropConfig Config
+    public PropDef Def { get; init; }
+    public PropConfig Config
     {
         get => _config;
         set
@@ -296,20 +296,28 @@ public class Prop
         }
     }
     public int Depth;
-    public required Quad Quad;
+    public Quad Quad;
     public Managed.Image? Preview { get; set; }
     public bool IsSelected;
     public bool IsHidden;
 
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    public Prop() {}
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+    public Prop(PropDef def, PropConfig config, Quad quad, int depth)
+    {
+        Def = def;
+        Config = _config = config;
+        Quad = quad;
+        Depth = depth;
+    }
+
     public Prop(Prop prop)
     {
         Def = prop.Def;
         _config = prop.Config.Clone();
         Depth = prop.Depth;
         Quad = new Quad(prop.Quad);
+        IsSelected = prop.IsSelected;
+        IsHidden = prop.IsHidden;
+        Preview = prop.Preview;
     }
 
     public override string ToString() => $"Prop({Def}, {Depth}, {Quad})";

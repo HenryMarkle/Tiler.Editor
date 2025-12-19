@@ -428,12 +428,13 @@ public class Props : BaseView
                                 new Rectangle(Vector2.Zero, previewSize)
                             ) + cursor.Pos - (previewSize/2);
 
-                            var prop = new Prop
+                            var prop = new Prop(
+                                def:    selectedProp,
+                                config: selectedProp.CreateConfig(),
+                                quad,
+                                depth: Context.Layer * 10
+                            )
                             {
-                                Def = selectedProp,
-                                Config = selectedProp.CreateConfig(),
-                                Quad = quad,
-                                Depth = Context.Layer * 10,
                                 Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
                                     ? replica.Preview
                                     : new Managed.Image(propPreview.Texture)
@@ -523,6 +524,7 @@ public class Props : BaseView
                                     }
                                     else if (IsMouseButtonReleased(MouseButton.Left))
                                     {
+                                        
                                         SelectPlacedProps(prop =>
                                         {
                                             if (CheckCollisionRecs(
@@ -536,6 +538,14 @@ public class Props : BaseView
 
                                             return false;
                                         });
+                                        
+                                        if (selectedPlacedProps.Count > 0 && selectionRect is { Width: <= 0.1f, Height: <= 0.1f })
+                                        {
+                                            var last = selectedPlacedProps[^1];
+                                            foreach (var prop in level.Props) prop.IsSelected = prop == last;
+                                            selectedPlacedProps = [last];
+                                            CalculatePlacedPropsCenter();
+                                        }
 
                                         isSelecting = false;
                                         initialSelectionPos = -Vector2.One;
@@ -548,6 +558,20 @@ public class Props : BaseView
                                     initialSelectionPos = cursor.Pos;
                                     selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
                                 }
+
+                                // Duplicate selected props
+                                if (IsKeyPressed(KeyboardKey.D) && selectedPlacedProps.Count > 0)
+                                {
+                                    List<Prop> copied = [..selectedPlacedProps.Select(p => new Prop(p))];
+                                
+                                    foreach (var prop in selectedPlacedProps) prop.IsSelected = false;
+                                    level.Props.AddRange(copied);
+                                    selectedPlacedProps = copied;
+                                    CalculatePlacedPropsCenter();
+
+                                    selectionAction = SelectionAction.Translate;
+                                    prevCursorPos = cursor.Pos;
+                                }
                             break;
 
                             case SelectionAction.Translate:
@@ -557,6 +581,9 @@ public class Props : BaseView
                                     foreach (var prop in selectedPlacedProps) prop.Quad += delta;
 
                                     prevCursorPos = cursor.Pos;
+
+                                    if (IsMouseButtonPressed(MouseButton.Left))
+                                        selectionAction = SelectionAction.Nothing;
                                 }
                             break;
 
@@ -605,6 +632,9 @@ public class Props : BaseView
                             break;
 
                             case SelectionAction.Deform:
+                                {
+                                    
+                                }
                             break;
                         }
 
