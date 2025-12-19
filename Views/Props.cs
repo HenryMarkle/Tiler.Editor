@@ -72,10 +72,21 @@ public class Props : BaseView
     private List<Prop> selectedPlacedProps;
     private Queue<Prop> redrawPlacedProps;
     
+    private Vector2 selectedPlacedPropsCenter;
+
     /// <summary>
     /// Used for translating props
     /// </summary>
     private Vector2 prevCursorPos;
+
+    private float prevScaleCenterLen;
+
+    private float prevRotateAngle;
+    private float prevRotateCenterLen;
+
+    //
+
+    private bool showSelectedPlacedPropsCenter;
 
     public Props(Context context) : base(context)
     {
@@ -137,6 +148,8 @@ public class Props : BaseView
 
         foreach (var prop in level.Props) prop.IsSelected = false;
         selectedPlacedProps = [];
+
+        CalculatePlacedPropsCenter();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -156,6 +169,24 @@ public class Props : BaseView
             prop.IsSelected = true;
             selectedPlacedProps.Add(prop);
         }
+
+        CalculatePlacedPropsCenter();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void CalculatePlacedPropsCenter() => selectedPlacedPropsCenter = GetPropsCenter(selectedPlacedProps);
+
+    private static Vector2 GetPropsCenter(List<Prop> props)
+    {
+        if (props.Count == 0) return Vector2.Zero;
+
+        Vector2 center = props[0].Quad.Center;
+
+        if (props.Count == 1) return center;
+
+        foreach (var prop in props.Skip(1)) center = (center + prop.Quad.Center)/2;
+    
+        return center;
     }
 
     public void DrawPropRT(RenderTexture rt, PropDef prop)
@@ -383,6 +414,7 @@ public class Props : BaseView
                         if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right))
                         {
                             editMode = EditMode.Selection;
+                            selectionAction = SelectionAction.Nothing;
                             goto selection_mode_case;
                         }
 
@@ -419,6 +451,7 @@ public class Props : BaseView
                         if (IsMouseButtonPressed(MouseButton.Right) && !IsMouseButtonDown(MouseButton.Left))
                         {
                             editMode = EditMode.Placement;
+                            selectionAction = SelectionAction.Nothing;
 
                             UnSelectAllPlacedProps();
 
@@ -449,12 +482,19 @@ public class Props : BaseView
                             selectionAction = selectionAction == SelectionAction.Scale 
                                 ? SelectionAction.Nothing 
                                 : SelectionAction.Scale;
+
+                            if (selectionAction == SelectionAction.Scale)
+                            {
+                                prevScaleCenterLen = (cursor.Pos.X - selectedPlacedPropsCenter.X) + (cursor.Pos.Y - selectedPlacedPropsCenter.Y);
+                            }
                         }
                         else if (IsKeyPressed(KeyboardKey.R))
                         {
                             selectionAction = selectionAction == SelectionAction.Rotate 
                                 ? SelectionAction.Nothing 
                                 : SelectionAction.Rotate;
+
+                            prevRotateCenterLen = (cursor.Pos.X - selectedPlacedPropsCenter.X) + (cursor.Pos.Y - selectedPlacedPropsCenter.Y);
                         }
                         else if (IsKeyPressed(KeyboardKey.Q))
                         {
@@ -466,39 +506,48 @@ public class Props : BaseView
                         switch (selectionAction)
                         {
                             case SelectionAction.Nothing:
-                            if (isSelecting)
-                            {
-                                if (IsMouseButtonDown(MouseButton.Left))
+                                if (isSelecting)
                                 {
-                                    var minX = MathF.Min(initialSelectionPos.X, cursor.X);
-                                    var minY = MathF.Min(initialSelectionPos.Y, cursor.Y);
-                                    
-                                    var maxX = MathF.Max(initialSelectionPos.X, cursor.X);
-                                    var maxY = MathF.Max(initialSelectionPos.Y, cursor.Y);
+                                    if (IsMouseButtonDown(MouseButton.Left))
+                                    {
+                                        var minX = MathF.Min(initialSelectionPos.X, cursor.X);
+                                        var minY = MathF.Min(initialSelectionPos.Y, cursor.Y);
+                                        
+                                        var maxX = MathF.Max(initialSelectionPos.X, cursor.X);
+                                        var maxY = MathF.Max(initialSelectionPos.Y, cursor.Y);
 
-                                    selectionRect.X = minX;
-                                    selectionRect.Y = minY;
-                                    selectionRect.Width = maxX - minX;
-                                    selectionRect.Height = maxY - minY;
+                                        selectionRect.X = minX;
+                                        selectionRect.Y = minY;
+                                        selectionRect.Width = maxX - minX;
+                                        selectionRect.Height = maxY - minY;
+                                    }
+                                    else if (IsMouseButtonReleased(MouseButton.Left))
+                                    {
+                                        SelectPlacedProps(prop =>
+                                        {
+                                            if (CheckCollisionRecs(
+                                                selectionRect, 
+                                                prop.Quad.Enclosed()
+                                            ))
+                                            {
+                                                if (IsKeyDown(KeyboardKey.LeftControl)) return !prop.IsSelected;
+                                                return true;
+                                            } else if (IsKeyDown(KeyboardKey.LeftControl)) return prop.IsSelected;
+
+                                            return false;
+                                        });
+
+                                        isSelecting = false;
+                                        initialSelectionPos = -Vector2.One;
+                                        selectionRect = new Rectangle(-1, -1, -1, -1);
+                                    }
                                 }
-                                else if (IsMouseButtonReleased(MouseButton.Left))
+                                else if (IsMouseButtonDown(MouseButton.Left))
                                 {
-                                    SelectPlacedProps(prop => CheckCollisionRecs(
-                                        selectionRect, 
-                                        prop.Quad.Enclosed()
-                                    ));
-
-                                    isSelecting = false;
-                                    initialSelectionPos = -Vector2.One;
-                                    selectionRect = new Rectangle(-1, -1, -1, -1);
+                                    isSelecting = true;
+                                    initialSelectionPos = cursor.Pos;
+                                    selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
                                 }
-                            }
-                            else if (IsMouseButtonDown(MouseButton.Left))
-                            {
-                                isSelecting = true;
-                                initialSelectionPos = cursor.Pos;
-                                selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
-                            }
                             break;
 
                             case SelectionAction.Translate:
@@ -512,9 +561,47 @@ public class Props : BaseView
                             break;
 
                             case SelectionAction.Scale:
+                                {
+                                    var centerLen = (cursor.Pos.X - selectedPlacedPropsCenter.X) + (cursor.Pos.Y - selectedPlacedPropsCenter.Y);
+                                    var delta = centerLen - prevScaleCenterLen;
+
+                                    foreach (var prop in selectedPlacedProps)
+                                    {
+                                        prop.Quad.TopLeft += Raymath.Vector2Normalize(prop.Quad.TopLeft - selectedPlacedPropsCenter) * delta;
+                                        prop.Quad.TopRight += Raymath.Vector2Normalize(prop.Quad.TopRight - selectedPlacedPropsCenter) * delta;
+                                        prop.Quad.BottomRight += Raymath.Vector2Normalize(prop.Quad.BottomRight - selectedPlacedPropsCenter) * delta;
+                                        prop.Quad.BottomLeft += Raymath.Vector2Normalize(prop.Quad.BottomLeft - selectedPlacedPropsCenter) * delta;
+                                    }
+
+                                    prevScaleCenterLen = centerLen;
+                                }
                             break;
 
                             case SelectionAction.Rotate:
+                                {
+                                    var centerLen = (cursor.Pos.X - selectedPlacedPropsCenter.X) + (cursor.Pos.Y - selectedPlacedPropsCenter.Y);
+                                    var delta = centerLen - prevRotateCenterLen;
+                                    
+                                    var angle = float.RadiansToDegrees(MathF.Atan2(
+                                        cursor.Y - selectedPlacedPropsCenter.Y,
+                                        cursor.X - selectedPlacedPropsCenter.X
+                                    ));
+                                    var rotateDelta = angle - prevRotateAngle;
+
+                                    if (IsKeyDown(KeyboardKey.LeftControl))
+                                    {
+                                        foreach (var prop in selectedPlacedProps)
+                                            prop.Quad.Rotate((int)MathF.Ceiling(rotateDelta), selectedPlacedPropsCenter);
+                                    }
+                                    else
+                                    {
+                                        foreach (var prop in selectedPlacedProps)
+                                            prop.Quad.Rotate((int)MathF.Ceiling(delta), selectedPlacedPropsCenter);
+                                    }
+
+                                    prevRotateAngle = angle;
+                                    prevRotateCenterLen = centerLen;
+                                }
                             break;
 
                             case SelectionAction.Deform:
@@ -620,6 +707,12 @@ public class Props : BaseView
                     thick: 1, 
                     color: Color.SkyBlue
                 );
+            }
+
+            if (showSelectedPlacedPropsCenter)
+            {
+                DrawCircleV(selectedPlacedPropsCenter, 8, Color.White with { A = 200 });
+                DrawCircleV(selectedPlacedPropsCenter, 6, Color.Magenta with { A = 200 });
             }
         }
 
@@ -775,11 +868,19 @@ public class Props : BaseView
                             selectedPlacedProps.Add(prop);
                         }
 
+                        CalculatePlacedPropsCenter();
                     }
                 }
 
                 ImGui.EndListBox();
             }
+        }
+
+        ImGui.End();
+
+        if (ImGui.Begin("Options##PlacedPropsOptions"))
+        {
+            ImGui.Checkbox("Selected Center", ref showSelectedPlacedPropsCenter);
         }
 
         ImGui.End();

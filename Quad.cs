@@ -79,15 +79,13 @@ public class Quad
 
     public Vector2 Center => (TopLeft + TopRight + BottomRight + BottomLeft) / 4;
 
-    public Quad Rotate(int degrees, Vector2 center)
+    public void Rotate(int degrees, Vector2 center)
     {
         var radian = float.DegreesToRadians(degrees);
         
         var sinRotation = (float)Math.Sin(radian);
         var cosRotation = (float)Math.Cos(radian);
         
-        Vector2 newTopLeft, newTopRight, newBottomRight, newBottomLeft;
-
         { // Rotate the top left corner
             var x = TopLeft.X;
             var y = TopLeft.Y;
@@ -95,7 +93,7 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            newTopLeft = new Vector2(
+            TopLeft = new Vector2(
                 center.X + dx * cosRotation - dy * sinRotation, 
                 center.Y + dx * sinRotation + dy * cosRotation
             );
@@ -108,7 +106,7 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            newTopRight = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
+            TopRight = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
         }
         
         { // Rotate the bottom right corner
@@ -118,7 +116,7 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            newBottomRight = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
+            BottomRight = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
         }
         
         { // Rotate the bottom left corner
@@ -128,14 +126,12 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            newBottomLeft = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
+            BottomLeft = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
         }
-
-        return new Quad(newTopLeft, newTopRight, newBottomRight, newBottomLeft);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Quad Rotate(int degrees) => Rotate(degrees, Center);
+    public void Rotate(int degrees) => Rotate(degrees, Center);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Rectangle Enclosed()
