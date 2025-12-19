@@ -69,8 +69,13 @@ public class Props : BaseView
     private Vector2 initialSelectionPos;
     private Rectangle selectionRect;
 
+    private List<Prop> selectedPlacedProps;
     private Queue<Prop> redrawPlacedProps;
     
+    /// <summary>
+    /// Used for translating props
+    /// </summary>
+    private Vector2 prevCursorPos;
 
     public Props(Context context) : base(context)
     {
@@ -80,6 +85,7 @@ public class Props : BaseView
         editMode = EditMode.Placement;
         selectionAction = SelectionAction.Nothing;
 
+        selectedPlacedProps = [];
         redrawPlacedProps = [];
 
         propPreview = new RenderTexture(
@@ -122,6 +128,34 @@ public class Props : BaseView
 
         selectedPropMenuIndex = index;
         selectedProp = selectedPropMenuCategoryProps[index];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void UnSelectAllPlacedProps()
+    {
+        if (Context.SelectedLevel is not { } level) return;
+
+        foreach (var prop in level.Props) prop.IsSelected = false;
+        selectedPlacedProps = [];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void SelectPlacedProps(Predicate<Prop> predicate)
+    {
+        if (Context.SelectedLevel is not { } level) return;
+
+        selectedPlacedProps.Clear();
+        foreach (var prop in level.Props)
+        {
+            if (!predicate(prop))
+            {
+                prop.IsSelected = false;
+                continue;
+            }
+
+            prop.IsSelected = true;
+            selectedPlacedProps.Add(prop);
+        }
     }
 
     public void DrawPropRT(RenderTexture rt, PropDef prop)
@@ -338,6 +372,8 @@ public class Props : BaseView
                 };
             }
 
+            #region Process Control
+
             switch (editMode)
             {
                 case EditMode.Placement:
@@ -383,53 +419,114 @@ public class Props : BaseView
                         if (IsMouseButtonPressed(MouseButton.Right) && !IsMouseButtonDown(MouseButton.Left))
                         {
                             editMode = EditMode.Placement;
+
+                            UnSelectAllPlacedProps();
+
                             break;
-                        }
-
-                        if (isSelecting)
-                        {
-                            if (IsMouseButtonDown(MouseButton.Left))
-                            {
-                                var minX = MathF.Min(initialSelectionPos.X, cursor.X);
-                                var minY = MathF.Min(initialSelectionPos.Y, cursor.Y);
-                                
-                                var maxX = MathF.Max(initialSelectionPos.X, cursor.X);
-                                var maxY = MathF.Max(initialSelectionPos.Y, cursor.Y);
-
-                                selectionRect.X = minX;
-                                selectionRect.Y = minY;
-                                selectionRect.Width = maxX - minX;
-                                selectionRect.Height = maxY - minY;
-                            }
-                            else if (IsMouseButtonReleased(MouseButton.Left))
-                            {
-                                foreach (var prop in level.Props)
-                                {
-                                    prop.IsSelected = CheckCollisionRecs(
-                                        selectionRect, 
-                                        prop.Quad.Enclosed()
-                                    );
-                                }
-
-                                isSelecting = false;
-                                initialSelectionPos = -Vector2.One;
-                                selectionRect = new Rectangle(-1, -1, -1, -1);
-                            }
-                        }
-                        else if (IsMouseButtonDown(MouseButton.Left))
-                        {
-                            isSelecting = true;
-                            initialSelectionPos = cursor.Pos;
-                            selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
                         }
 
                         if (IsKeyPressed(KeyboardKey.X))
                         {
                             level.Props = [..level.Props.Where(p => !p.IsSelected)];
+                            UnSelectAllPlacedProps();
                         }
+
+                        #region Process Selection Control
+
+                        if (IsKeyPressed(KeyboardKey.F))
+                        {
+                            selectionAction = selectionAction == SelectionAction.Translate 
+                                ? SelectionAction.Nothing 
+                                : SelectionAction.Translate;
+
+                            if (selectionAction == SelectionAction.Translate)
+                            {
+                                prevCursorPos = cursor.Pos;
+                            }
+                        }
+                        else if (IsKeyPressed(KeyboardKey.S))
+                        {
+                            selectionAction = selectionAction == SelectionAction.Scale 
+                                ? SelectionAction.Nothing 
+                                : SelectionAction.Scale;
+                        }
+                        else if (IsKeyPressed(KeyboardKey.R))
+                        {
+                            selectionAction = selectionAction == SelectionAction.Rotate 
+                                ? SelectionAction.Nothing 
+                                : SelectionAction.Rotate;
+                        }
+                        else if (IsKeyPressed(KeyboardKey.Q))
+                        {
+                            selectionAction = selectionAction == SelectionAction.Deform 
+                                ? SelectionAction.Nothing 
+                                : SelectionAction.Deform;
+                        }
+
+                        switch (selectionAction)
+                        {
+                            case SelectionAction.Nothing:
+                            if (isSelecting)
+                            {
+                                if (IsMouseButtonDown(MouseButton.Left))
+                                {
+                                    var minX = MathF.Min(initialSelectionPos.X, cursor.X);
+                                    var minY = MathF.Min(initialSelectionPos.Y, cursor.Y);
+                                    
+                                    var maxX = MathF.Max(initialSelectionPos.X, cursor.X);
+                                    var maxY = MathF.Max(initialSelectionPos.Y, cursor.Y);
+
+                                    selectionRect.X = minX;
+                                    selectionRect.Y = minY;
+                                    selectionRect.Width = maxX - minX;
+                                    selectionRect.Height = maxY - minY;
+                                }
+                                else if (IsMouseButtonReleased(MouseButton.Left))
+                                {
+                                    SelectPlacedProps(prop => CheckCollisionRecs(
+                                        selectionRect, 
+                                        prop.Quad.Enclosed()
+                                    ));
+
+                                    isSelecting = false;
+                                    initialSelectionPos = -Vector2.One;
+                                    selectionRect = new Rectangle(-1, -1, -1, -1);
+                                }
+                            }
+                            else if (IsMouseButtonDown(MouseButton.Left))
+                            {
+                                isSelecting = true;
+                                initialSelectionPos = cursor.Pos;
+                                selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
+                            }
+                            break;
+
+                            case SelectionAction.Translate:
+                                {
+                                    var delta = cursor.Pos - prevCursorPos;
+                                    
+                                    foreach (var prop in selectedPlacedProps) prop.Quad += delta;
+
+                                    prevCursorPos = cursor.Pos;
+                                }
+                            break;
+
+                            case SelectionAction.Scale:
+                            break;
+
+                            case SelectionAction.Rotate:
+                            break;
+
+                            case SelectionAction.Deform:
+                            break;
+                        }
+
+                        #endregion
                     }
                     break;
             }
+
+            #endregion
         }
     }
 
@@ -449,9 +546,9 @@ public class Props : BaseView
         BeginMode2D(Context.Camera);
         DrawTexture(
             texture: Context.Viewports.Main.Raw.Texture,
-            posX: 0,
-            posY: 0,
-            tint: Color.White
+            posX:    0,
+            posY:    0,
+            tint:    Color.White
         );
 
         switch (gridPrecision)
@@ -470,6 +567,8 @@ public class Props : BaseView
                     DrawLineEx(new Vector2(0, y * 10), new Vector2(level.Width * 20, y * 10), y % 2 == 0 ? 1 : 0.5f, Color.White with { A = 80 });
                 break;
         }
+
+        /// TODO: Optimize using redraw queue
 
         Dictionary<PropDef, Texture> textureCache = [];
 
@@ -524,6 +623,8 @@ public class Props : BaseView
             }
         }
 
+        #region Draw Control
+
         switch (editMode)
         {
             case EditMode.Placement:
@@ -557,6 +658,8 @@ public class Props : BaseView
                 }
                 break;
         }
+
+        #endregion
 
         EndMode2D();
     }
@@ -640,9 +743,38 @@ public class Props : BaseView
                 {
                     var prop = level.Props[p];
 
-                    if (ImGui.Selectable($"{prop.Def.ID}##{p}", prop.IsSelected))
+                    if (ImGui.Selectable($"{p}. {prop.Def.ID}", prop.IsSelected))
                     {
-                        prop.IsSelected = !prop.IsSelected;
+                        // Select a range
+                        if (ImGui.IsKeyDown(ImGuiKey.LeftShift))
+                        {
+                            var firstSelectedIndex = level.Props.FindIndex(p => p.IsSelected);
+
+                            if (firstSelectedIndex == -1) firstSelectedIndex = 0;
+                            for (var i = 0; i < level.Props.Count; i++)
+                                level.Props[i].IsSelected = i >= firstSelectedIndex && i <= p;
+
+                            selectedPlacedProps = [..level.Props.Where(p => p.IsSelected)];
+                        }
+                        // Select/Deselect
+                        else if (ImGui.IsKeyDown(ImGuiKey.LeftCtrl))
+                        {
+                            if (prop.IsSelected = !prop.IsSelected) 
+                                selectedPlacedProps.Add(prop);
+                            else
+                                selectedPlacedProps.Remove(prop);
+                        }
+                        // Select only one
+                        else
+                        {
+                            foreach (var toDeselect in selectedPlacedProps)
+                                toDeselect.IsSelected = false;
+                            
+                            prop.IsSelected = !prop.IsSelected;
+                            selectedPlacedProps.Clear();
+                            selectedPlacedProps.Add(prop);
+                        }
+
                     }
                 }
 
