@@ -559,19 +559,63 @@ public class Props : BaseView
                                     selectionRect = new Rectangle(initialSelectionPos, Vector2.One);
                                 }
 
-                                // Duplicate selected props
-                                if (IsKeyPressed(KeyboardKey.D) && selectedPlacedProps.Count > 0)
-                                {
-                                    List<Prop> copied = [..selectedPlacedProps.Select(p => new Prop(p))];
-                                
-                                    foreach (var prop in selectedPlacedProps) prop.IsSelected = false;
-                                    level.Props.AddRange(copied);
-                                    selectedPlacedProps = copied;
-                                    CalculatePlacedPropsCenter();
+                                if (selectedPlacedProps.Count > 0)
+                                {    
+                                    // Duplicate selected props
+                                    if (IsKeyPressed(KeyboardKey.D))
+                                    {
+                                        List<Prop> copied = [..selectedPlacedProps.Select(p => new Prop(p))];
+                                    
+                                        foreach (var prop in selectedPlacedProps) prop.IsSelected = false;
+                                        level.Props.AddRange(copied);
+                                        selectedPlacedProps = copied;
+                                        CalculatePlacedPropsCenter();
 
-                                    selectionAction = SelectionAction.Translate;
-                                    prevCursorPos = cursor.Pos;
+                                        selectionAction = SelectionAction.Translate;
+                                        prevCursorPos = cursor.Pos;
+                                    }
+                                    else if (IsKeyPressed(KeyboardKey.M))
+                                    {
+                                        foreach (var prop in selectedPlacedProps) 
+                                            prop.Depth = ++prop.Depth % 50;
+                                    }
+                                    else if (IsKeyPressed(KeyboardKey.N))
+                                    {
+                                        foreach (var prop in selectedPlacedProps)
+                                            prop.Depth = Math.Clamp(prop.Depth - 1, 0, 49);
+                                    }
+                                    else if (IsKeyPressed(KeyboardKey.T))
+                                    {
+                                        foreach (var prop in selectedPlacedProps)
+                                        {
+                                            if (prop.Preview is null) continue;
+
+                                            var previewSize = new Vector2(prop.Preview.Width, prop.Preview.Height);
+
+                                            var quad = new Quad(
+                                                new Rectangle(Vector2.Zero, previewSize)
+                                            ) + prop.Quad.Center - (previewSize/2);
+
+                                            prop.Quad = quad;
+                                        }
+                                    }
+                                    else if (IsKeyPressed(KeyboardKey.Y))
+                                    {
+                                        var last = selectedPlacedProps[^1].Def;
+
+                                        if (last != selectedProp) DrawPropRT(propPreview, last);
+                                        
+                                        if (last.Category is not null)
+                                        {
+                                            SelectPropCategory(last.Category);
+                                            if (selectedPropMenuCategoryProps is not null)
+                                            {
+                                                SelectPropFromCategory(selectedPropMenuCategoryProps.FindIndex(p => p == last));
+                                            }
+                                        }
+                                    }
                                 }
+
                             break;
 
                             case SelectionAction.Translate:
@@ -601,6 +645,9 @@ public class Props : BaseView
                                     }
 
                                     prevScaleCenterLen = centerLen;
+
+                                    if (IsMouseButtonPressed(MouseButton.Left))
+                                        selectionAction = SelectionAction.Nothing;
                                 }
                             break;
 
@@ -628,6 +675,9 @@ public class Props : BaseView
 
                                     prevRotateAngle = angle;
                                     prevRotateCenterLen = centerLen;
+
+                                    if (IsMouseButtonPressed(MouseButton.Left))
+                                        selectionAction = SelectionAction.Nothing;
                                 }
                             break;
 
@@ -701,7 +751,7 @@ public class Props : BaseView
                     textureCache.Add(prop.Def, texture);
                 }
 
-                var layerTint = (byte)(255 - Math.Abs(prop.Depth - Context.Layer*10)/40.0f*230);
+                var layerTint = (byte)(255 - Math.Abs(prop.Depth - Context.Layer*10)/49.0f*220);
 
                 RlUtils.DrawTextureQuad(
                     texture,
@@ -911,6 +961,21 @@ public class Props : BaseView
         if (ImGui.Begin("Options##PlacedPropsOptions"))
         {
             ImGui.Checkbox("Selected Center", ref showSelectedPlacedPropsCenter);
+
+            if (selectedPlacedProps.Count > 0)
+            {
+                if (selectedPlacedProps.All(p => p.Depth == selectedPlacedProps[0].Depth))
+                {
+                    var depth = selectedPlacedProps[0].Depth;
+
+                    if (ImGui.SliderInt("Depth", ref depth, 0, 49))
+                    {
+                        foreach (var prop in selectedPlacedProps) 
+                            prop.Depth = depth;
+                    }
+                }
+                
+            }
         }
 
         ImGui.End();
@@ -932,5 +997,7 @@ public class Props : BaseView
 
         printer.PrintlnLabel("Selected Category", selectedPropMenuCategory, Color.Gold);
         printer.PrintlnLabel("Selected Prop", selectedProp, Color.Gold);
+
+        printer.PrintlnLabel("Selected Placed Count", selectedPlacedProps.Count, Color.SkyBlue);
     }
 }
