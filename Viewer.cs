@@ -10,6 +10,7 @@ public class Viewer
     public Start start;
     public Geos geos;
     public Tiles tiles;
+    public Connections connections;
     public Cameras cameras;
     public Light light;
     public Props props;
@@ -38,6 +39,7 @@ public class Viewer
         start = new(context);
         geos = new(context);
         tiles = new(context);
+        connections = new(context);
         cameras = new(context);
         light = new(context);
         props = new(context);
@@ -46,6 +48,7 @@ public class Viewer
         context.LevelSelected += start.OnLevelSelected;
         context.LevelSelected += geos.OnLevelSelected;
         context.LevelSelected += tiles.OnLevelSelected;
+        context.LevelSelected += connections.OnLevelSelected;
         context.LevelSelected += cameras.OnLevelSelected;
         context.LevelSelected += light.OnLevelSelected;
         context.LevelSelected += props.OnLevelSelected;
@@ -59,6 +62,7 @@ public class Viewer
         context.LevelSelected -= start.OnLevelSelected;
         context.LevelSelected -= geos.OnLevelSelected;
         context.LevelSelected -= tiles.OnLevelSelected;
+        context.LevelSelected -= connections.OnLevelSelected;
         context.LevelSelected -= cameras.OnLevelSelected;
         context.LevelSelected -= light.OnLevelSelected;
         context.LevelSelected -= props.OnLevelSelected;

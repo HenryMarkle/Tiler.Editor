@@ -150,7 +150,7 @@ public class Tiles : BaseView
 
         BeginTextureMode(Context.Viewports.Main);
         ClearBackground(new Color(0, 0, 0, 0));
-        for (int l = 0; l < Context.Viewports.Depth; l++)
+        for (int l = Context.Viewports.Depth - 1; l > -1; --l)
         {
             if (l == Context.Layer) continue;
             DrawTexture(Context.Viewports.Geos[l].Raw.Texture, 0, 0, Color.Black with { A = 120 });

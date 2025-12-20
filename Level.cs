@@ -18,8 +18,8 @@ namespace Tiler.Editor;
 
 public class Level
 {
-    public const int DefaultWidth = 70;
-    public const int DefaultHeight = 40;
+    public const int DefaultWidth = 76;
+    public const int DefaultHeight = 46;
     public const int DefaultDepth = 5;
 
     public string? Name = "New Level";
@@ -45,6 +45,7 @@ public class Level
     public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, DefaultDepth);
     public List<LevelCamera> Cameras = [ new LevelCamera(new Vector2(20, 20)) ];
     public List<Prop> Props = [];
+    public List<Connection> Connections = [];
 
     public void Resize(int width, int height)
     {

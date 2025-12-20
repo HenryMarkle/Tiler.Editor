@@ -161,6 +161,9 @@ public class Program {
 				if (ImGui.MenuItem("Tiles", "", viewer.SelectedView.GetType() == typeof(Views.Tiles))) {
 					viewer.Select<Views.Tiles>();
 				}
+				if (ImGui.MenuItem("Connections", "", viewer.SelectedView.GetType() == typeof(Views.Connections))) {
+					viewer.Select<Views.Connections>();
+				}
 				if (ImGui.MenuItem("Cameras", "", viewer.SelectedView.GetType() == typeof(Views.Cameras))) {
 					viewer.Select<Views.Cameras>();
 				}
