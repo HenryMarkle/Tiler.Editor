@@ -51,7 +51,7 @@ public class Program {
 		Log.Information("Initializing window");
 
 		#if DEBUG
-		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
+		// Raylib.SetTraceLogLevel(TraceLogLevel.Error);
 		#else
 		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
 		#endif
