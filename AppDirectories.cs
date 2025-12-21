@@ -24,6 +24,7 @@ public class AppDirectories
         public required string Config { get; init; }
         public required string DefaultFont { get; init; }
         public required string CameraSprite { get; init; }
+        public required string ConnectionsAtlas { get; init; }
     }
 
     public AppFiles Files { get; init; }
@@ -56,7 +57,8 @@ public class AppDirectories
             ImGui  = Combine(Executable, "imgui.ini"),
             Config = Combine(Executable, "config.ini"),
             DefaultFont = Combine(Fonts, "default.ttf"),
-            CameraSprite = Combine(Textures, "camera_sprite.png")
+            CameraSprite = Combine(Textures, "camera_sprite.png"),
+            ConnectionsAtlas = Combine(Textures, "geometry", "connections.png")
         };
     }
 }

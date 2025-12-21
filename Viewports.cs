@@ -12,6 +12,7 @@ public class Viewports
     public static int LightmapMargin { get; set; } = 5 * 10;
 
     public RenderTexture Main { get; private set; }
+    public RenderTexture Connections { get; private set; }
     public RenderTexture Lightmap { get; private set; }
     public RenderTexture[] Geos { get; private set; }
     public RenderTexture[] Tiles { get; private set; }
@@ -19,6 +20,7 @@ public class Viewports
     public void Resize(int width, int height)
     {
         Main.Resize(width, height);
+        Connections.Resize(width, height);
         Lightmap.Resize(width + LightmapMargin*2, height + LightmapMargin*2);
 
         for (int l = 0; l < Depth; l++)
@@ -38,6 +40,7 @@ public class Viewports
         Depth = depth;
 
         Main = new(width, height, new Color4(0,0,0,0), true);
+        Connections = new(width, height, new Color4(0,0,0,0), true);
         Lightmap = new(width + LightmapMargin*2, height + LightmapMargin*2, new Color4(0,0,0,0), true);
 
         Geos = new RenderTexture[depth];

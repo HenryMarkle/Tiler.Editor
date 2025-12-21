@@ -50,3 +50,31 @@ public class GeoAtlas(Texture texture)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rectangle GetRect((int x, int y) index) => new(index.x * 20f, index.y *20f, 20f, 20f);
 }
+
+public class ConnectionAtlas(Texture texture)
+{
+    public Texture Texture { get; init; } = texture;
+
+    public static implicit operator Texture2D(ConnectionAtlas atlas) => atlas.Texture.Raw;
+
+    public (int x, int y) Entrance = (0, 0);
+    public (int x, int y) Path = (1, 0);
+    public (int x, int y) Exit = (2, 0);
+    public (int x, int y) Warp = (3, 0);
+    public (int x, int y) Spawn = (4, 0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public (int x, int y) GetIndex(ConnectionType t) => t switch
+    {
+        ConnectionType.Entrance => Entrance,
+        ConnectionType.Exit => Exit,
+        ConnectionType.Path => Path,
+        ConnectionType.Spawn => Spawn,
+        ConnectionType.Warp => Warp,
+        
+        _ => Path
+    };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Rectangle GetRect((int x, int y) index) => new(index.x * 20f, index.y *20f, 20f, 20f);
+}

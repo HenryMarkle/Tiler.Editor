@@ -184,6 +184,7 @@ public class Tiles : BaseView
 
         BeginTextureMode(Context.Viewports.Tiles[mz]);
 
+        // Clear area
         BeginBlendMode(BlendMode.Custom);
         Rlgl.SetBlendMode(BlendMode.Custom);
         Rlgl.SetBlendFactors(1, 0, 1);

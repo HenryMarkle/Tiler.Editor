@@ -42,14 +42,15 @@ public class Level
     public int LightDirection { get; set; } = 90;
 
     public Matrix<Geo> Geos = new(DefaultWidth, DefaultHeight, DefaultDepth);
+    public Matrix<ConnectionType> Connections = new(DefaultWidth, DefaultHeight, 1);
     public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, DefaultDepth);
     public List<LevelCamera> Cameras = [ new LevelCamera(new Vector2(20, 20)) ];
     public List<Prop> Props = [];
-    public List<Connection> Connections = [];
 
     public void Resize(int width, int height)
     {
         Geos.Resize(width, height);
+        Connections.Resize(width, height);
         Tiles.Resize(width, height);
 
         Width = width;
@@ -105,6 +106,29 @@ public class Level
                     for (var x = 0; x < Width; x++)
                     {
                         writer.Write(Geos[x, y, z]);
+
+                        if (x < Width - 1) writer.Write('|');
+                    }
+
+                    if (y < Height - 1) writer.Write('|');
+                }
+
+                if (z < Depth - 1) writer.Write('|');
+            }
+        });
+        
+        var connectionsTask = Task.Run(() =>
+        {
+            using var fs = new FileStream(Path.Combine(targetDir, "connections.txt"), FileMode.Create);
+            using var writer = new StreamWriter(fs);
+
+            for (var z = 0; z < Depth; z++)
+            {
+                for (var y = 0; y < Height; y++)
+                {
+                    for (var x = 0; x < Width; x++)
+                    {
+                        writer.Write(Connections[x, y, z]);
 
                         if (x < Width - 1) writer.Write('|');
                     }
@@ -179,10 +203,13 @@ public class Level
 
         Raylib.ExportImage(Lightmap, Path.Combine(targetDir, "lightmap.png"));
 
-        Task.WaitAll(geosTask, tilesTask, camerasTask);
+        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask);
 
         Log.Information("Level saved successfully");
     }
+
+
+    /// TODO: Turn those into extensions
 
     /// <exception cref="LevelParseException"></exception>
     public static Level FromDir(string dir, TileDex tiles)
@@ -217,6 +244,31 @@ public class Level
                 .Select((c, i) => 
                     (
                         Enum.TryParse<Geo>(c, out var cell) ? cell : Geo.Solid,
+                        i % width,                          // x
+                        (i % (width * height)) / width,     // y
+                        i / (width * height)                // z
+                    )
+                );
+
+            foreach (var (cell, x, y, z) in cells) matrix[x, y, z] = cell;
+
+            return matrix;
+        });
+
+        var connectionsTask = Task.Run(() =>
+        {
+            var matrix = new Matrix<ConnectionType>(width, height, 1);
+
+            var connectionsFile = Path.Combine(dir, "connections.txt");
+
+            if (!File.Exists(connectionsFile)) return matrix;
+
+            var cells = File
+                .ReadAllText(connectionsFile)
+                .Split('|')
+                .Select((c, i) => 
+                    (
+                        Enum.TryParse<ConnectionType>(c, out var cell) ? cell : ConnectionType.None,
                         i % width,                          // x
                         (i % (width * height)) / width,     // y
                         i / (width * height)                // z
@@ -349,10 +401,13 @@ public class Level
             return cameras;
         });
 
-        Task.WaitAll(geosTask, tilesTask, camerasTask);
+        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask);
 
         if (geosTask.IsFaulted)
             throw new ParseException("Failed to load geometry", geosTask.Exception);
+        
+        if (connectionsTask.IsFaulted)
+            throw new ParseException("Failed to load connections", connectionsTask.Exception);
 
         if (tilesTask.IsFaulted)
             throw new ParseException("Failed to load tiles", tilesTask.Exception);
@@ -392,6 +447,7 @@ public class Level
             Lightmap = new Managed.Image(Raylib.LoadImageFromTexture(lightmapRT.Texture)),
 
             Geos = geosTask.Result,
+            Connections = connectionsTask.Result,
             Tiles = tilesTask.Result,
             Cameras = camerasTask.Result
         };
