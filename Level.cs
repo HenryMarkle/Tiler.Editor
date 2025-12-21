@@ -122,21 +122,16 @@ public class Level
             using var fs = new FileStream(Path.Combine(targetDir, "connections.txt"), FileMode.Create);
             using var writer = new StreamWriter(fs);
 
-            for (var z = 0; z < Depth; z++)
+            for (var y = 0; y < Height; y++)
             {
-                for (var y = 0; y < Height; y++)
+                for (var x = 0; x < Width; x++)
                 {
-                    for (var x = 0; x < Width; x++)
-                    {
-                        writer.Write(Connections[x, y, z]);
+                    writer.Write(Connections[x, y, 0]);
 
-                        if (x < Width - 1) writer.Write('|');
-                    }
-
-                    if (y < Height - 1) writer.Write('|');
+                    if (x < Width - 1) writer.Write('|');
                 }
 
-                if (z < Depth - 1) writer.Write('|');
+                if (y < Height - 1) writer.Write('|');
             }
         });
 
@@ -271,11 +266,11 @@ public class Level
                         Enum.TryParse<ConnectionType>(c, out var cell) ? cell : ConnectionType.None,
                         i % width,                          // x
                         (i % (width * height)) / width,     // y
-                        i / (width * height)                // z
+                        0                                   // z
                     )
                 );
 
-            foreach (var (cell, x, y, z) in cells) matrix[x, y, z] = cell;
+            foreach (var (cell, x, y, z) in cells) matrix[x, y, 0] = cell;
 
             return matrix;
         });
