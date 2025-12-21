@@ -19,13 +19,13 @@ public class Cameras : BaseView
     private readonly Cursor cursor;
     private LevelCamera? selectedCamera;
     private static readonly Color[] cameraColors = [
-        Color.Green with { A = 80 },
-        Color.Red with { A = 80 },
-        Color.Blue with { A = 80 },
-        Color.Magenta with { A = 80 },
-        Color.Orange with { A = 80 },
-        Color.Gold with { A = 80 },
-        Color.Gray with { A = 80 },
+        Color.Green with { A = 50 },
+        Color.Red with { A = 50 },
+        Color.Blue with { A = 50 },
+        Color.Magenta with { A = 50 },
+        Color.Orange with { A = 50 },
+        Color.Gold with { A = 50 },
+        Color.Gray with { A = 50 },
     ];
 
     public Cameras(Context context) : base(context)
@@ -117,6 +117,11 @@ public class Cameras : BaseView
             DrawRectangleV(cam.Position, new Vector2(LevelCamera.Width, LevelCamera.Height), cameraColors[c % cameraColors.Length]);
             DrawTextureV(cameraSprite, cam.Position, Color.White);
             DrawText($"{c}", (int)(cam.Position.X + 25), (int)(cam.Position.Y + 20), 20, Color.White);
+
+            if (CheckCollisionPointCircle(cursor.Pos, cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2), 50))
+            {
+                DrawCircleV(cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2), 50, Color.White with { A = 50 });
+            }
         }
         EndMode2D();
     }

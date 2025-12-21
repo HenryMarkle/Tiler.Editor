@@ -17,6 +17,7 @@ public class AppDirectories
     public string Light { get; init; }
     public string Textures { get; init; }
     public string Fonts { get; init; }
+    public string Shaders { get; init; }
 
     public class AppFiles
     {
@@ -51,6 +52,7 @@ public class AppDirectories
 
         Textures = Combine(Assets, "textures");
         Fonts    = Combine(Assets, "fonts");
+        Shaders  = Combine(Assets, "shaders");
 
         Files = new AppFiles()
         {
