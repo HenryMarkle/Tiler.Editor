@@ -20,7 +20,7 @@ public class VoxelStructConfig : PropConfig
 }
 public class SoftConfig : PropConfig
 {
-    public int Depth;
+    public int Depth = 10;
 
     public override SoftConfig Clone()
     {
@@ -32,7 +32,7 @@ public class SoftConfig : PropConfig
 }
 public class AntimatterConfig : PropConfig
 {
-    public int Depth;
+    public int Depth = 10;
 
     public override AntimatterConfig Clone()
     {
@@ -144,12 +144,28 @@ public abstract class PropDef(string id, string resourceDir)
 
                 var image = new Managed.HybridImage(Raylib.LoadImage(imagePath));
 
+                var contourExp = data["contourExp"]?.ToFloat() ?? 0.8f;
+                var selfShade = data["selfShade"] switch { "true" => true, "false" => false, _ => false }; 
+                var highlightBorder = data["highlightBorder"]?.ToFloat() ?? 0.4f; 
+                var depthAffectHilites = data["depthAffectHilites"]?.ToFloat() ?? 0.2f; 
+                var shadowBorder = data["shadowBorder"]?.ToFloat() ?? 0.9f; 
+                var smoothShading = data["smoothShading"]?.ToInt() ?? 2;
+                var effectColor = data["effectColor"] switch { "None" => Soft.EffectColors.None, "A" => Soft.EffectColors.A, "B" => Soft.EffectColors.B, _ => Soft.EffectColors.None };
+
                 return new Soft(id, dir)
                 {
                     Name = name,
                     Category = category,
-                    DefaultDepth = depth,
-                    Image = image
+                    Depth = depth,
+                    Image = image,
+
+                    ContourExp = contourExp,
+                    SelfShade = selfShade,
+                    HighlightBorder = highlightBorder,
+                    ShadowBorder = shadowBorder,
+                    DepthAffectsHighlights = depthAffectHilites,
+                    SmoothShading = smoothShading,
+                    EffectColor = effectColor
                 };
             }
 
@@ -167,7 +183,7 @@ public abstract class PropDef(string id, string resourceDir)
                 {
                     Name = name,
                     Category = category,
-                    DefaultDepth = depth,
+                    Depth = depth,
                     Image = image
                 };
             }
@@ -227,7 +243,15 @@ public class Soft(string id, string resourceDir) : PropDef(id, resourceDir)
 {
     public int Width => Image.Width;
     public int Height => Image.Height;
-    public int DefaultDepth { get; init; } = 10;
+    public int Depth { get; init; } = 10;
+    public enum EffectColors { None, A, B }
+    public EffectColors EffectColor { get; init; } = EffectColors.None;
+    public bool SelfShade { get; init; } = true;
+    public int SmoothShading { get; init; } = 1;
+    public float DepthAffectsHighlights { get; init; }
+    public float HighlightBorder { get; init; } = 0.4f;
+    public float ShadowBorder { get; init; } = 0.4f;
+    public float ContourExp { get; init; } = 0.8f;
 
     public required Managed.HybridImage Image { get; init; }
 
@@ -243,7 +267,7 @@ public class Antimatter(string id, string resourceDir) : PropDef(id, resourceDir
 {
     public int Width => Image.Width;
     public int Height => Image.Height;
-    public int DefaultDepth { get; init; } = 10;
+    public int Depth { get; init; } = 15;
 
     public required Managed.HybridImage Image { get; init; }
 

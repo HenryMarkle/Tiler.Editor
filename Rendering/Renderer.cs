@@ -12,6 +12,7 @@ public class Renderer
 
     public Level Level { get; init; }
     public TileDex Tiles { get; init; }
+    public PropDex Props { get; init; }
     public int SublayersPerLayer { get; init; } = 10;
     public int LayerMargin { get; init; } = 100;
 
@@ -24,11 +25,13 @@ public class Renderer
     public Managed.RenderTexture Final { get; private set; }
 
     private TileRenderer TileRenderer { get; init; }
+    private PropRenderer PropRenderer { get; init; }
 
-    public Renderer(Level level, TileDex tiles, LevelCamera? camera = null)
+    public Renderer(Level level, TileDex tiles, PropDex props, LevelCamera? camera = null)
     {
         Level = level;
         Tiles = tiles;
+        Props = props;
 
         Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
         for (var l = 0; l < Layers.Length; l++) Layers[l] = 
@@ -44,6 +47,7 @@ public class Renderer
             ?? throw new RenderException("Level must have at least one camera");
 
         TileRenderer = new TileRenderer(Layers, Level, Tiles, SelectedCamera);
+        PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
     }
 
     public enum RenderState
@@ -70,11 +74,12 @@ public class Renderer
             case RenderState.Tiles:
             {
                 TileRenderer.Next();
-                if (TileRenderer.IsDone) State = RenderState.Done;
+                if (TileRenderer.IsDone) State = RenderState.Props;
             } break;
             case RenderState.Props:
             {
-                
+                PropRenderer.Next();
+                if (PropRenderer.IsDone) State = RenderState.Done;
             } break;
             case RenderState.Effects:
             {

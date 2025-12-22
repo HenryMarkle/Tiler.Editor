@@ -51,7 +51,7 @@ public class TileRenderer
                         var mx = x + (int)(camera.Position.X/20) - (layerMargin/20);
                         if (mx < 0 || mx >= level.Width) continue;
 
-                        var cell = level.Tiles[mx, my, l] ??= level.DefaultTile;
+                        var cell = level.Tiles[mx, my, l] ?? level.DefaultTile;
                         if (cell is null) continue;
                         if (level.Geos[mx, my, l] is Geo.Air) continue;
 

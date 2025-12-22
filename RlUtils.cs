@@ -36,34 +36,13 @@ public static class RlUtils
 
         Rlgl.SetTexture(0);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void DrawTextureQuad(
         in Texture2D texture,
         in Rectangle source,
         in Quad quad
-    )
-    {
-        Rlgl.SetTexture(texture.Id);
-
-        Rlgl.Begin(DrawMode.Quads);
-
-        Rlgl.Color4ub(255, 255, 255, 255);
-
-        Rlgl.TexCoord2f((source.X + source.Width) / texture.Width, source.Y / texture.Height);
-        Rlgl.Vertex2f(quad.TopRight.X, quad.TopRight.Y);
-     
-        Rlgl.TexCoord2f(source.X / texture.Width, source.Y / texture.Height);
-        Rlgl.Vertex2f(quad.TopLeft.X, quad.TopLeft.Y);
-     
-        Rlgl.TexCoord2f(source.X / texture.Width, (source.Y + source.Height) / texture.Height);
-        Rlgl.Vertex2f(quad.BottomLeft.X, quad.BottomLeft.Y);
-     
-        Rlgl.TexCoord2f((source.X + source.Width) / texture.Width, (source.Y + source.Height) / texture.Height);
-        Rlgl.Vertex2f(quad.BottomRight.X, quad.BottomRight.Y);
-    
-        Rlgl.End();
-
-        Rlgl.SetTexture(0);
-    }
+    ) => DrawTextureQuad(texture, source, quad, new Color4(255, 255, 255, 255));
 
     /// <summary>
     /// Draws a rectangular portion of a texture into a framebuffer inside a 
@@ -111,7 +90,7 @@ public static class RlUtils
         BeginTextureMode(rt);
         DrawTexturePro(
             texture,
-            source: source with { Height = -source.Height },
+            source: source with { Y = source.Y + source.Height, Height = -source.Height },
             dest: new Rectangle(
                 destination.X,
                 rt.Texture.Height - destination.Height - destination.Y,
@@ -157,7 +136,12 @@ public static class RlUtils
         );
 
         BeginTextureMode(rt);
-        DrawTextureQuad(texture, source: source with { Height = -source.Height }, quad, tint);
+        DrawTextureQuad(
+            texture, 
+            source: source with { Y = source.Y + source.Height, Height = -source.Height }, 
+            quad, 
+            tint
+        );
         EndTextureMode();
     }
 

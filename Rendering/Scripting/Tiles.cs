@@ -103,7 +103,7 @@ public class TileRenderingScriptRuntime : IDisposable
         {
             case [ Texture texture, long layer, Rectangle destination, Rectangle source, .. ]:
             {        
-                Raylib.BeginTextureMode(layers[layer]);
+                // Raylib.BeginTextureMode(layers[layer]);
                 RlUtils.DrawTextureRT(
                     rt:   layers[layer],
                     texture,
@@ -114,13 +114,13 @@ public class TileRenderingScriptRuntime : IDisposable
                     },
                     tint: args.Last() is Color4 c ? c : Color.White
                 );
-                Raylib.EndTextureMode();
+                // Raylib.EndTextureMode();
             }
             break;
 
             case [ Texture texture, long layer, Quad destination, Rectangle source, .. ]:
             {
-                Raylib.BeginTextureMode(layers[layer]);
+                // Raylib.BeginTextureMode(layers[layer]);
                 RlUtils.DrawTextureRT(
                     rt:   layers[layer],
                     texture, 
@@ -128,13 +128,13 @@ public class TileRenderingScriptRuntime : IDisposable
                     destination + (Vector2.One * layerMargin) - camera.Position, 
                     tint: args.Last() is Color4 c ? c : Color.White
                 );
-                Raylib.EndTextureMode();
+                // Raylib.EndTextureMode();
             }
             break;
             
             case [ Texture texture, long layer, Rectangle destination, .. ]:
             {
-                Raylib.BeginTextureMode(layers[layer]);
+                // Raylib.BeginTextureMode(layers[layer]);
                 RlUtils.DrawTextureRT(
                     rt:       layers[layer],
                     texture,
@@ -145,14 +145,14 @@ public class TileRenderingScriptRuntime : IDisposable
                     },
                     tint:     args.Last() is Color4 c ? c : Color.White
                 );
-                Raylib.EndTextureMode();
+                // Raylib.EndTextureMode();
             }
             break;
 
             case [ Texture texture, long layer, Quad destination, .. ]:
             {
                     
-                Raylib.BeginTextureMode(layers[layer]);
+                // Raylib.BeginTextureMode(layers[layer]);
                 RlUtils.DrawTextureRT(
                     layers[layer],
                     texture, 
@@ -160,7 +160,7 @@ public class TileRenderingScriptRuntime : IDisposable
                     destination + (Vector2.One * layerMargin) - camera.Position,
                     tint:   args.Last() is Color4 c ? c : Color.White
                 );
-                Raylib.EndTextureMode();
+                // Raylib.EndTextureMode();
             }
             break;
 

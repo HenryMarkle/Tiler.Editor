@@ -123,13 +123,13 @@ public class Render : BaseView
             ImGui.Columns(2);
             ImGui.SetColumnWidth(0, 200);
 
-            var isDisabled = renderer?.State is not null and not Renderer.RenderState.Done or Renderer.RenderState.Idle;
+            var isDisabled = renderer?.State is not null and not (Renderer.RenderState.Done or Renderer.RenderState.Idle);
             if (isDisabled) ImGui.BeginDisabled();
             if (ImGui.Button("Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 if (renderer is null or { State: Renderer.RenderState.Done })
                 {
-                    renderer = new(Context.SelectedLevel!, Context.Tiles);
+                    renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props);
                     GC.Collect();
                 }
             }

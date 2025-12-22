@@ -9,6 +9,13 @@ public static class Extensions
     
         return integer;
     }
+    public static float ToFloat(this string str)
+    {
+        if (!float.TryParse(str, out var floating)) 
+            throw new ParseException($"Invalid floating value '{str}'");
+    
+        return floating;
+    }
 
     public static Color4? ToColor4(this string str)
     {
