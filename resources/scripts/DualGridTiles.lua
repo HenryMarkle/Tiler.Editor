@@ -78,7 +78,7 @@ function M.Render(tileset, x, y, z)
 
                     if Level.Geos:IsInBounds(offsetPos) and
                         Level.Geos:StrAt(offsetPos.X, offsetPos.Y, z) == Solid and
-                        Level.Tiles:At(offsetPos.X, offsetPos.Y, z) == Tile then
+                        (Level.Tiles:At(offsetPos.X, offsetPos.Y, z) or Level.DefaultTile) == Tile then
 
                         product = product * primes[p]
                     end
