@@ -239,13 +239,13 @@ public class Props : BaseView
                     if (rt.Width != voxels.Width || rt.Height != voxels.Height)
                         rt.CleanResize(voxels.Width, voxels.Height);
 
-                    using var texture = new Texture(LoadTextureFromImage(voxels.Image));
+                    voxels.Image.ToTexture();
 
                     for (var l = voxels.Layers - 1; l > -1; l--)
                     {
                         RlUtils.DrawTextureRT(
                             rt,
-                            texture,
+                            texture:     voxels.Image,
                             source:      new Rectangle(0, l * voxels.Height, voxels.Width, voxels.Height),
                             destination: new Rectangle(0, 0, voxels.Width, voxels.Height),
                             tint:        Color.White with { A = (byte)(255 - l) }
@@ -259,11 +259,11 @@ public class Props : BaseView
                     if (rt.Width != soft.Width || rt.Height != soft.Height)
                         rt.CleanResize(soft.Width, soft.Height);
 
-                    using var texture = new Texture(LoadTextureFromImage(soft.Image));
+                    soft.Image.ToTexture();
 
                     RlUtils.DrawTextureRT(
                         rt,
-                        texture,
+                        texture:     soft.Image,
                         source:      new Rectangle(0, 0, soft.Width, soft.Height),
                         destination: new Rectangle(0, 0, soft.Width, soft.Height),
                         tint:        Color.White
@@ -276,11 +276,11 @@ public class Props : BaseView
                     if (rt.Width != antimatter.Width || rt.Height != antimatter.Height)
                         rt.CleanResize(antimatter.Width, antimatter.Height);
 
-                    using var texture = new Texture(LoadTextureFromImage(antimatter.Image));
+                    antimatter.Image.ToTexture();
 
                     RlUtils.DrawTextureRT(
                         rt,
-                        texture,
+                        texture:     antimatter.Image,
                         source:      new Rectangle(0, 0, antimatter.Width, antimatter.Height),
                         destination: new Rectangle(0, 0, antimatter.Width, antimatter.Height),
                         tint:        Color.White
@@ -293,11 +293,11 @@ public class Props : BaseView
                     if (rt.Width != custom.Width || rt.Height != custom.Height)
                         rt.CleanResize(custom.Width, custom.Height);
 
-                    using var texture = new Texture(LoadTextureFromImage(custom.Image));
+                    custom.Image.ToTexture();
 
                     RlUtils.DrawTextureRT(
                         rt,
-                        texture,
+                        texture:     custom.Image,
                         source:      new Rectangle(0, 0, custom.Width, custom.Height),
                         destination: new Rectangle(0, 0, custom.Width, custom.Height),
                         tint:        Color.White

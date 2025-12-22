@@ -192,7 +192,6 @@ void main()
     uv.x = tex_source_pos[0] + uv.x*(tex_source_pos[2] - tex_source_pos[0]);
     uv.y = tex_source_pos[1] + uv.y*(tex_source_pos[3] - tex_source_pos[1]);
 
-    
     // Fallback to iterative if robust method fails
     const float TOLERANCE = 0.52; // Slightly more than 0.5 to account for boundary pixels
     if (max(abs(uv.x - 0.5), abs(uv.y - 0.5)) > TOLERANCE) {
@@ -200,9 +199,9 @@ void main()
     }
     
     // Final validation
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-        discard;
-    }
+    // if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+    //     discard;
+    // }
     
     vec4 c = texture(texture0, uv);
     finalColor = c * fragColor;
@@ -474,7 +473,7 @@ void main()
                                                      0, 
                                                      (float)(l * voxels.Height) / voxels.Image.Height, 
                                                      (float)voxels.Width / voxels.Image.Width, 
-                                                     (float)voxels.Height / voxels.Image.Height 
+                                                     (float)(l * voxels.Height + voxels.Height) / voxels.Image.Height 
                                                  },
                                     uniformType: ShaderUniformDataType.Float, 
                                     count:       4
