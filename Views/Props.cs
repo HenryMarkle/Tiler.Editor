@@ -474,6 +474,9 @@ public class Props : BaseView
                             goto selection_mode_case;
                         }
 
+                        // Nearly identical branches
+                        // TODO: Try to optimize this
+
                         if (continuousPlacement)
                         {
                             if (IsMouseButtonDown(MouseButton.Right))
@@ -483,9 +486,11 @@ public class Props : BaseView
                                 if (selectedProp is null) break;
 
                                 var previewSize = new Vector2(propPreview.Width, propPreview.Height);
-                                var previewRect = new Rectangle(cursor.Pos - (previewSize/2), previewSize);
+                                var previewRect = new Rectangle(TransPos - (previewSize/2), previewSize);
 
                                 // Must collide with no other props
+                                // NOTE: Gets slower the more props are placed
+                                // TODO: Optimize this
                                 if (level.Props.All(p => !CheckCollisionRecs(p.Quad.Enclosed(), previewRect)))
                                 {    
                                     var quad = new Quad(
@@ -496,7 +501,7 @@ public class Props : BaseView
                                         def:    selectedProp,
                                         config: selectedProp.CreateConfig(),
                                         quad,
-                                        depth: Context.Layer * 10
+                                        depth:  Context.Layer * 10
                                     )
                                     {
                                         Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
@@ -521,13 +526,13 @@ public class Props : BaseView
 
                                 var quad = new Quad(
                                     new Rectangle(Vector2.Zero, previewSize)
-                                ) + cursor.Pos - (previewSize/2);
+                                ) + TransPos - (previewSize/2);
 
                                 var prop = new Prop(
                                     def:    selectedProp,
                                     config: selectedProp.CreateConfig(),
                                     quad,
-                                    depth: Context.Layer * 10
+                                    depth:  Context.Layer * 10
                                 )
                                 {
                                     Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
