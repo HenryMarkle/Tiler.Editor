@@ -99,9 +99,12 @@ public class Props : BaseView
     private readonly Shader invbShader;
 
     //
+    private bool contPlacementLock;
+    //
 
     private bool showSelectedPlacedPropsCenter;
     private bool individualOriginRotation;
+    private bool continuousPlacement;
 
     public Props(Context context) : base(context)
     {
@@ -464,37 +467,79 @@ public class Props : BaseView
                 placement_mode_case:
                     {
                         // Avoid loop
-                        if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right))
+                        if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right) && !contPlacementLock)
                         {
                             editMode = EditMode.Selection;
                             selectionAction = SelectionAction.Nothing;
                             goto selection_mode_case;
                         }
 
-                        if (IsMouseButtonPressed(MouseButton.Right))
+                        if (continuousPlacement)
                         {
-                            if (selectedProp is null) break;
-
-                            var previewSize = new Vector2(propPreview.Width, propPreview.Height);
-
-                            var quad = new Quad(
-                                new Rectangle(Vector2.Zero, previewSize)
-                            ) + cursor.Pos - (previewSize/2);
-
-                            var prop = new Prop(
-                                def:    selectedProp,
-                                config: selectedProp.CreateConfig(),
-                                quad,
-                                depth: Context.Layer * 10
-                            )
+                            if (IsMouseButtonDown(MouseButton.Right))
                             {
-                                Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
-                                    ? replica.Preview
-                                    : new HybridImage(LoadImageFromTexture(propPreview.Texture))
-                            };
+                                contPlacementLock = true;
 
-                            level.Props.Add(prop);
+                                if (selectedProp is null) break;
+
+                                var previewSize = new Vector2(propPreview.Width, propPreview.Height);
+                                var previewRect = new Rectangle(cursor.Pos - (previewSize/2), previewSize);
+
+                                // Must collide with no other props
+                                if (level.Props.All(p => !CheckCollisionRecs(p.Quad.Enclosed(), previewRect)))
+                                {    
+                                    var quad = new Quad(
+                                        new Rectangle(Vector2.Zero, previewSize)
+                                    ) + TransPos - (previewSize/2);
+
+                                    var prop = new Prop(
+                                        def:    selectedProp,
+                                        config: selectedProp.CreateConfig(),
+                                        quad,
+                                        depth: Context.Layer * 10
+                                    )
+                                    {
+                                        Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
+                                            ? replica.Preview
+                                            : new HybridImage(LoadImageFromTexture(propPreview.Texture))
+                                    };
+
+                                    level.Props.Add(prop);
+                                }
+                            }
+
+                            if (IsMouseButtonReleased(MouseButton.Right) && contPlacementLock) 
+                                contPlacementLock = false;
                         }
+                        else
+                        {
+                            if (IsMouseButtonPressed(MouseButton.Right))
+                            {
+                                if (selectedProp is null) break;
+
+                                var previewSize = new Vector2(propPreview.Width, propPreview.Height);
+
+                                var quad = new Quad(
+                                    new Rectangle(Vector2.Zero, previewSize)
+                                ) + cursor.Pos - (previewSize/2);
+
+                                var prop = new Prop(
+                                    def:    selectedProp,
+                                    config: selectedProp.CreateConfig(),
+                                    quad,
+                                    depth: Context.Layer * 10
+                                )
+                                {
+                                    Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
+                                        ? replica.Preview
+                                        : new HybridImage(LoadImageFromTexture(propPreview.Texture))
+                                };
+
+                                level.Props.Add(prop);
+                            }
+                        }
+
+                        
                     }
                     break;
 
@@ -1187,6 +1232,14 @@ public class Props : BaseView
                     }
                 }
             }
+        }
+
+        ImGui.End();
+
+
+        if (ImGui.Begin("Settings##PlacementSettings"))
+        {
+            ImGui.Checkbox("Continuous Placement", ref continuousPlacement);
         }
 
         ImGui.End();
