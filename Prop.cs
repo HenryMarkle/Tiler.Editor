@@ -255,6 +255,11 @@ public class Antimatter(string id, string resourceDir) : PropDef(id, resourceDir
     public override string ToString() => $"AntimatterProp({ID})";
 }
 
+/// <summary>
+/// Custom prop
+/// </summary>
+/// <param name="id"></param>
+/// <param name="resourceDir"></param>
 public class Custom(string id, string resourceDir) : PropDef(id, resourceDir)
 {
     public int Width => Image.Width;
@@ -287,6 +292,7 @@ public class Prop
             {
                 case (VoxelStruct, VoxelStructConfig): return;
                 case (Soft, SoftConfig): return;
+                case (Antimatter, AntimatterConfig): return;
                 case (Custom, CustomPropConfig): return;
                 default: 
                     throw new TilerException(

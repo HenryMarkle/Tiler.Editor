@@ -100,6 +100,7 @@ public class Props : BaseView
     //
 
     private bool showSelectedPlacedPropsCenter;
+    private bool individualOriginRotation;
 
     public Props(Context context) : base(context)
     {
@@ -230,9 +231,9 @@ public class Props : BaseView
                         RlUtils.DrawTextureRT(
                             rt,
                             texture,
-                            source: new Rectangle(0, l * voxels.Height, voxels.Width, voxels.Height),
+                            source:      new Rectangle(0, l * voxels.Height, voxels.Width, voxels.Height),
                             destination: new Rectangle(0, 0, voxels.Width, voxels.Height),
-                            tint: Color.White with { A = (byte)(255 - l) }
+                            tint:        Color.White with { A = (byte)(255 - l) }
                         );
                     }
                 }
@@ -248,9 +249,9 @@ public class Props : BaseView
                     RlUtils.DrawTextureRT(
                         rt,
                         texture,
-                        source: new Rectangle(0, 0, soft.Width, soft.Height),
+                        source:      new Rectangle(0, 0, soft.Width, soft.Height),
                         destination: new Rectangle(0, 0, soft.Width, soft.Height),
-                        tint: Color.White
+                        tint:        Color.White
                     );
                 }
                 break;
@@ -265,9 +266,26 @@ public class Props : BaseView
                     RlUtils.DrawTextureRT(
                         rt,
                         texture,
-                        source: new Rectangle(0, 0, antimatter.Width, antimatter.Height),
+                        source:      new Rectangle(0, 0, antimatter.Width, antimatter.Height),
                         destination: new Rectangle(0, 0, antimatter.Width, antimatter.Height),
-                        tint: Color.White
+                        tint:        Color.White
+                    );
+                }
+                break;
+
+            case Custom custom:
+                {
+                    if (rt.Width != custom.Width || rt.Height != custom.Height)
+                        rt.CleanResize(custom.Width, custom.Height);
+
+                    using var texture = new Texture(custom.Image);
+
+                    RlUtils.DrawTextureRT(
+                        rt,
+                        texture,
+                        source:      new Rectangle(0, 0, custom.Width, custom.Height),
+                        destination: new Rectangle(0, 0, custom.Width, custom.Height),
+                        tint:        Color.White
                     );
                 }
                 break;
@@ -666,8 +684,16 @@ public class Props : BaseView
                                     var centerLen = (cursor.Pos.X - selectedPlacedPropsCenter.X) + (cursor.Pos.Y - selectedPlacedPropsCenter.Y);
                                     var delta = centerLen - prevScaleCenterLen;
 
+                                    if (delta != 0)
                                     foreach (var prop in selectedPlacedProps)
                                     {
+                                        // if (delta < 0)
+                                        // {
+                                        //     var enclosed = prop.Quad.Enclosed();
+
+                                        //     if (enclosed.Width + delta < 10 || enclosed.Height + delta < 10) continue;
+                                        // }
+
                                         prop.Quad.TopLeft += Raymath.Vector2Normalize(prop.Quad.TopLeft - selectedPlacedPropsCenter) * delta;
                                         prop.Quad.TopRight += Raymath.Vector2Normalize(prop.Quad.TopRight - selectedPlacedPropsCenter) * delta;
                                         prop.Quad.BottomRight += Raymath.Vector2Normalize(prop.Quad.BottomRight - selectedPlacedPropsCenter) * delta;
@@ -700,7 +726,12 @@ public class Props : BaseView
                                     else
                                     {
                                         foreach (var prop in selectedPlacedProps)
-                                            prop.Quad.Rotate((int)MathF.Ceiling(delta), selectedPlacedPropsCenter);
+                                            prop.Quad.Rotate(
+                                                (int)MathF.Ceiling(delta), 
+                                                individualOriginRotation 
+                                                    ? prop.Quad.Center 
+                                                    : selectedPlacedPropsCenter
+                                            );
                                     }
 
                                     prevRotateAngle = angle;
@@ -828,13 +859,6 @@ public class Props : BaseView
                     ShaderUniformDataType.Vec2, 
                     4
                 );
-                SetShaderValueV(
-                    invbShader, 
-                    GetShaderLocation(invbShader, "tex_coord_pos"), 
-                    new float[4] { 0, 0, 1, 1 }, 
-                    ShaderUniformDataType.Float, 
-                    4
-                );
 
                 // DrawTexturePro(
                 //     texture,
@@ -887,8 +911,19 @@ public class Props : BaseView
 
             if (showSelectedPlacedPropsCenter)
             {
-                DrawCircleV(selectedPlacedPropsCenter, 8, Color.White with { A = 200 });
-                DrawCircleV(selectedPlacedPropsCenter, 6, Color.Magenta with { A = 200 });
+                if (individualOriginRotation)
+                {
+                    foreach (var sprop in selectedPlacedProps)
+                    {
+                        DrawCircleV(sprop.Quad.Center, 8, Color.White with { A = 200 });
+                        DrawCircleV(sprop.Quad.Center, 6, Color.Magenta with { A = 200 });
+                    }
+                }
+                else
+                {
+                    DrawCircleV(selectedPlacedPropsCenter, 8, Color.White with { A = 200 });
+                    DrawCircleV(selectedPlacedPropsCenter, 6, Color.Magenta with { A = 200 });
+                }
             }
         }
 
@@ -977,8 +1012,13 @@ public class Props : BaseView
                         selectedPropMenuCategory = category;
                         selectedPropMenuCategoryProps = Context.Props.CategoryProps[category];
                         selectedPropMenuIndex = 0;
+
                         if (selectedPropMenuCategoryProps.Count > 0)
+                        {
+                            if (selectedPropMenuCategoryProps[0] != selectedProp) 
+                                DrawPropRT(propPreview, selectedPropMenuCategoryProps[0]);
                             selectedProp = selectedPropMenuCategoryProps[0];
+                        }
                     }
                 }
 
@@ -1004,6 +1044,7 @@ public class Props : BaseView
 
                             selectedPropMenuIndex = p;
                             selectedProp = prop;
+                            editMode = EditMode.Placement;
                         }
 
                         if (ImGui.IsItemHovered())
@@ -1067,6 +1108,7 @@ public class Props : BaseView
                             selectedPlacedProps.Add(prop);
                         }
 
+                        editMode = EditMode.Selection;
                         CalculatePlacedPropsCenter();
                     }
                 }
@@ -1080,6 +1122,7 @@ public class Props : BaseView
         if (ImGui.Begin("Options##PlacedPropsOptions"))
         {
             ImGui.Checkbox("Selected Center", ref showSelectedPlacedPropsCenter);
+            ImGui.Checkbox("Individual Rotation", ref individualOriginRotation);
 
             if (selectedPlacedProps.Count > 0)
             {
