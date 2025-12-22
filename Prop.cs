@@ -105,7 +105,7 @@ public abstract class PropDef(string id, string resourceDir)
                 if (!File.Exists(imagePath))
                     throw new PropParseException($"{type}'s 'layers.png' not found");
 
-                var image = new Managed.Image(Raylib.LoadImage(imagePath));
+                var image = new Managed.HybridImage(Raylib.LoadImage(imagePath));
                 
                 // Infere missing properties
 
@@ -142,7 +142,7 @@ public abstract class PropDef(string id, string resourceDir)
                 if (!File.Exists(imagePath))
                     throw new PropParseException($"{type}'s 'image.png' not found");
 
-                var image = new Managed.Image(Raylib.LoadImage(imagePath));
+                var image = new Managed.HybridImage(Raylib.LoadImage(imagePath));
 
                 return new Soft(id, dir)
                 {
@@ -161,7 +161,7 @@ public abstract class PropDef(string id, string resourceDir)
                 if (!File.Exists(imagePath))
                     throw new PropParseException($"{type}'s 'image.png' not found");
 
-                var image = new Managed.Image(Raylib.LoadImage(imagePath));
+                var image = new Managed.HybridImage(Raylib.LoadImage(imagePath));
 
                 return new Antimatter(id, dir)
                 {
@@ -213,7 +213,7 @@ public class VoxelStruct(string id, string resourceDir) : PropDef(id, resourceDi
     public int Layers { get; init; } = 1;
     public int[] Repeat { get; init; } = [ 1 ];
 
-    public required Managed.Image Image { get; init; }
+    public required Managed.HybridImage Image { get; init; }
 
     public override VoxelStructConfig CreateConfig()
     {
@@ -229,7 +229,7 @@ public class Soft(string id, string resourceDir) : PropDef(id, resourceDir)
     public int Height => Image.Height;
     public int DefaultDepth { get; init; } = 10;
 
-    public required Managed.Image Image { get; init; }
+    public required Managed.HybridImage Image { get; init; }
 
     public override SoftConfig CreateConfig()
     {
@@ -245,7 +245,7 @@ public class Antimatter(string id, string resourceDir) : PropDef(id, resourceDir
     public int Height => Image.Height;
     public int DefaultDepth { get; init; } = 10;
 
-    public required Managed.Image Image { get; init; }
+    public required Managed.HybridImage Image { get; init; }
 
     public override AntimatterConfig CreateConfig()
     {
@@ -303,7 +303,7 @@ public class Prop
     }
     public int Depth;
     public Quad Quad;
-    public Managed.Image? Preview { get; set; }
+    public Managed.HybridImage? Preview { get; set; }
     public bool IsSelected;
     public bool IsHidden;
 

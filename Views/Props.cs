@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ImGuiNET;
@@ -70,7 +71,7 @@ public class Props : BaseView
     private Rectangle selectionRect;
 
     private List<Prop> selectedPlacedProps;
-    private Queue<Prop> redrawPlacedProps;
+    private Timer unloadTimer;
     
     private Vector2 selectedPlacedPropsCenter;
 
@@ -111,7 +112,17 @@ public class Props : BaseView
         selectionAction = SelectionAction.Nothing;
 
         selectedPlacedProps = [];
-        redrawPlacedProps = [];
+
+        unloadTimer = new Timer(
+            callback: _ =>
+            {
+                if (Context.SelectedLevel is not { } level) return;
+                foreach (var prop in level.Props) prop.Preview?.ToImage();
+            },
+            state:   null,
+            dueTime: 0,
+            period:  TimeSpan.FromSeconds(3).Milliseconds
+        );
 
         propPreview = new RenderTexture(
             width: 1,
@@ -138,6 +149,7 @@ public class Props : BaseView
     ~Props()
     {
         UnloadShader(invbShader);
+        unloadTimer.Dispose();
     }
 
     private void SelectPropCategory(int index)
@@ -224,7 +236,7 @@ public class Props : BaseView
                     if (rt.Width != voxels.Width || rt.Height != voxels.Height)
                         rt.CleanResize(voxels.Width, voxels.Height);
 
-                    using var texture = new Texture(voxels.Image);
+                    using var texture = new Texture(LoadTextureFromImage(voxels.Image));
 
                     for (var l = voxels.Layers - 1; l > -1; l--)
                     {
@@ -244,7 +256,7 @@ public class Props : BaseView
                     if (rt.Width != soft.Width || rt.Height != soft.Height)
                         rt.CleanResize(soft.Width, soft.Height);
 
-                    using var texture = new Texture(soft.Image);
+                    using var texture = new Texture(LoadTextureFromImage(soft.Image));
 
                     RlUtils.DrawTextureRT(
                         rt,
@@ -261,7 +273,7 @@ public class Props : BaseView
                     if (rt.Width != antimatter.Width || rt.Height != antimatter.Height)
                         rt.CleanResize(antimatter.Width, antimatter.Height);
 
-                    using var texture = new Texture(antimatter.Image);
+                    using var texture = new Texture(LoadTextureFromImage(antimatter.Image));
 
                     RlUtils.DrawTextureRT(
                         rt,
@@ -278,7 +290,7 @@ public class Props : BaseView
                     if (rt.Width != custom.Width || rt.Height != custom.Height)
                         rt.CleanResize(custom.Width, custom.Height);
 
-                    using var texture = new Texture(custom.Image);
+                    using var texture = new Texture(LoadTextureFromImage(custom.Image));
 
                     RlUtils.DrawTextureRT(
                         rt,
@@ -478,7 +490,7 @@ public class Props : BaseView
                             {
                                 Preview = level.Props.Find(p => p.Def == selectedProp) is { } replica
                                     ? replica.Preview
-                                    : new Managed.Image(propPreview.Texture)
+                                    : new HybridImage(LoadImageFromTexture(propPreview.Texture))
                             };
 
                             level.Props.Add(prop);
@@ -672,6 +684,8 @@ public class Props : BaseView
                                     
                                     foreach (var prop in selectedPlacedProps) prop.Quad += delta;
 
+                                    CalculatePlacedPropsCenter();
+
                                     prevCursorPos = cursor.Pos;
 
                                     if (IsMouseButtonPressed(MouseButton.Left))
@@ -694,10 +708,40 @@ public class Props : BaseView
                                         //     if (enclosed.Width + delta < 10 || enclosed.Height + delta < 10) continue;
                                         // }
 
-                                        prop.Quad.TopLeft += Raymath.Vector2Normalize(prop.Quad.TopLeft - selectedPlacedPropsCenter) * delta;
-                                        prop.Quad.TopRight += Raymath.Vector2Normalize(prop.Quad.TopRight - selectedPlacedPropsCenter) * delta;
-                                        prop.Quad.BottomRight += Raymath.Vector2Normalize(prop.Quad.BottomRight - selectedPlacedPropsCenter) * delta;
-                                        prop.Quad.BottomLeft += Raymath.Vector2Normalize(prop.Quad.BottomLeft - selectedPlacedPropsCenter) * delta;
+                                        /// TODO: Clamp scaling to avoid vertex mishandling 
+
+                                        prop.Quad.TopLeft = Raymath.Vector2Add(
+                                            Raymath.Vector2Add(
+                                                Raymath.Vector2Subtract(prop.Quad.TopLeft, selectedPlacedPropsCenter),
+                                                Raymath.Vector2Normalize(Raymath.Vector2Subtract(prop.Quad.TopLeft, selectedPlacedPropsCenter)) 
+                                                    *delta
+                                            ),
+                                            selectedPlacedPropsCenter
+                                        );
+                                        prop.Quad.TopRight = Raymath.Vector2Add(
+                                            Raymath.Vector2Add(
+                                                Raymath.Vector2Subtract(prop.Quad.TopRight, selectedPlacedPropsCenter),
+                                                Raymath.Vector2Normalize(Raymath.Vector2Subtract(prop.Quad.TopRight, selectedPlacedPropsCenter)) 
+                                                    *delta
+                                            ),
+                                            selectedPlacedPropsCenter
+                                        );
+                                        prop.Quad.BottomRight = Raymath.Vector2Add(
+                                            Raymath.Vector2Add(
+                                                Raymath.Vector2Subtract(prop.Quad.BottomRight, selectedPlacedPropsCenter),
+                                                Raymath.Vector2Normalize(Raymath.Vector2Subtract(prop.Quad.BottomRight, selectedPlacedPropsCenter)) 
+                                                    *delta
+                                            ),
+                                            selectedPlacedPropsCenter
+                                        );
+                                        prop.Quad.BottomLeft = Raymath.Vector2Add(
+                                            Raymath.Vector2Add(
+                                                Raymath.Vector2Subtract(prop.Quad.BottomLeft, selectedPlacedPropsCenter),
+                                                Raymath.Vector2Normalize(Raymath.Vector2Subtract(prop.Quad.BottomLeft, selectedPlacedPropsCenter)) 
+                                                    *delta
+                                            ),
+                                            selectedPlacedPropsCenter
+                                        );
                                     }
 
                                     prevScaleCenterLen = centerLen;
@@ -822,8 +866,6 @@ public class Props : BaseView
 
         /// TODO: Optimize using redraw queue
 
-        Dictionary<PropDef, Texture> textureCache = [];
-
         float screenW = GetScreenWidth();
         float screenH = GetScreenHeight();
         var screenSize = new Vector2(screenW, screenH);
@@ -834,11 +876,7 @@ public class Props : BaseView
 
             if (prop.Preview is not null)
             {
-                if (!textureCache.TryGetValue(prop.Def, out var texture))
-                {
-                    texture = new Texture(prop.Preview);
-                    textureCache.Add(prop.Def, texture);
-                }
+                prop.Preview.ToTexture();
 
                 var layerTint = (byte)(255 - Math.Abs(prop.Depth - Context.Layer*10)/49.0f*220);
 
@@ -870,8 +908,8 @@ public class Props : BaseView
                 // );
 
                 RlUtils.DrawTextureQuad(
-                    texture,
-                    source: new Rectangle(0, 0, texture.Width, texture.Height),
+                    texture: prop.Preview,
+                    source: new Rectangle(0, 0, prop.Preview.Width, prop.Preview.Height),
                     quad:   prop.Quad,
                     tint:   new Color4(layerTint, layerTint, layerTint, layerTint)
                 );
@@ -908,6 +946,8 @@ public class Props : BaseView
                     color: quad.TopLeft.Y < quad.BottomLeft.Y ? Color.SkyBlue : Color.Pink
                 );
             }
+
+            // Draw prop center(s)
 
             if (showSelectedPlacedPropsCenter)
             {
@@ -1137,6 +1177,15 @@ public class Props : BaseView
                     }
                 }
                 
+                if (selectedPlacedProps.All(p => p.IsHidden) || selectedPlacedProps.All(p => !p.IsHidden))
+                {
+                    var hidden = selectedPlacedProps[0].IsHidden;
+
+                    if (ImGui.Checkbox("Hidden", ref hidden))
+                    {
+                        foreach (var p in selectedPlacedProps) p.IsHidden = hidden;
+                    }
+                }
             }
         }
 
