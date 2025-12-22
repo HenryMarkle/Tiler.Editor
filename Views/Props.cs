@@ -1244,6 +1244,20 @@ public class Props : BaseView
 
         if (ImGui.Begin("Settings##PlacementSettings"))
         {
+            {
+                var pres = (int)gridPrecision;
+                ImGui.SetNextItemWidth(80);
+                if (ImGui.Combo("Grid", ref pres, "None\0Half\0One"))
+                    gridPrecision = (Precision)pres;               
+            }
+            
+            {
+                var pres = (int)transformPrecision;
+                ImGui.SetNextItemWidth(80);
+                if (ImGui.Combo("Transform Precision", ref pres, "Free\0Half\0One"))
+                    transformPrecision = (Precision)pres;               
+            }
+
             ImGui.Checkbox("Continuous Placement", ref continuousPlacement);
         }
 
