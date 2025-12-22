@@ -194,7 +194,7 @@ public abstract class PropDef(string id, string resourceDir)
                 if (!File.Exists(imagePath))
                     throw new PropParseException($"{type}'s 'preview.png' not found");
 
-                var image = new Managed.Image(Raylib.LoadImage(imagePath));
+                var image = new Managed.HybridImage(Raylib.LoadImage(imagePath));
 
                 var scriptPath = Path.Combine(dir, "script.lua");
                 if (!File.Exists(scriptPath))
@@ -290,7 +290,7 @@ public class Custom(string id, string resourceDir) : PropDef(id, resourceDir)
     public int Height => Image.Height;
     public string ScriptFile { get; init; } = Path.Combine(resourceDir, "script.lua");
 
-    public required Managed.Image Image { get; init; }
+    public required Managed.HybridImage Image { get; init; }
 
     public override CustomPropConfig CreateConfig()
     {
