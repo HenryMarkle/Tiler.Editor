@@ -28,7 +28,7 @@ function M.Render(tileset, x, y, z, layer, options)
         tileset,
         layer or z * 10,
         Rect((x - buffer) * 20, (y - buffer) * 20, 20 + (buffer*2*20), 20 + (buffer*2*20)),
-        Rect((mapping[geo] * buffer * 3) * 20, (math.random(variations)-1) * (buffer * 3 * 20), buffer*3*20, buffer*3*20)
+        Rect((mapping[geo] * buffer * 3) * 20, (math.random(variations)-1) * (buffer * 3 * 20), 20 + buffer*2*20, 20 + buffer*2*20)
     )
 end
 
