@@ -924,6 +924,20 @@ public class Props : BaseView
         {
             if (prop.IsHidden) continue;
 
+            if (prop.Preview is null)
+            {
+                if (level.Props.Find(p => p.Def == selectedProp) is { } replica)
+                {
+                    prop.Preview = replica.Preview;
+                }
+                else
+                {
+                    using var rt = new RenderTexture(0, 0);
+                    DrawPropRT(rt, prop.Def);
+                    prop.Preview = new HybridImage(LoadImageFromTexture(rt.Texture));
+                }
+            }
+
             if (prop.Preview is not null)
             {
                 prop.Preview.ToTexture();

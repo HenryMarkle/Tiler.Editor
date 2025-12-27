@@ -105,7 +105,7 @@ public class Level
                 {
                     for (var x = 0; x < Width; x++)
                     {
-                        writer.Write(Geos[x, y, z]);
+                        writer.Write(Geos[x, y, z] is Geo.Air ? "" : Geos[x, y, z]);
 
                         if (x < Width - 1) writer.Write('|');
                     }
@@ -126,7 +126,7 @@ public class Level
             {
                 for (var x = 0; x < Width; x++)
                 {
-                    writer.Write(Connections[x, y, 0]);
+                    writer.Write(Connections[x, y, 0] is ConnectionType.None ? "" : Connections[x, y, 0]);
 
                     if (x < Width - 1) writer.Write('|');
                 }
@@ -196,9 +196,35 @@ public class Level
             }
         });
 
+        var propsTask = Task.Run(() =>
+        {
+            var propsDir = Path.Combine(targetDir, "props");
+
+            if (!System.IO.Directory.Exists(propsDir))
+                System.IO.Directory.CreateDirectory(propsDir);
+            else foreach (var propFile in System.IO.Directory.GetFiles(propsDir).Where(f => f.EndsWith(".ini"))) 
+                File.Delete(propFile);
+
+            for (var p = 0; p < Props.Count; p++)
+            {
+                var prop = Props[p];
+
+                File.WriteAllText(
+                    Path.Combine(propsDir, $"{p}.ini"), 
+                    @$"[prop]
+id = {prop.Def.ID}
+depth = {prop.Depth}
+quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.Quad.TopRight.Y}|{prop.Quad.BottomRight.X}/{prop.Quad.BottomRight.Y}|{prop.Quad.BottomLeft.X}/{prop.Quad.BottomLeft.Y}
+
+[settings]
+"
+                );
+            }
+        });
+
         Raylib.ExportImage(Lightmap, Path.Combine(targetDir, "lightmap.png"));
 
-        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask);
+        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask, propsTask);
 
         Log.Information("Level saved successfully");
     }
@@ -207,7 +233,7 @@ public class Level
     /// TODO: Turn those into extensions
 
     /// <exception cref="LevelParseException"></exception>
-    public static Level FromDir(string dir, TileDex tiles)
+    public static Level FromDir(string dir, TileDex tiles, PropDex props)
     {
         var iniFile = Path.Combine(dir, "level.ini");
 
@@ -238,7 +264,7 @@ public class Level
                 .Split('|')
                 .Select((c, i) => 
                     (
-                        Enum.TryParse<Geo>(c, out var cell) ? cell : Geo.Solid,
+                        c is "" ? Geo.Air : Enum.TryParse<Geo>(c, out var cell) ? cell : Geo.Solid,
                         i % width,                          // x
                         (i % (width * height)) / width,     // y
                         i / (width * height)                // z
@@ -263,7 +289,7 @@ public class Level
                 .Split('|')
                 .Select((c, i) => 
                     (
-                        Enum.TryParse<ConnectionType>(c, out var cell) ? cell : ConnectionType.None,
+                        c is "" ? ConnectionType.None : Enum.TryParse<ConnectionType>(c, out var cell) ? cell : ConnectionType.None,
                         i % width,                          // x
                         (i % (width * height)) / width,     // y
                         0                                   // z
@@ -396,6 +422,74 @@ public class Level
             return cameras;
         });
 
+        var propsTask = Task.Run(() =>
+        {
+            var propsDir = Path.Combine(dir, "props");
+
+            if (!System.IO.Directory.Exists(propsDir))
+                return [];
+
+            var propParser = new FileIniDataParser();
+
+            var files = System.IO.Directory
+                .GetFiles(propsDir)
+                .Where(d => d.EndsWith(".ini") && int.TryParse(Path.GetFileNameWithoutExtension(d), out _))
+                .OrderBy(d => int.Parse(Path.GetFileNameWithoutExtension(d)));
+
+            List<Prop> parsedProps = [];
+        
+            foreach (var file in files)
+            {
+                try
+                {
+                    var ini = propParser.ReadFile(file);
+
+                    var propIni = ini["prop"];
+
+                    var id = propIni["id"] ?? throw new PropParseException("Missing field 'id'");
+                    
+                    if (!props.Props.TryGetValue(id, out var def))
+                        throw new PropParseException($"Undefined ID '{id}'");
+
+                    var depth = propIni["depth"]?.ToInt() ?? 0;
+
+                    var quadStr = propIni["quad"] ?? throw new PropParseException("Missing field 'quad'");
+
+                    var quadVertices = quadStr.Split('|');
+
+                    if (quadVertices is not [ string topLeft, string topRight, string bottomRight, string bottomLeft ])
+                        throw new PropParseException("Invalid field value 'quad'");
+
+                    var quad = new Quad();
+
+                    try
+                    {
+                        quad.TopLeft = topLeft.ToVector2();
+                        quad.TopRight = topRight.ToVector2();
+                        quad.BottomRight = bottomRight.ToVector2();
+                        quad.BottomLeft = bottomLeft.ToVector2();
+                    }
+                    catch (Exception qe)
+                    {
+                        throw new PropParseException("Invalid 'quad' value", qe);
+                    }
+
+                    var configIni = ini["settings"];
+
+                    /// TODO: Complete here
+
+                    parsedProps.Add(new Prop(def, config: def.CreateConfig(), quad, depth));
+                }
+                catch (Exception pe)
+                {
+                    throw new PropParseException($"Failed to load prop file '{Path.GetFileName(file)}'", pe);
+                }
+            }
+
+            return parsedProps;
+        });
+
+
         Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask);
 
         if (geosTask.IsFaulted)
@@ -409,6 +503,9 @@ public class Level
 
         if (camerasTask.IsFaulted)
             throw new ParseException("Failed to load cameras", camerasTask.Exception);
+
+        if (propsTask.IsFaulted)
+            throw new ParseException("Failed to load props", propsTask.Exception);
 
         if (undefinedTiles is not null)
             foreach (var und in undefinedTiles) Log.Warning("Undefined tile '{Name}'", und);
@@ -444,7 +541,8 @@ public class Level
             Geos = geosTask.Result,
             Connections = connectionsTask.Result,
             Tiles = tilesTask.Result,
-            Cameras = camerasTask.Result
+            Cameras = camerasTask.Result,
+            Props = propsTask.Result
         };
     }
 }

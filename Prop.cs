@@ -229,6 +229,8 @@ public class VoxelStruct(string id, string resourceDir) : PropDef(id, resourceDi
     public int Layers { get; init; } = 1;
     public int[] Repeat { get; init; } = [ 1 ];
 
+    public Option<Geo>[,] Specs { get; init; } = new Option<Geo>[1, 1];
+
     public required Managed.HybridImage Image { get; init; }
 
     public override VoxelStructConfig CreateConfig()

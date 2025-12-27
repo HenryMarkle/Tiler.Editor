@@ -134,7 +134,7 @@ public class Start : BaseView
 
                                 try
                                 {
-                                    var level = Level.FromDir(entries[i], Context.Tiles);
+                                    var level = Level.FromDir(entries[i], Context.Tiles, Context.Props);
                                     Context.AddLevel(level);
                                     Context.SelectLevel(level);
                                     Context.Viewer.Select<Geos>();

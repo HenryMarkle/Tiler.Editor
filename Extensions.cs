@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Tiler.Editor;
 
 public static class Extensions
@@ -40,5 +42,19 @@ public static class Extensions
             throw new ParseException($"Invalid Color4's A value '{values[3]}'");
 
         return new Color4(r, g, b, a);
+    }
+
+    public static Vector2 ToVector2(this string str)
+    {
+        if (str.Split('/') is not [ string xStr, string yStr])
+            throw new ParseException("Invalid expression");
+
+        if (!float.TryParse(xStr, out float x))
+            throw new ParseException("Invalid X value");
+
+        if (!float.TryParse(yStr, out float y))
+            throw new ParseException("Invalid Y value");
+    
+        return new Vector2(x, y);
     }
 }
