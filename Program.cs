@@ -118,6 +118,18 @@ public class Program {
 			printer.Reset();
 			Unloader.Dequeue(20);
 
+			if (viewer.SelectedView.GetType() != typeof(Views.Start))
+			{
+				if (Raylib.IsKeyPressed(KeyboardKey.One)) viewer.Select<Views.Geos>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Two)) viewer.Select<Views.Tiles>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Three)) viewer.Select<Views.Connections>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Four)) viewer.Select<Views.Cameras>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Five)) viewer.Select<Views.Light>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Six)) viewer.Select<Views.Light>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Seven)) viewer.Select<Views.Light>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Eight)) viewer.Select<Views.Props>();
+			}
+
 			viewer.SelectedView.Process();
 
 			Raylib.BeginDrawing();
