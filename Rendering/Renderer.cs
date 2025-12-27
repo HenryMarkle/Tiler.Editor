@@ -55,6 +55,7 @@ public class Renderer
         Idle,
         Tiles,
         Props,
+        Poles,
         Effects,
         Lighting,
         Done,
@@ -79,7 +80,80 @@ public class Renderer
             case RenderState.Props:
             {
                 PropRenderer.Next();
-                if (PropRenderer.IsDone) State = RenderState.Done;
+                if (PropRenderer.IsDone) State = RenderState.Poles;
+            } break;
+            case RenderState.Poles:
+            {
+                var columns = (Width + LayerMargin*2) / 20;
+                var rows = (Height + LayerMargin*2) / 20;
+
+                for (var z = 0; z < 5; z++)
+                    {
+                        Raylib.BeginTextureMode(Layers[z * SublayersPerLayer + 4]);
+                        for (var y = 0; y < rows; y++)
+                        {
+                            var my = y + (int)(SelectedCamera.Position.Y/20) - (LayerMargin/20);
+                            if (my < 0 || my >= Level.Height) continue;
+
+                            for (var x = 0; x < columns; x++)
+                            {
+                                var mx = x + (int)(SelectedCamera.Position.X/20) - (LayerMargin/20);
+                                if (mx < 0 || mx >= Level.Width) continue;
+
+                                switch (Level.Geos[mx, my, z])
+                                {
+                                    case Geo.VerticalPole:
+                                    Raylib.DrawRectangleRec(
+                                        rec:   new Rectangle(
+                                                mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X, 
+                                                Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
+                                                4, 
+                                                20
+                                            ), 
+                                        color: Color.Red
+                                    );
+                                    break;
+
+                                    case Geo.HorizontalPole:
+                                    Raylib.DrawRectangleRec(
+                                        rec:   new Rectangle(
+                                            mx * 20 + LayerMargin - SelectedCamera.Position.X, 
+                                            Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
+                                            20, 
+                                            4
+                                        ), 
+                                        color: Color.Red
+                                    );
+                                    break;
+
+                                    case Geo.CrossPole:
+                                    Raylib.DrawRectangleRec(
+                                        rec:   new Rectangle(
+                                                mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X, 
+                                                Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
+                                                4, 
+                                                20
+                                            ), 
+                                        color: Color.Red
+                                    );
+                                    Raylib.DrawRectangleRec(
+                                        rec:   new Rectangle(
+                                            mx * 20 + LayerMargin - SelectedCamera.Position.X, 
+                                            Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
+                                            20, 
+                                            4
+                                        ), 
+                                        color: Color.Red
+                                    );
+                                    break;
+                                }
+                            }
+                        }
+                        Raylib.EndTextureMode();
+                    }
+
+
+                State = RenderState.Done;
             } break;
             case RenderState.Effects:
             {
