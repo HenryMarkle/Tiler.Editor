@@ -13,6 +13,7 @@ using Serilog;
 using System.Linq;
 using System;
 using Tiler.Editor.Managed;
+using System.Text;
 
 namespace Tiler.Editor;
 
@@ -45,6 +46,7 @@ public class Level
     public Matrix<ConnectionType> Connections = new(DefaultWidth, DefaultHeight, 1);
     public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, DefaultDepth);
     public List<LevelCamera> Cameras = [ new LevelCamera(new Vector2(20, 20)) ];
+    public List<Effect> Effects = [];
     public List<Prop> Props = [];
 
     public void Resize(int width, int height)
@@ -196,6 +198,48 @@ public class Level
             }
         });
 
+        var effectsTask = Task.Run(() =>
+        {
+            var effectsDir = Path.Combine(targetDir, "effects");
+
+            if (!System.IO.Directory.Exists(effectsDir))
+                System.IO.Directory.CreateDirectory(effectsDir);
+            else foreach (var propFile in System.IO.Directory.GetFiles(effectsDir).Where(f => f.EndsWith(".ini"))) 
+                File.Delete(propFile);
+
+            for (var e = 0; e < Effects.Count; e++)
+            {
+                var effect = Effects[e];
+
+                var stringified = new StringBuilder();
+
+                for (var y = 0; y < Height; y++)
+                {
+                    for (var x = 0; x < Width; x++)
+                    {
+                        if(effect.Matrix[x, y, 0] != 0.0f) stringified.Append($"{effect.Matrix[x, y, 0]:F02}");
+
+                        if (x < Width - 1) stringified.Append('|');
+                    }
+
+                    if (y < Height - 1) stringified.Append('|');
+                }
+
+                File.WriteAllText(
+                    Path.Combine(effectsDir, $"{e}.ini"), 
+                    @$"[effect]
+id = {effect.Def.ID}
+
+[options]
+{string.Join(Environment.NewLine, effect.Def.Config.Select((c, index) => $"{c.name} = {c.options[effect.OptionIndices[index]]}"))}
+
+[data]
+matrix = {stringified}
+"
+                );
+            }
+        });
+
         var propsTask = Task.Run(() =>
         {
             var propsDir = Path.Combine(targetDir, "props");
@@ -224,16 +268,15 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
 
         Raylib.ExportImage(Lightmap, Path.Combine(targetDir, "lightmap.png"));
 
-        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask, propsTask);
+        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask, effectsTask, propsTask);
 
         Log.Information("Level saved successfully");
     }
 
-
     /// TODO: Turn those into extensions
 
     /// <exception cref="LevelParseException"></exception>
-    public static Level FromDir(string dir, TileDex tiles, PropDex props)
+    public static Level FromDir(string dir, TileDex tiles, PropDex props, EffectDex effects)
     {
         var iniFile = Path.Combine(dir, "level.ini");
 
@@ -422,6 +465,101 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
             return cameras;
         });
 
+        var effectsTask = Task.Run(() =>
+        {
+            var effectsDir = Path.Combine(dir, "effects");
+
+            if (!System.IO.Directory.Exists(effectsDir))
+                return [];
+
+            var propParser = new FileIniDataParser();
+
+            var files = System.IO.Directory
+                .GetFiles(effectsDir)
+                .Where(d => d.EndsWith(".ini") && int.TryParse(Path.GetFileNameWithoutExtension(d), out _))
+                .OrderBy(d => int.Parse(Path.GetFileNameWithoutExtension(d)));
+
+            List<Effect> parsedEffects = [];
+        
+            foreach (var file in files)
+            {
+                var ini = propParser.ReadFile(file);
+
+                var effectIni = ini["effect"];
+
+                var id = effectIni["id"] ?? throw new EffectParseException("Missing field 'id'");
+
+                if (!effects.Effects.TryGetValue(id, out var def))
+                    throw new EffectParseException($"Undefined ID '{id}'");
+
+                //
+
+                Effect.TargetLayers targetLayers = 0;
+
+                if (effectIni["layers"]?.Split(',') is string[] layers)
+                {
+                    if (layers is []) targetLayers = (Effect.TargetLayers)0b00011111;
+                    else
+                    {
+                        foreach (var layerStr in layers)
+                        {
+                            if (!int.TryParse(layerStr, out var layer) || layer is < 1 or > 5)
+                                throw new EffectParseException($"Invalid layers value");
+
+                            targetLayers |= (Effect.TargetLayers)(2 << layer);
+                        }
+                    }
+                }
+                else
+                {
+                    targetLayers = (Effect.TargetLayers)0b00011111;
+                }
+
+                //
+
+                var configIni = ini["options"];
+
+                var options = new int[def.Config.Length];
+
+                for (var c = 0; c < def.Config.Length; c++)
+                {
+                    var config = def.Config[c];
+
+                    var value = configIni[config.name];
+
+                    var index = Array.IndexOf(config.options, value);
+
+                    if (index < 0)
+                        throw new ParseException($"Invalid effect option '{config.name}' value '{value}'");
+
+                    options[c] = index;
+                }
+
+                //
+
+                var dataStr = ini["data"]?["matrix"]
+                    ?? throw new EffectParseException("Missing 'matrix' field in [data] section");
+
+                var cells = dataStr.Split('|')
+                .Select((c, i) => 
+                    (
+                        c is "" ? 0 : Math.Clamp(float.TryParse(c, out var cell) ? cell : 0, 0, 1),
+                        i % width,                          // x
+                        (i % (width * height)) / width,     // y
+                        0                // z
+                    )
+                );
+
+                var effect = new Effect(def, width, height) { Layers = targetLayers, OptionIndices = options };
+
+                foreach (var (cell, x, y, z) in cells) effect.Matrix[x, y, 0] = cell;
+
+                parsedEffects.Add(effect);
+            }
+
+            return parsedEffects;
+        });
+
         var propsTask = Task.Run(() =>
         {
             var propsDir = Path.Combine(dir, "props");
@@ -489,8 +627,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
             return parsedProps;
         });
 
-
-        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask);
+        Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask, effectsTask, propsTask);
 
         if (geosTask.IsFaulted)
             throw new ParseException("Failed to load geometry", geosTask.Exception);
@@ -503,6 +640,9 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
 
         if (camerasTask.IsFaulted)
             throw new ParseException("Failed to load cameras", camerasTask.Exception);
+
+        if (effectsTask.IsFaulted)
+            throw new ParseException("Failed to load effects", effectsTask.Exception);
 
         if (propsTask.IsFaulted)
             throw new ParseException("Failed to load props", propsTask.Exception);
@@ -542,6 +682,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
             Connections = connectionsTask.Result,
             Tiles = tilesTask.Result,
             Cameras = camerasTask.Result,
+            Effects = effectsTask.Result,
             Props = propsTask.Result
         };
     }

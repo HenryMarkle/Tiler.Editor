@@ -59,6 +59,7 @@ public class Context
 
     public TileDex Tiles { get; set; } = new();
     public PropDex Props { get; set; } = new();
+    public EffectDex Effects { get; set; } = new();
 
     public Camera2D Camera = new() { Zoom = 1, Target = Vector2.Zero };
     public int Layer { get; set; } = 0;

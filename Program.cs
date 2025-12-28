@@ -86,6 +86,7 @@ public class Program {
 
 		var tiledex = TileDex.FromTilesDir(paths.Tiles);
 		var propdex = PropDex.FromPropsDir(paths.Props);
+		var effcdex = EffectDex.FromEffectsDir(paths.Effects);
 
 		Log.Information("Loading context");
 
@@ -95,6 +96,7 @@ public class Program {
 			Viewports = new(70 * 20, 40 * 20, 5),
 			Tiles = tiledex,
 			Props = propdex,
+			Effects = effcdex,
 			Config = config,
 			DebugPrinter = printer
         };
@@ -126,7 +128,7 @@ public class Program {
 				else if (Raylib.IsKeyPressed(KeyboardKey.Four)) viewer.Select<Views.Cameras>();
 				else if (Raylib.IsKeyPressed(KeyboardKey.Five)) viewer.Select<Views.Light>();
 				else if (Raylib.IsKeyPressed(KeyboardKey.Six)) viewer.Select<Views.Light>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Seven)) viewer.Select<Views.Light>();
+				else if (Raylib.IsKeyPressed(KeyboardKey.Seven)) viewer.Select<Views.Effects>();
 				else if (Raylib.IsKeyPressed(KeyboardKey.Eight)) viewer.Select<Views.Props>();
 			}
 
@@ -184,7 +186,9 @@ public class Program {
 				}
 				if (ImGui.MenuItem("Dimensions", null, false, false)) {
 				}
-				if (ImGui.MenuItem("Effects", null, false, false)) {
+				if (ImGui.MenuItem("Effects", "", viewer.SelectedView.GetType() == typeof(Views.Effects)))
+				{
+					viewer.Select<Views.Effects>();
 				}
 				if (ImGui.MenuItem("Props", "", viewer.SelectedView.GetType() == typeof(Views.Props)))
 				{

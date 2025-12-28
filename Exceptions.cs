@@ -87,3 +87,23 @@ public sealed class DuplicatePropException(string propId) : TilerException($"Dup
 {
     public readonly string PropID = propId;
 }
+
+public class EffectParseException : ParseException
+{
+    public EffectParseException()
+    {
+    }
+
+    public EffectParseException(string? message) : base(message)
+    {
+    }
+
+    public EffectParseException(string? message, Exception? innerException) : base(message, innerException)
+    {
+    }
+}
+
+public sealed class DuplicateEffectException(string effectId) : TilerException($"Duplicate effect '{effectId}'")
+{
+    public readonly string EffectID = effectId;
+}

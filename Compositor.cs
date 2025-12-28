@@ -27,6 +27,8 @@ public class CompositorConfiguration
     public readonly bool Tiles = true;
     public readonly List<LevelCamera>? Cameras;
     public readonly bool Props = true;
+
+    public readonly byte PropsOpacity = 240;
 }
 
 public class Compositor(Viewports viewports)
@@ -90,6 +92,11 @@ public class Compositor(Viewports viewports)
                     }
                     break;
             }
+        }
+
+        if (config.Props)
+        {
+            
         }
 
         if (config.Cameras is not null)

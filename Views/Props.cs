@@ -406,12 +406,72 @@ public class Props : BaseView
         EndTextureMode();
     }
 
-    public void UpdatePlacedPropPreview(Prop prop)
-    {
-        throw new NotImplementedException();
-    }
-
     public void DrawPlacedProps()
+    {
+        if (Context.SelectedLevel is not { } level) return;
+
+        foreach (var prop in level.Props)
+        {
+            if (prop.IsHidden) continue;
+
+            if (prop.Preview is null)
+            {
+                if (level.Props.Find(p => p.Def == selectedProp) is { } replica)
+                {
+                    prop.Preview = replica.Preview;
+                }
+                else
+                {
+                    using var rt = new RenderTexture(0, 0, new Color4(0,0,0,0));
+                    DrawPropRT(rt, prop.Def);
+                    prop.Preview = new HybridImage(LoadImageFromTexture(rt.Texture));
+                }
+            }
+            else
+            {
+                prop.Preview.ToTexture();
+
+                var layerTint = (byte)(255 - Math.Abs(prop.Depth - Context.Layer*10)/49.0f*220);
+
+                var quad = new Vector2[4]
+                {
+                    prop.Quad.TopLeft,
+                    prop.Quad.TopRight,
+                    prop.Quad.BottomRight,
+                    prop.Quad.BottomLeft,
+                };
+
+                BeginShaderMode(invbShader);
+
+                SetShaderValueV(
+                    invbShader, 
+                    GetShaderLocation(invbShader, "vertex_pos"), 
+                    quad, 
+                    ShaderUniformDataType.Vec2, 
+                    4
+                );
+
+                // DrawTexturePro(
+                //     texture,
+                //     source: new Rectangle(0, 0, texture.Width, texture.Height),
+                //     dest: prop.Quad.Enclosed(),
+                //     Vector2.Zero,
+                //     0,
+                //     new Color4(layerTint, layerTint, layerTint, layerTint)
+                // );
+
+                RlUtils.DrawTextureQuad(
+                    texture: prop.Preview,
+                    source: new Rectangle(0, 0, prop.Preview.Width, prop.Preview.Height),
+                    quad:   prop.Quad,
+                    tint:   new Color4(layerTint, layerTint, layerTint, layerTint)
+                );
+
+                EndShaderMode();
+            }
+        }
+    }
+    public void UpdatePlacedPropPreview(Prop prop)
     {
         throw new NotImplementedException();
     }
@@ -920,116 +980,7 @@ public class Props : BaseView
         float screenH = GetScreenHeight();
         var screenSize = new Vector2(screenW, screenH);
 
-        foreach (var prop in level.Props)
-        {
-            if (prop.IsHidden) continue;
-
-            if (prop.Preview is null)
-            {
-                if (level.Props.Find(p => p.Def == selectedProp) is { } replica)
-                {
-                    prop.Preview = replica.Preview;
-                }
-                else
-                {
-                    using var rt = new RenderTexture(0, 0);
-                    DrawPropRT(rt, prop.Def);
-                    prop.Preview = new HybridImage(LoadImageFromTexture(rt.Texture));
-                }
-            }
-
-            if (prop.Preview is not null)
-            {
-                prop.Preview.ToTexture();
-
-                var layerTint = (byte)(255 - Math.Abs(prop.Depth - Context.Layer*10)/49.0f*220);
-
-                var quad = new Vector2[4]
-                {
-                    prop.Quad.TopLeft,
-                    prop.Quad.TopRight,
-                    prop.Quad.BottomRight,
-                    prop.Quad.BottomLeft,
-                };
-
-                BeginShaderMode(invbShader);
-
-                SetShaderValueV(
-                    invbShader, 
-                    GetShaderLocation(invbShader, "vertex_pos"), 
-                    quad, 
-                    ShaderUniformDataType.Vec2, 
-                    4
-                );
-
-                // DrawTexturePro(
-                //     texture,
-                //     source: new Rectangle(0, 0, texture.Width, texture.Height),
-                //     dest: prop.Quad.Enclosed(),
-                //     Vector2.Zero,
-                //     0,
-                //     new Color4(layerTint, layerTint, layerTint, layerTint)
-                // );
-
-                RlUtils.DrawTextureQuad(
-                    texture: prop.Preview,
-                    source: new Rectangle(0, 0, prop.Preview.Width, prop.Preview.Height),
-                    quad:   prop.Quad,
-                    tint:   new Color4(layerTint, layerTint, layerTint, layerTint)
-                );
-
-                EndShaderMode();
-            }
-
-            if (prop.IsSelected)
-            {
-                var quad = prop.Quad;
-
-                DrawLineEx(
-                    startPos: quad.TopLeft, 
-                    endPos: quad.TopRight, 
-                    thick: 1, 
-                    color: quad.TopLeft.X < quad.TopRight.X ? Color.SkyBlue : Color.Pink
-                );
-                DrawLineEx(
-                    endPos: quad.TopRight, 
-                    startPos: quad.BottomRight, 
-                    thick: 1, 
-                    color: quad.TopRight.Y < quad.BottomRight.Y ? Color.SkyBlue : Color.Pink
-                );
-                DrawLineEx(
-                    startPos: quad.BottomRight, 
-                    endPos: quad.BottomLeft, 
-                    thick: 1, 
-                    color: quad.BottomRight.X > quad.BottomLeft.X ? Color.SkyBlue : Color.Pink
-                );
-                DrawLineEx(
-                    endPos: quad.BottomLeft, 
-                    startPos: quad.TopLeft, 
-                    thick: 1, 
-                    color: quad.TopLeft.Y < quad.BottomLeft.Y ? Color.SkyBlue : Color.Pink
-                );
-            }
-
-            // Draw prop center(s)
-
-            if (showSelectedPlacedPropsCenter)
-            {
-                if (individualOriginRotation)
-                {
-                    foreach (var sprop in selectedPlacedProps)
-                    {
-                        DrawCircleV(sprop.Quad.Center, 8, Color.White with { A = 200 });
-                        DrawCircleV(sprop.Quad.Center, 6, Color.Magenta with { A = 200 });
-                    }
-                }
-                else
-                {
-                    DrawCircleV(selectedPlacedPropsCenter, 8, Color.White with { A = 200 });
-                    DrawCircleV(selectedPlacedPropsCenter, 6, Color.Magenta with { A = 200 });
-                }
-            }
-        }
+        DrawPlacedProps();
 
         #region Draw Control
 

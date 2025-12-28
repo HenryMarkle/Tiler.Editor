@@ -7,14 +7,15 @@ public class Viewer
 {
     private readonly Context context;
 
-    public Start start;
-    public Geos geos;
-    public Tiles tiles;
-    public Connections connections;
-    public Cameras cameras;
-    public Light light;
-    public Props props;
-    public Render render;
+    public Start Start;
+    public Geos Geos;
+    public Tiles Tiles;
+    public Connections Connections;
+    public Cameras Cameras;
+    public Light Light;
+    public Effects Effects;
+    public Props Props;
+    public Render Render;
 
     public BaseView SelectedView;
 
@@ -36,36 +37,39 @@ public class Viewer
     {
         this.context = context;
 
-        start = new(context);
-        geos = new(context);
-        tiles = new(context);
-        connections = new(context);
-        cameras = new(context);
-        light = new(context);
-        props = new(context);
-        render = new(context);
+        Start = new(context);
+        Geos = new(context);
+        Tiles = new(context);
+        Connections = new(context);
+        Cameras = new(context);
+        Light = new(context);
+        Effects = new(context);
+        Props = new(context);
+        Render = new(context);
 
-        context.LevelSelected += start.OnLevelSelected;
-        context.LevelSelected += geos.OnLevelSelected;
-        context.LevelSelected += tiles.OnLevelSelected;
-        context.LevelSelected += connections.OnLevelSelected;
-        context.LevelSelected += cameras.OnLevelSelected;
-        context.LevelSelected += light.OnLevelSelected;
-        context.LevelSelected += props.OnLevelSelected;
-        context.LevelSelected += render.OnLevelSelected;
+        context.LevelSelected += Start.OnLevelSelected;
+        context.LevelSelected += Geos.OnLevelSelected;
+        context.LevelSelected += Tiles.OnLevelSelected;
+        context.LevelSelected += Connections.OnLevelSelected;
+        context.LevelSelected += Cameras.OnLevelSelected;
+        context.LevelSelected += Light.OnLevelSelected;
+        context.LevelSelected += Effects.OnLevelSelected;
+        context.LevelSelected += Props.OnLevelSelected;
+        context.LevelSelected += Render.OnLevelSelected;
 
-        SelectedView = start;
+        SelectedView = Start;
     } 
 
     ~Viewer()
     {
-        context.LevelSelected -= start.OnLevelSelected;
-        context.LevelSelected -= geos.OnLevelSelected;
-        context.LevelSelected -= tiles.OnLevelSelected;
-        context.LevelSelected -= connections.OnLevelSelected;
-        context.LevelSelected -= cameras.OnLevelSelected;
-        context.LevelSelected -= light.OnLevelSelected;
-        context.LevelSelected -= props.OnLevelSelected;
-        context.LevelSelected -= render.OnLevelSelected;
+        context.LevelSelected -= Start.OnLevelSelected;
+        context.LevelSelected -= Geos.OnLevelSelected;
+        context.LevelSelected -= Tiles.OnLevelSelected;
+        context.LevelSelected -= Connections.OnLevelSelected;
+        context.LevelSelected -= Cameras.OnLevelSelected;
+        context.LevelSelected -= Light.OnLevelSelected;
+        context.LevelSelected -= Effects.OnLevelSelected;
+        context.LevelSelected -= Props.OnLevelSelected;
+        context.LevelSelected -= Render.OnLevelSelected;
     }
 }

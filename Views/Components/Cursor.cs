@@ -84,7 +84,7 @@ public class Cursor(Context context)
             var wheel = GetMouseWheelMove();
             ref var camera = ref Context.Camera;
 
-            if (wheel != 0)
+            if (!IsKeyDown(KeyboardKey.LeftAlt) && !IsKeyDown(KeyboardKey.LeftShift) && !IsKeyDown(KeyboardKey.LeftControl) && wheel != 0)
             {
                 camera.Offset = GetMousePosition();
                 camera.Target = new Vector2(X, Y);

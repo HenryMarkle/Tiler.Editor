@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Tiler.Editor.Rendering.Scripting;
 using Tiler.Editor.Tile;
-using Tiler.Editor.Views;
 
 namespace Tiler.Editor.Rendering;
 
@@ -13,7 +12,6 @@ public class TileRenderer
 
     private readonly Managed.RenderTexture[] layers;
     public readonly Level level;
-    private readonly TileDex tiles;
     private readonly int sublayersPerLayer;
     private readonly int layerMargin;
     private readonly LevelCamera camera;
@@ -22,11 +20,10 @@ public class TileRenderer
     public bool IsDone { get; private set; }
 
 
-    public TileRenderer(Managed.RenderTexture[] layers, Level level, TileDex tiles, LevelCamera camera)
+    public TileRenderer(Managed.RenderTexture[] layers, Level level, LevelCamera camera)
     {
         this.layers = layers;
         this.level = level;
-        this.tiles = tiles;
         this.camera = camera;
         layerMargin = 100;
         sublayersPerLayer = 10;
@@ -53,7 +50,7 @@ public class TileRenderer
 
                         var cell = level.Tiles[mx, my, l] ?? level.DefaultTile;
                         if (cell is null) continue;
-                        if (level.Geos[mx, my, l] is Geo.Air) continue;
+                        if (level.Geos[mx, my, l] is Geo.Air or Geo.CrossPole or Geo.VerticalPole or Geo.HorizontalPole) continue;
 
                         if (!layerCells.TryAdd(cell, [(mx, my)]))
                             layerCells[cell].Add((mx, my));

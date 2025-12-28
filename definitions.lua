@@ -3,6 +3,12 @@
 ---@field Height integer
 RLImage = {}
 
+---@class RLRenderTexture
+---@field Width integer
+---@field Height integer
+---@field Texture RLImage
+RLRenderTexture = {}
+
 ---@class RLRect
 ---@field X number
 ---@field Y number
@@ -35,6 +41,12 @@ RLQuad = {}
 ---@return RLImage
 function Image(path) return {} end
 
+---Creates a render texture
+---@param width integer
+---@param height integer
+---@return RLRenderTexture
+function RenderTexture(width, height) return {} end
+
 ---@class Matrix
 ---@field Width integer
 ---@field Height integer
@@ -49,6 +61,7 @@ MatrixType = {}
 ---@field Width integer
 ---@field Height integer
 ---@field Layers integer
+---@field DefaultTile userdata
 LevelType = {}
 
 ---@type Level
@@ -79,6 +92,13 @@ function Rect(x, y, width, height) return {} end
 ---@param source RLRect?
 ---@param tint RLColor?
 function Draw(image, layer, dest, source, tint) end
+
+---@param rt RLRenderTexture
+---@param image RLImage
+---@param dest RLQuad|RLRect
+---@param source RLRect?
+---@param tint RLColor?
+function DrawOn(rt, image, dest, source, tint) end
 
 ---@param tl RLPoint?
 ---@param tr RLPoint?

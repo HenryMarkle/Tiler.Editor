@@ -26,6 +26,7 @@ public class Renderer
 
     private TileRenderer TileRenderer { get; init; }
     private PropRenderer PropRenderer { get; init; }
+    private EffectRenderer EffectRenderer { get; set; }
 
     public Renderer(Level level, TileDex tiles, PropDex props, LevelCamera? camera = null)
     {
@@ -34,20 +35,21 @@ public class Renderer
         Props = props;
 
         Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
-        for (var l = 0; l < Layers.Length; l++) Layers[l] = 
-            new(Width + LayerMargin*2, Height + LayerMargin*2, new Color4(0, 0, 0, 0), true);
-        
+        for (var l = 0; l < Layers.Length; l++) Layers[l] =
+            new(Width + LayerMargin * 2, Height + LayerMargin * 2, new Color4(0, 0, 0, 0), true);
+
         Lightmap = new(level.Lightmap.Width, level.Lightmap.Height, new Color4(0, 0, 0, 0), true);
-    
+
         ComposedLightmap = new(Width, Height);
         FinalLightmap = new(Width, Height);
         Final = new(Width, Height);
 
-        SelectedCamera = camera ?? level.Cameras.FirstOrDefault() 
+        SelectedCamera = camera ?? level.Cameras.FirstOrDefault()
             ?? throw new RenderException("Level must have at least one camera");
 
-        TileRenderer = new TileRenderer(Layers, Level, Tiles, SelectedCamera);
+        TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
         PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
+        EffectRenderer = new EffectRenderer(Layers, Level, SelectedCamera);
     }
 
     public enum RenderState
@@ -73,79 +75,81 @@ public class Renderer
             case RenderState.Done: return;
             case RenderState.Idle: State = RenderState.Tiles; return;
             case RenderState.Tiles:
-            {
-                TileRenderer.Next();
-                if (TileRenderer.IsDone) State = RenderState.Props;
-            } break;
+                {
+                    TileRenderer.Next();
+                    if (TileRenderer.IsDone) State = RenderState.Props;
+                }
+                break;
             case RenderState.Props:
-            {
-                PropRenderer.Next();
-                if (PropRenderer.IsDone) State = RenderState.Poles;
-            } break;
+                {
+                    PropRenderer.Next();
+                    if (PropRenderer.IsDone) State = RenderState.Poles;
+                }
+                break;
             case RenderState.Poles:
-            {
-                var columns = (Width + LayerMargin*2) / 20;
-                var rows = (Height + LayerMargin*2) / 20;
+                {
+                    var columns = (Width + LayerMargin * 2) / 20;
+                    var rows = (Height + LayerMargin * 2) / 20;
 
-                for (var z = 0; z < 5; z++)
+                    for (var z = 0; z < 5; z++)
                     {
                         Raylib.BeginTextureMode(Layers[z * SublayersPerLayer + 4]);
                         for (var y = 0; y < rows; y++)
                         {
-                            var my = y + (int)(SelectedCamera.Position.Y/20) - (LayerMargin/20);
+                            var my = y + (int)(SelectedCamera.Position.Y / 20) - (LayerMargin / 20);
                             if (my < 0 || my >= Level.Height) continue;
 
                             for (var x = 0; x < columns; x++)
                             {
-                                var mx = x + (int)(SelectedCamera.Position.X/20) - (LayerMargin/20);
+                                var mx = x + (int)(SelectedCamera.Position.X / 20) - (LayerMargin / 20);
                                 if (mx < 0 || mx >= Level.Width) continue;
 
                                 switch (Level.Geos[mx, my, z])
                                 {
                                     case Geo.VerticalPole:
-                                    Raylib.DrawRectangleRec(
-                                        rec:   new Rectangle(
-                                                mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X, 
-                                                Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
-                                                4, 
-                                                20
-                                            ), 
-                                        color: Color.Red
-                                    );
-                                    break;
+                                        Raylib.DrawRectangleRec(
+                                            rec: new Rectangle(
+                                                    mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X,
+                                                    Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                    4,
+                                                    20
+                                                ),
+                                            color: Color.Red
+                                        );
+                                        break;
 
                                     case Geo.HorizontalPole:
-                                    Raylib.DrawRectangleRec(
-                                        rec:   new Rectangle(
-                                            mx * 20 + LayerMargin - SelectedCamera.Position.X, 
-                                            Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
-                                            20, 
-                                            4
-                                        ), 
-                                        color: Color.Red
-                                    );
-                                    break;
+                                        Raylib.DrawRectangleRec(
+                                            rec: new Rectangle(
+                                                mx * 20 + LayerMargin - SelectedCamera.Position.X,
+                                                Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                20,
+                                                4
+                                            ),
+                                            color: Color.Red
+                                        );
+                                        break;
 
                                     case Geo.CrossPole:
-                                    Raylib.DrawRectangleRec(
-                                        rec:   new Rectangle(
-                                                mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X, 
-                                                Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
-                                                4, 
-                                                20
-                                            ), 
-                                        color: Color.Red
-                                    );
-                                    Raylib.DrawRectangleRec(
-                                        rec:   new Rectangle(
-                                            mx * 20 + LayerMargin - SelectedCamera.Position.X, 
-                                            Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y), 
-                                            20, 
-                                            4
-                                        ), 
-                                        color: Color.Red
-                                    );
-                                    break;
+                                        Raylib.DrawRectangleRec(
+                                            rec: new Rectangle(
+                                                    mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X,
+                                                    Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                    4,
+                                                    20
+                                                ),
+                                            color: Color.Red
+                                        );
+                                        Raylib.DrawRectangleRec(
+                                            rec: new Rectangle(
+                                                mx * 20 + LayerMargin - SelectedCamera.Position.X,
+                                                Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                20,
+                                                4
+                                            ),
+                                            color: Color.Red
+                                        );
+                                        break;
                                 }
                             }
                         }
@@ -153,16 +157,23 @@ public class Renderer
                     }
 
 
-                State = RenderState.Done;
-            } break;
+                    State = RenderState.Effects;
+                }
+                break;
             case RenderState.Effects:
-            {
-                
-            } break;
+                {
+                    if (EffectRenderer.IsDone) State = RenderState.Done;
+
+                    var count = 0;
+                    while (!EffectRenderer.IsDone && ++count < 100) 
+                        EffectRenderer.Next();
+                }
+                break;
             case RenderState.Lighting:
-            {
-                
-            } break;
+                {
+
+                }
+                break;
         }
     }
 

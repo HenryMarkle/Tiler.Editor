@@ -6,6 +6,14 @@ using System.Linq;
 using Serilog;
 using Tiler.Editor.Tile;
 
+public class Dex<T> // Unsused
+{
+    public readonly Dictionary<string, T> Defs = [];
+    public readonly Dictionary<string, List<T>> CategoryDefs = [];
+    public readonly List<string> Categories = [];
+    public readonly List<T> UnCategorizedDefs = [];
+}
+
 public class TileDex
 {
     public readonly Dictionary<string, TileDef> Tiles = [];
@@ -104,7 +112,7 @@ public class PropDex
     public void Register(PropDef prop)
     {
         if (!Props.TryAdd(prop.ID, prop))
-            throw new DuplicateTileException(prop.ID);
+            throw new DuplicatePropException(prop.ID);
 
         if (string.IsNullOrEmpty(prop.Category))
         {
@@ -186,6 +194,114 @@ public class PropDex
                 Log.Verbose("[PropDex.FromPropsDir] \t   Failed");
                 Log.Error(
                     "Failed to load prop in directory '{Name}'\n{Exception}", 
+                    Path.GetFileNameWithoutExtension(folder), 
+                    te
+                );
+                continue;
+            }
+        }
+
+        return dex;
+    }
+}
+
+public class EffectDex
+{
+    public readonly Dictionary<string, EffectDef> Effects = [];
+    public readonly Dictionary<string, List<EffectDef>> CategoryEffects = [];
+    public readonly List<string> Categories = [];
+    public readonly List<EffectDef> UnCategorizedEffects = [];
+
+    /// <summary>
+    /// Registers a tile.
+    /// </summary>
+    /// <returns>Returns true if added successfully, false if already exists.</returns>
+    /// <exception cref="DuplicateTileException"></exception>
+    public void Register(EffectDef prop)
+    {
+        if (!Effects.TryAdd(prop.ID, prop))
+            throw new DuplicateEffectException(prop.ID);
+
+        if (string.IsNullOrEmpty(prop.Category))
+        {
+            Log.Verbose("[EffectDex.Register] Effect is uncategorized");
+            
+            UnCategorizedEffects.Add(prop);
+        }
+        else
+        {
+            if (!CategoryEffects.TryGetValue(prop.Category, out var props))
+            {
+                Log.Verbose("[EffectDex.Register] Creating a new category for the effect");
+                
+                CategoryEffects.Add(prop.Category, [ prop ]);
+                Categories.Add(prop.Category);
+            }
+            else
+            {
+                Log.Verbose("[EffectDex.Register] Effect categorized");
+
+                props.Add(prop);
+            }
+        }
+    }
+
+    public void Register(string dir)
+    {
+        if (!Directory.Exists(dir))
+            throw new TilerException($"Effect directory not found");
+
+        try
+        {
+            var effect = EffectDef.FromDir(dir);
+            Register(effect);
+        }
+        catch (TilerException pe)
+        {
+            throw new TileParseException($"Failed to parse effect", pe);
+        }
+    }
+
+    public static EffectDex FromEffectsDir(string dir)
+    {
+        Log.Verbose("[EffectDex.FromEffectsDir] Registering effects from directory '{Path}'", dir);
+
+        if (!Directory.Exists(dir))
+        {
+            Log.Verbose("[EffectDex.FromEffectsDir] Directory was not found; throwing an exception.");
+            throw new DirectoryNotFoundException();
+        }
+
+        var dex = new EffectDex();
+
+        Log.Verbose("[EffectDex.FromEffectsDir] Iterating over designated effect directory:");
+
+        foreach (var folder in Directory.GetDirectories(dir))
+        {
+            var iniFile = Path.Combine(folder, "effect.ini");
+            if (!File.Exists(iniFile))
+            {
+                Log.Verbose("[EffectDex.FromEffectsDir] \t-> Skipping {Name}/ (no effect.ini)", Path.GetFileName(folder));
+                continue;
+            }
+
+            try
+            {
+                Log.Verbose("[EffectDex.FromEffectsDir] \t-> Trying {Name}/", Path.GetFileName(folder));
+                dex.Register(folder);
+                Log.Verbose("[EffectDex.FromEffectsDir] \t   Succeeded");
+            }
+            catch (DuplicateEffectException dpe)
+            {
+                Log.Verbose("[EffectDex.FromEffectsDir] \t   Failed");
+                Log.Warning("Skipping duplicate effect {Effect}", dpe.EffectID);
+                continue;
+            }
+            catch (TilerException te)
+            {
+                Log.Verbose("[EffectDex.FromEffectsDir] \t   Failed");
+                Log.Error(
+                    "Failed to load effect in directory '{Name}'\n{Exception}", 
                     Path.GetFileNameWithoutExtension(folder), 
                     te
                 );
