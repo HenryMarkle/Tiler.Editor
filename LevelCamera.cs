@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Raylib_cs;
 
 namespace Tiler.Editor;
 
@@ -20,10 +21,19 @@ public struct LevelCameraVertex
         Angle = angle;
     }
 
-    public readonly Vector2 Position => new(
-        Distance * MathF.Cos(float.DegreesToRadians(Angle)),
-        Distance * MathF.Sin(float.DegreesToRadians(Angle))
-    );
+    public Vector2 Position
+    {
+        readonly get => new(
+            Distance * MathF.Cos(float.DegreesToRadians(Angle)),
+            Distance * MathF.Sin(float.DegreesToRadians(Angle))
+        );
+
+        set
+        {
+            Distance = Raymath.Vector2Length(value);
+            Angle = (int)float.RadiansToDegrees(MathF.Atan2(value.Y, value.X));
+        }
+    }
 }
 
 public class LevelCamera
@@ -42,19 +52,19 @@ public class LevelCamera
     {
         Position = Vector2.Zero;
         
-        TopLeft = new();
-        TopRight = new();
-        BottomRight = new();
-        BottomLeft = new();
+        TopLeft = new(50, 45);
+        TopRight = new(50, 90 + 45);
+        BottomRight = new(50, 180 + 45);
+        BottomLeft = new(50, -45);
     }
 
     public LevelCamera(Vector2 position)
     {
         Position = position;
         
-        TopLeft = new();
-        TopRight = new();
-        BottomRight = new();
-        BottomLeft = new();
+        TopLeft = new(50, 45);
+        TopRight = new(50, 90 + 45);
+        BottomRight = new(50, 180 + 45);
+        BottomLeft = new(50, -45);
     }
 }

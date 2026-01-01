@@ -27,6 +27,7 @@ public class Renderer
     private TileRenderer TileRenderer { get; init; }
     private PropRenderer PropRenderer { get; init; }
     private EffectRenderer EffectRenderer { get; set; }
+    public LightRenderer LightRenderer { get; set; }
 
     public Renderer(Level level, TileDex tiles, PropDex props, LevelCamera? camera = null)
     {
@@ -50,6 +51,7 @@ public class Renderer
         TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
         PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
         EffectRenderer = new EffectRenderer(Layers, Level, SelectedCamera);
+        LightRenderer = new LightRenderer(Layers, Level.LightDistance, Level.LightDirection);
     }
 
     public enum RenderState
@@ -162,16 +164,19 @@ public class Renderer
                 break;
             case RenderState.Effects:
                 {
-                    if (EffectRenderer.IsDone) State = RenderState.Done;
+                    if (EffectRenderer.IsDone) State = RenderState.Lighting;
 
                     var count = 0;
                     while (!EffectRenderer.IsDone && ++count < 100) 
                         EffectRenderer.Next();
                 }
                 break;
+            
             case RenderState.Lighting:
                 {
+                    if (LightRenderer.IsDone) State = RenderState.Done;
 
+                    LightRenderer.Next();
                 }
                 break;
         }

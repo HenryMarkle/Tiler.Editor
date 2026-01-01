@@ -39,7 +39,7 @@ public class Level
         )
     );
 
-    public int LightDistance { get; set; } = 1;
+    public float LightDistance { get; set; } = 0.3f;
     public int LightDirection { get; set; } = 90;
 
     public Matrix<Geo> Geos = new(DefaultWidth, DefaultHeight, DefaultDepth);
@@ -91,6 +91,12 @@ public class Level
         levelSec.AddKey("name", asName);
         levelSec.AddKey("width", $"{Width}");
         levelSec.AddKey("height", $"{Height}");
+
+        model.Sections.AddSection("light");
+        var lightSec = model["light"];
+
+        lightSec.AddKey("distance", $"{LightDistance}");
+        lightSec.AddKey("direction", $"{LightDirection}");
 
         var parser = new FileIniDataParser();
 
@@ -285,14 +291,19 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
         
         var parser = new FileIniDataParser();
 
-        var data = parser.ReadFile(iniFile)["level"];
+        var data = parser.ReadFile(iniFile);
 
-        var name = data["name"];
-        var width = data["width"]?.ToInt() ?? DefaultWidth;
-        var height = data["height"]?.ToInt() ?? DefaultHeight;
-        var lightDistance = Math.Clamp(data["light_distance"]?.ToInt() ?? 1, 1, 10);
-        var lightDirection = Math.Clamp(data["light_direction"]?.ToInt() ?? 90, 0, 360);
-        _ = tiles.Tiles.TryGetValue(data["default_tile"] ?? "", out TileDef? defaultTile);
+        var levelSec = data["level"];
+
+        var name = levelSec["name"];
+        var width = levelSec["width"]?.ToInt() ?? DefaultWidth;
+        var height = levelSec["height"]?.ToInt() ?? DefaultHeight;
+        _ = tiles.Tiles.TryGetValue(levelSec["default_tile"] ?? "", out TileDef? defaultTile);
+
+        var lightSec = data["light"];
+
+        var lightDistance = Math.Clamp(lightSec["distance"]?.ToFloat() ?? 0.3f, 0, 1f);
+        var lightDirection = Math.Clamp(lightSec["direction"]?.ToInt() ?? 90, 0, 360);
 
         var geosTask = Task.Run(() =>
         {

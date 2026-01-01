@@ -21,7 +21,7 @@ public class Program {
 
 		#if DEBUG
 		Log.Logger = new LoggerConfiguration()
-			.MinimumLevel.Verbose()
+			.MinimumLevel.Debug()
 			.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
 			.CreateLogger();
 		#else
@@ -51,7 +51,7 @@ public class Program {
 		Log.Information("Initializing window");
 
 		#if DEBUG
-		// Raylib.SetTraceLogLevel(TraceLogLevel.Error);
+		// Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
 		#else
 		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
 		#endif

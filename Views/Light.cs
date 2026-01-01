@@ -170,10 +170,10 @@ public class Light : BaseView
         
         if (IsKeyDown(KeyboardKey.K))
         {
-            level.LightDistance = Math.Clamp(level.LightDistance + multiplier, 1, 10);
+            level.LightDistance = Math.Clamp(level.LightDistance + multiplier*0.1f, 0, 1f);
         } else if (IsKeyDown(KeyboardKey.J))
         {
-            level.LightDistance = Math.Clamp(level.LightDistance - multiplier, 1, 10);
+            level.LightDistance = Math.Clamp(level.LightDistance - multiplier*0.1f, 0, 1f);
         }
 
 
@@ -281,9 +281,9 @@ public class Light : BaseView
         DrawTextureV(
             texture: Context.Viewports.Lightmap.Texture, 
             position: new Vector2(
-                -Context.SelectedLevel!.LightDistance * MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
-                Context.SelectedLevel!.LightDistance * MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
-            ) - (Vector2.One * Viewports.LightmapMargin), 
+                -MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
+                MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
+            ) * (Context.SelectedLevel!.LightDistance * 10) - (Vector2.One * Viewports.LightmapMargin), 
             tint:    Color.Black with { A = 50, G = 50 }
         );
 
@@ -292,7 +292,7 @@ public class Light : BaseView
             texture: Context.Viewports.Lightmap.Texture, 
             posX:    -Viewports.LightmapMargin, 
             posY:    -Viewports.LightmapMargin, 
-            tint:    Color.Black with { A = 100 }
+            tint:    Color.Black with { A = 120 }
         );
 
         if (selectedBrush is not null)
@@ -319,14 +319,14 @@ public class Light : BaseView
 
         DrawCircleLinesV(
             center: mainCircleCenter,
-            radius: Context.SelectedLevel!.LightDistance * 10,
+            radius: Context.SelectedLevel!.LightDistance * 100,
             color:  Color.Red
         );
 
         DrawCircleV(
             center: mainCircleCenter + new Vector2(
-                Context.SelectedLevel!.LightDistance * 10 * MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
-                -Context.SelectedLevel!.LightDistance * 10 * MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
+                Context.SelectedLevel!.LightDistance * 100 * MathF.Cos(float.DegreesToRadians(Context.SelectedLevel!.LightDirection)),
+                -Context.SelectedLevel!.LightDistance * 100 * MathF.Sin(float.DegreesToRadians(Context.SelectedLevel!.LightDirection))
             ),
             radius: 10,
             color:  Color.Red

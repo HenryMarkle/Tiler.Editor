@@ -42,7 +42,11 @@ public class EffectRenderer
         sublayersPerLayer = 10;
         IsDone = false;
 
-        if (level.Effects.Count == 0) IsDone = true;
+        if (level.Effects.Count == 0)
+        {
+            IsDone = true;
+            return;
+        }
 
         X = (int)(camera.Position.X - LayerMargin)/20;
         Y = (int)(camera.Position.Y - LayerMargin)/20;

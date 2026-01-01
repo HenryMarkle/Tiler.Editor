@@ -290,7 +290,9 @@ public class Effects : BaseView
 
         if (ImGui.Begin("Effects##EffectList"))
         {
-            if (selectedEffect is null) ImGui.BeginDisabled();
+            var disableRemove = selectedEffect is null;
+
+            if (disableRemove) ImGui.BeginDisabled();
             if (ImGui.Button("Remove", ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 var index = level.Effects.IndexOf(selectedEffect!);
@@ -305,7 +307,7 @@ public class Effects : BaseView
                     selectedEffect = null;
                 }
             }
-            if (selectedEffect is null) ImGui.EndDisabled();
+            if (disableRemove) ImGui.EndDisabled();
 
             if (ImGui.BeginListBox("##Effects", ImGui.GetContentRegionAvail()))
             {
