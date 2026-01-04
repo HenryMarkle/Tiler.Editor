@@ -91,15 +91,15 @@ public class Tiles : BaseView
                 {
                     case Geo.Solid:
                     case Geo.Wall:
-                        DrawRectangle(x * 20 + 4, y * 20 + 4, 20 - 8, 20 - 8, tile.Color);
+                        DrawRectangle(x * 20 + 5, y * 20 + 5, 20 - 10, 20 - 10, tile.Color);
                     break;
 
                     case Geo.Slab:
-                        DrawRectangle(x * 20 + 4, y * 20 + 10 + 4, 20 - 8, 10 - 8, tile.Color);
+                        DrawRectangle(x * 20 + 5, y * 20 + 10 + 5, 20 - 10, 10 - 10, tile.Color);
                     break;
 
                     case Geo.Platform:
-                        DrawRectangle(x * 20 + 4, y * 20 + 4, 20 - 8, 10 - 8, tile.Color);
+                        DrawRectangle(x * 20 + 5, y * 20 + 5, 20 - 10, 10 - 10, tile.Color);
                     break;
 
                     case Geo.SlopeNW:
@@ -203,15 +203,15 @@ public class Tiles : BaseView
             {
                 case Geo.Solid:
                 case Geo.Wall:
-                    DrawRectangle(mx * 20 + 4, my * 20 + 4, 20 - 8, 20 - 8, tile.Color);
+                    DrawRectangle(mx * 20 + 5, my * 20 + 5, 20 - 10, 20 - 10, tile.Color);
                 break;
 
                 case Geo.Slab:
-                    DrawRectangle(mx * 20 + 4, my * 20 + 10 + 4, 20 - 8, 10 - 8, tile.Color);
+                    DrawRectangle(mx * 20 + 5, my * 20 + 10 + 5, 20 - 10, 10 - 10, tile.Color);
                 break;
 
                 case Geo.Platform:
-                    DrawRectangle(mx * 20 + 4, my * 20 + 4, 20 - 8, 10 - 8, tile.Color);
+                    DrawRectangle(mx * 20 + 5, my * 20 + 5, 20 - 10, 10 - 10, tile.Color);
                 break;
 
                 case Geo.SlopeNW:

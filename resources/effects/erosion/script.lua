@@ -27,8 +27,6 @@ function Render(x, y)
                 shaderValues = {
                     texture0 = layer,
                     strength = strength,
-                    x = x,
-                    y = y,
                     a = math.random() * 20 - 10,
                     b = math.random() * 20 - 10,
                     c = math.random() * 20 - 10,

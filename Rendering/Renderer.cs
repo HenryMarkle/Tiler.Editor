@@ -10,30 +10,65 @@ public class Renderer
     public const int Width = 1400;
     public const int Height = 800;
 
+    public struct Configuration
+    {
+        public bool AllCameras;
+        public bool[] Cameras;
+        public bool Geometry;
+
+        public bool Tiles;
+        public bool Props;
+        public bool Effects;
+        public bool Light;
+
+        public Configuration()
+        {
+            AllCameras = true;
+            Cameras = [];
+            Geometry = true;
+            
+            Tiles = true;
+            Props = true;
+            Effects = true;
+            Light = true;
+        }
+    }
+
+    public Configuration Config { get; init; }
+
     public Level Level { get; init; }
+    public string OutputDir { get; init; }
     public TileDex Tiles { get; init; }
     public PropDex Props { get; init; }
     public int SublayersPerLayer { get; init; } = 10;
     public int LayerMargin { get; init; } = 100;
 
-    public LevelCamera SelectedCamera { get; private set; }
+    public int CurrentCameraIndex { get; private set; }
+
+    public LevelCamera SelectedCamera => Level.Cameras[CurrentCameraIndex];
 
     public Managed.RenderTexture[] Layers { get; private set; }
     public Managed.Texture Lightmap { get; private set; }
-    public Managed.RenderTexture ComposedLightmap { get; private set; }
-    public Managed.RenderTexture FinalLightmap { get; private set; }
     public Managed.RenderTexture Final { get; private set; }
 
-    private TileRenderer TileRenderer { get; init; }
-    private PropRenderer PropRenderer { get; init; }
-    private EffectRenderer EffectRenderer { get; set; }
-    public LightRenderer LightRenderer { get; set; }
+    public TileRenderer TileRenderer { get; private set; }
+    public PropRenderer PropRenderer { get; private set; }
+    public EffectRenderer EffectRenderer { get; private set; }
+    public LightRenderer LightRenderer { get; private set; }
 
-    public Renderer(Level level, TileDex tiles, PropDex props, LevelCamera? camera = null)
-    {
+    public Renderer(
+        Level level, 
+        TileDex tiles, 
+        PropDex props, 
+        string outputDir
+    ) {
+        Config = new();
+        
         Level = level;
         Tiles = tiles;
         Props = props;
+
+        OutputDir = outputDir;
 
         Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
         for (var l = 0; l < Layers.Length; l++) Layers[l] =
@@ -41,12 +76,10 @@ public class Renderer
 
         Lightmap = new Managed.Texture(Level.Lightmap);
 
-        ComposedLightmap = new(Width, Height);
-        FinalLightmap = new(Width, Height);
         Final = new(Width, Height);
 
-        SelectedCamera = camera ?? level.Cameras.FirstOrDefault()
-            ?? throw new RenderException("Level must have at least one camera");
+        if (level.Cameras.Count == 0) 
+            throw new RenderException("Level must have at least one camera");
 
         TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
         PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
@@ -62,6 +95,8 @@ public class Renderer
         Poles,
         Effects,
         Lighting,
+        Encoding,
+        Finalizing,
         Done,
         Aborted
     }
@@ -174,11 +209,39 @@ public class Renderer
             
             case RenderState.Lighting:
                 {
-                    if (LightRenderer.IsDone) State = RenderState.Done;
+                    if (LightRenderer.IsDone) State = RenderState.Encoding;
 
                     LightRenderer.Next();
                 }
                 break;
+
+            case RenderState.Encoding:
+                {
+                    // Encode
+
+                    // Reset buffers & renderers
+
+                    if (CurrentCameraIndex + 1 >= Level.Cameras.Count)
+                    {
+                        State = RenderState.Finalizing;
+                        return;
+                    }
+
+                    CurrentCameraIndex++;
+
+                    foreach (var layer in Layers) layer.Clear();
+                    Final.Clear();
+
+                    TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
+                    PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
+                    EffectRenderer = new EffectRenderer(Layers, Level, SelectedCamera);
+                    LightRenderer = new LightRenderer(Layers, Lightmap, Level.LightDistance, Level.LightDirection);
+                }
+            break;
+
+            case RenderState.Finalizing:
+            State = RenderState.Done;
+            break;
         }
     }
 

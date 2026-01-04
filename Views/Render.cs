@@ -173,11 +173,29 @@ void main()
 
     private RenderTexture preview;
 
+    private bool showOptions;
+    private Renderer.Configuration rendererConfig;
+
+    public override void OnLevelSelected(Level level)
+    {
+        rendererConfig = new()
+        {
+            AllCameras = true,
+            Cameras = [..level.Cameras.Select(_ => true)]  
+        };
+    }
+
     public override void OnViewSelected()
     {
         if (Context.SelectedLevel is not { } level) return;
 
         level.Lightmap = new Managed.Image(LoadImageFromTexture(Context.Viewports.Lightmap.Texture));
+
+        rendererConfig = new()
+        {
+            AllCameras = true,
+            Cameras = [..level.Cameras.Select(_ => true)]  
+        };
     }
 
     public override void Process()
@@ -298,6 +316,8 @@ void main()
 
     public override void GUI()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         if (ImGui.Begin("Level Render", 
                 ImGuiWindowFlags.NoMove | 
                 ImGuiWindowFlags.NoResize | 
@@ -310,17 +330,30 @@ void main()
             ImGui.Columns(2);
             ImGui.SetColumnWidth(0, 200);
 
-            var isDisabled = renderer?.State is not null and not (Renderer.RenderState.Done or Renderer.RenderState.Idle);
+            var isDisabled = renderer?.State is not null and not (Renderer.RenderState.Done or Renderer.RenderState.Idle or Renderer.RenderState.Aborted);
             if (isDisabled) ImGui.BeginDisabled();
             if (ImGui.Button("Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 if (renderer is null or { State: Renderer.RenderState.Done })
                 {
-                    renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props);
+                    renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs.Levels)
+                    {
+                        Config = rendererConfig
+                    };
                     GC.Collect();
                 }
             }
             if (isDisabled) ImGui.EndDisabled();
+
+            if (ImGui.Button("Options", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            {
+                showOptions = true;
+            }
+
+            if (!isDisabled) ImGui.BeginDisabled();
+            if (ImGui.Button("Abort", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                renderer?.Abort();
+            if (!isDisabled) ImGui.EndDisabled();
 
             ImGui.Text($"State: {renderer?.State}");
 
@@ -341,5 +374,40 @@ void main()
         }
 
         ImGui.End();
+
+        if (showOptions) ImGui.OpenPopup("Render Options##RendererOptions");
+
+        if (ImGui.BeginPopupModal("Render Options##RendererOptions", ImGuiWindowFlags.NoCollapse))
+        {
+            ImGui.Checkbox("Geometry output", ref rendererConfig.Geometry);
+
+            ImGui.SeparatorText("Visuals");
+
+            ImGui.Checkbox("Tiles", ref rendererConfig.Tiles);
+            ImGui.Checkbox("Props", ref rendererConfig.Props);
+            ImGui.Checkbox("Effects", ref rendererConfig.Effects);
+            ImGui.Checkbox("Light", ref rendererConfig.Light);
+
+            ImGui.SeparatorText("Cameras");
+
+            ImGui.Checkbox("All", ref rendererConfig.AllCameras);
+
+            if (rendererConfig.AllCameras) ImGui.BeginDisabled();
+            for (var c = 0; c < level.Cameras.Count; c++)
+            {
+                var selected = rendererConfig.Cameras[c];
+
+                if (ImGui.Checkbox($"Camera #{c+1}", ref selected))
+                    rendererConfig.Cameras[c] = selected;
+            }
+            if (rendererConfig.AllCameras) ImGui.EndDisabled();
+
+            if (ImGui.Button("Close"))
+            {
+                showOptions = false;
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
+        }
     }
 }

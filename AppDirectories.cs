@@ -9,6 +9,7 @@ public class AppDirectories
     public string Executable { get; init; }
     public string Logs { get; init; }
     public string Projects { get; init; }
+    public string Levels { get; init; }
     public string Assets { get; init; }
     public string Resources { get; init; }
     public string Tiles { get; init; }
@@ -43,6 +44,7 @@ public class AppDirectories
 
         Logs      = Combine(Executable, "logs");
         Projects  = Combine(Executable, "projects");
+        Levels    = Combine(Executable, "levels");
         Assets    = Combine(Executable, "assets");
         Resources = Combine(Executable, "resources");
 
