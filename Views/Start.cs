@@ -1,12 +1,13 @@
 namespace Tiler.Editor.Views;
 
-using System.Numerics;
 
 using Raylib_cs;
 using ImGuiNET;
 using static ImGuiNET.ImGui;
 
 using Tiler.Editor;
+
+using System.Numerics;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -53,39 +54,41 @@ public class Start : BaseView
     {
         if (Raylib.IsKeyPressed(KeyboardKey.N))
         {
-            var level = new Level
-            {
-                Directory = Context.Dirs.Projects,
-            };
+            // var level = new Level
+            // {
+            //     Directory = Context.Dirs.Projects,
+            // };
 
-            for (int z = 0; z < 2; z++)
-            {
-                for (int y = 0; y < level.Height; y++)
-                {
-                    for (int x = 0; x < level.Width; x++)
-                    {
-                        level.Geos[x, y, z] = Geo.Solid;
-                    }
-                }
-            }
+            // for (int z = 0; z < 2; z++)
+            // {
+            //     for (int y = 0; y < level.Height; y++)
+            //     {
+            //         for (int x = 0; x < level.Width; x++)
+            //         {
+            //             level.Geos[x, y, z] = Geo.Solid;
+            //         }
+            //     }
+            // }
 
-            Context.AddLevel(level);
+            // Context.AddLevel(level);
 
-            Context.SelectLevel(level);
-            Context.Viewer.Select<Geos>();
+            // Context.SelectLevel(level);
+            Context.Viewer.Select<Create>();
         }
     }
 
     public override void GUI()
     {
-        if (ImGui.IsKeyPressed(ImGuiKey.UpArrow))
+        Exception? loadExcep = null;
+
+        if (IsKeyPressed(ImGuiKey.UpArrow))
         {
             selectedEntryIndex--;
 
             if (selectedEntryIndex < 0) 
                 selectedEntryIndex = entries.Count - 1;
         }
-        else if (ImGui.IsKeyPressed(ImGuiKey.DownArrow))
+        else if (IsKeyPressed(ImGuiKey.DownArrow))
         {
             selectedEntryIndex++;
 
@@ -93,7 +96,32 @@ public class Start : BaseView
                 selectedEntryIndex = 0;
         }
 
-        Exception? loadExcep = null;
+        if (IsKeyPressed(ImGuiKey.Enter) && selectedEntryIndex >= 0 && selectedEntryIndex < entries.Count)
+        {
+            if (isDir[selectedEntryIndex])
+            {
+                GoTo(entries[selectedEntryIndex]);
+            }
+            else
+            {
+                Log.Information("Loading level {Name}", projectNames[selectedEntryIndex]);
+
+                try
+                {
+                    var level = Level.FromDir(entries[selectedEntryIndex], Context.Tiles, Context.Props, Context.Effects);
+                    Context.AddLevel(level);
+                    Context.SelectLevel(level);
+                    Context.Viewer.Select<Geos>();
+
+                    Log.Information("Level loaded successfully");
+                }
+                catch (Exception e)
+                {
+                    Log.Error("Failed to load level at {Dir}\n{Exception}", entries[selectedEntryIndex], e);
+                    loadExcep = e;
+                }
+            }
+        }
 
         if (Begin(
             "Project Explorer", 

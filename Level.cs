@@ -19,8 +19,8 @@ namespace Tiler.Editor;
 
 public class Level
 {
-    public const int DefaultWidth = 76;
-    public const int DefaultHeight = 46;
+    public const int DefaultWidth = 70;
+    public const int DefaultHeight = 40;
     public const int DefaultDepth = 5;
 
     public string? Name = "New Level";
@@ -48,6 +48,25 @@ public class Level
     public List<LevelCamera> Cameras = [ new LevelCamera(new Vector2(20, 20)) ];
     public List<Effect> Effects = [];
     public List<Prop> Props = [];
+
+    public Level() {}
+    public Level(int width, int height)
+    {
+        Geos = new(width, height, DefaultDepth);
+        Connections = new(width, height, 1);
+        Tiles = new(width, height, DefaultDepth);
+
+        Lightmap = new(
+            Raylib.GenImageColor(
+                width + Viewports.LightmapMargin*2, 
+                height + Viewports.LightmapMargin*2, 
+                new Color(0,0,0,0)
+            )
+        );
+    
+        Width = width;
+        Height = height;
+    }
 
     public void Resize(int width, int height)
     {

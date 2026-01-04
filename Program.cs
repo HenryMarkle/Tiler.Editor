@@ -120,7 +120,7 @@ public class Program {
 			printer.Reset();
 			Unloader.Dequeue(20);
 
-			if (viewer.SelectedView.GetType() != typeof(Views.Start))
+			if (viewer.SelectedView.GetType() != typeof(Views.Start) && viewer.SelectedView.GetType() != typeof(Views.Create))
 			{
 				if (Raylib.IsKeyPressed(KeyboardKey.One)) viewer.Select<Views.Geos>();
 				else if (Raylib.IsKeyPressed(KeyboardKey.Two)) viewer.Select<Views.Tiles>();
@@ -144,7 +144,7 @@ public class Program {
 			rlImGui.Begin();
 			
 			ImGui.BeginMainMenuBar();
-			if (viewer.SelectedView.GetType() != typeof(Views.Start))
+			if (viewer.SelectedView.GetType() != typeof(Views.Start) && viewer.SelectedView.GetType() != typeof(Views.Create))
             {
                 if (ImGui.BeginMenu("Project")) {
 					if (ImGui.MenuItem("Save", "CTRL + S", false, context.SelectedLevel is not null))
@@ -166,7 +166,7 @@ public class Program {
 
 					ImGui.MenuItem("Save As", "CTRL + SHIFT + S", false, false);
 					if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select<Views.Start>();
-					ImGui.MenuItem("Create", "CTRL + N", false, false);
+					if (ImGui.MenuItem("Create", "CTRL + N")) viewer.Select<Views.Create>();
 					ImGui.EndMenu();
 				}
 				if (ImGui.MenuItem("Geometry", "", viewer.SelectedView.GetType() == typeof(Views.Geos))) {

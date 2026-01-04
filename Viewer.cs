@@ -8,6 +8,7 @@ public class Viewer
     private readonly Context context;
 
     public Start Start;
+    public Create Create;
     public Geos Geos;
     public Tiles Tiles;
     public Connections Connections;
@@ -38,6 +39,7 @@ public class Viewer
         this.context = context;
 
         Start = new(context);
+        Create = new(context);
         Geos = new(context);
         Tiles = new(context);
         Connections = new(context);
@@ -48,6 +50,7 @@ public class Viewer
         Render = new(context);
 
         context.LevelSelected += Start.OnLevelSelected;
+        context.LevelSelected += Create.OnLevelSelected;
         context.LevelSelected += Geos.OnLevelSelected;
         context.LevelSelected += Tiles.OnLevelSelected;
         context.LevelSelected += Connections.OnLevelSelected;
@@ -63,6 +66,7 @@ public class Viewer
     ~Viewer()
     {
         context.LevelSelected -= Start.OnLevelSelected;
+        context.LevelSelected -= Create.OnLevelSelected;
         context.LevelSelected -= Geos.OnLevelSelected;
         context.LevelSelected -= Tiles.OnLevelSelected;
         context.LevelSelected -= Connections.OnLevelSelected;
