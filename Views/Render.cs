@@ -173,6 +173,13 @@ void main()
 
     private RenderTexture preview;
 
+    public override void OnViewSelected()
+    {
+        if (Context.SelectedLevel is not { } level) return;
+
+        level.Lightmap = new Managed.Image(LoadImageFromTexture(Context.Viewports.Lightmap.Texture));
+    }
+
     public override void Process()
     {
         if (renderer 

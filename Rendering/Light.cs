@@ -14,6 +14,7 @@ public class LightRenderer
     public const int Width = 1400 + 100*2;
     public const int Height = 800 + 100*2;
 
+    public Texture Lightmap { get; private set; }
     public RenderTexture Commulative { get; private set; }
     public RenderTexture Final { get; private set; }
     public RenderTexture[] Layers { get; init; }
@@ -24,9 +25,10 @@ public class LightRenderer
     private float Distance { get; init; }
     private int Direction { get; init; }
 
-    public LightRenderer(RenderTexture[] layers, float distance, int direction)
+    public LightRenderer(RenderTexture[] layers, Texture lightmap, float distance, int direction)
     {
         Layers = layers;
+        Lightmap = lightmap;
         Distance = distance;
         Direction = direction;
 
@@ -83,6 +85,28 @@ void main() {
     else finalColor = white;
 }"
         );
+
+        var projection = new Vector2(
+            -MathF.Cos(float.DegreesToRadians(Direction)),
+            MathF.Sin(float.DegreesToRadians(Direction))
+        );
+
+        projection = Raymath.Vector2Normalize(projection);
+        projection = (projection * Progress) + (projection * Distance * 10);
+
+        Raylib.BeginShaderMode(SilhouetteShader);
+        Raylib.SetShaderValueTexture(
+            shader:   SilhouetteShader, 
+            locIndex: Raylib.GetShaderLocation(SilhouetteShader, "texture0"), 
+            texture:  Lightmap
+        );
+        RlUtils.DrawTextureRT(
+            rt:          Commulative, 
+            texture:     Lightmap,
+            source:      new Rectangle(0, 0, Lightmap.Width, Lightmap.Height),
+            destination: new Rectangle(projection.X, projection.Y, Lightmap.Width, Lightmap.Height)
+        );
+        Raylib.EndShaderMode();
     }
 
     ~LightRenderer()

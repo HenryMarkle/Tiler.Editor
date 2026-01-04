@@ -208,6 +208,11 @@ public class Effects : BaseView
 
         if (redrawMain)
         {
+            BeginTextureMode(Context.Viewports.Props);
+            ClearBackground(new Color(0, 0, 0, 0));
+            Context.Viewer.Props.DrawPlacedProps();
+            EndTextureMode();
+
             BeginTextureMode(Context.Viewports.Main);
             ClearBackground(new Color(0, 0, 0, 0));
             for (int l = Context.Viewports.Depth - 1; l > -1; --l)
@@ -222,20 +227,19 @@ public class Effects : BaseView
             DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, 0, 0, Color.Black with { A = 210 });
             DrawTexture(Context.Viewports.Tiles[Context.Layer].Raw.Texture, 0, 0, Color.White with { A = 210 });
 
+            DrawTexture(Context.Viewports.Props.Texture, 0, 0, Color.White);
+
             DrawRectangle(0, 0, Context.Viewports.Main.Width, Context.Viewports.Main.Height, Color.Magenta with { A = (byte)tintOpacity });
-
+            
             DrawTexture(Context.Viewports.Effect.Texture, 0, 0, Color.White);
-
+            
             EndTextureMode();
-
-            Context.Viewer.Props.DrawPlacedProps();
             
             redrawMain = false;
         }
 
         BeginMode2D(Context.Camera);
         DrawTexture(Context.Viewports.Main.Texture, 0, 0, Color.White);
-
 
         cursor.DrawCursor();
 
@@ -306,6 +310,8 @@ public class Effects : BaseView
                 {
                     selectedEffect = null;
                 }
+
+                redrawEffects = true;
             }
             if (disableRemove) ImGui.EndDisabled();
 
@@ -318,6 +324,7 @@ public class Effects : BaseView
                     if (ImGui.Selectable($"{e}. {effect.Def.Name}", effect == selectedEffect))
                     {
                         selectedEffect = effect;
+                        redrawEffects = true;
                     }
                 }
 

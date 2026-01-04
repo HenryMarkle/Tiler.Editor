@@ -19,7 +19,7 @@ public class Renderer
     public LevelCamera SelectedCamera { get; private set; }
 
     public Managed.RenderTexture[] Layers { get; private set; }
-    public Managed.RenderTexture Lightmap { get; private set; }
+    public Managed.Texture Lightmap { get; private set; }
     public Managed.RenderTexture ComposedLightmap { get; private set; }
     public Managed.RenderTexture FinalLightmap { get; private set; }
     public Managed.RenderTexture Final { get; private set; }
@@ -39,7 +39,7 @@ public class Renderer
         for (var l = 0; l < Layers.Length; l++) Layers[l] =
             new(Width + LayerMargin * 2, Height + LayerMargin * 2, new Color4(0, 0, 0, 0), true);
 
-        Lightmap = new(level.Lightmap.Width, level.Lightmap.Height, new Color4(0, 0, 0, 0), true);
+        Lightmap = new Managed.Texture(Level.Lightmap);
 
         ComposedLightmap = new(Width, Height);
         FinalLightmap = new(Width, Height);
@@ -51,7 +51,7 @@ public class Renderer
         TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
         PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
         EffectRenderer = new EffectRenderer(Layers, Level, SelectedCamera);
-        LightRenderer = new LightRenderer(Layers, Level.LightDistance, Level.LightDirection);
+        LightRenderer = new LightRenderer(Layers, Lightmap, Level.LightDistance, Level.LightDirection);
     }
 
     public enum RenderState

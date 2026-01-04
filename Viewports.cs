@@ -25,7 +25,7 @@ public class Viewports
         Connections.Resize(width, height);
         Lightmap.Resize(width + LightmapMargin*2, height + LightmapMargin*2);
         Effect.Resize(width, height);
-        Props.Resize(width + LightmapMargin*2, height + LightmapMargin*2);
+        Props.Resize(width, height);
 
         for (int l = 0; l < Depth; l++)
         {
@@ -47,7 +47,7 @@ public class Viewports
         Connections = new(width, height, new Color4(0,0,0,0), true);
         Lightmap = new(width + LightmapMargin*2, height + LightmapMargin*2, new Color4(0,0,0,0), true);
         Effect = new(width, height, new Color4(0,0,0,0), true);
-        Props = new(width + LightmapMargin*2, height + LightmapMargin*2, new Color4(0,0,0,0), true);
+        Props = new(width, height, new Color4(0,0,0,0), true);
 
         Geos = new RenderTexture[depth];
         Tiles = new RenderTexture[depth];
