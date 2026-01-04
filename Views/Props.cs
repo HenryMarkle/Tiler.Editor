@@ -96,7 +96,7 @@ public class Props : BaseView
 
     //
 
-    private readonly Shader invbShader;
+    private readonly Raylib_cs.Shader invbShader;
 
     //
     private bool contPlacementLock;

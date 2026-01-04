@@ -23,7 +23,7 @@ public class Light : BaseView
     private float brushRotation;
     private bool isRotatingBrushWithCursor;
     private Vector2 pinnedBrushPos;
-    private readonly Shader eraseShader;
+    private readonly Raylib_cs.Shader eraseShader;
     private Rectangle lightConfigBkgRect = new(10, GetScreenHeight() - 210, 200, 200);
 
     public Light(Context context) : base(context)

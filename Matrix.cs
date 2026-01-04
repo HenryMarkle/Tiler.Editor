@@ -14,7 +14,7 @@ public class Matrix<T>
         set => array[x, y, z] = value;
     }
 
-    public T At(int x, int y, int z) => array[x, y, z];
+    public T At(int x, int y = 0, int z = 0) => array[x, y, z];
     public string? StrAt(int x, int y, int z) => array[x, y, z]?.ToString();
 
     public int Width => array.GetLength(0);

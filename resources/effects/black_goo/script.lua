@@ -39,13 +39,13 @@ function Render()
                     back.Height = back.Height + 13
                 end
             
-                Draw(
-                    blob,
-                    0,
-                    back,
-                    source,
-                    Color(0, 255, 0, 255)
-                )
+                Draw({
+                    layer = 0,
+                    texture = blob,
+                    source = source,
+                    dest = back,
+                    tint = Color(0, 255, 0, 255)
+                })
             end
         end
     end
@@ -90,13 +90,13 @@ function Render()
                     front.Height = front.Height - addY
                 end
                 
-                Draw(
-                    blob,
-                    0,
-                    front,
-                    source,
-                    Color(255, 0, 0, 255)
-                )
+                Draw({
+                    texture = blob,
+                    layer = 0,
+                    dest = front,
+                    source = source,
+                    tint = Color(255, 0, 0, 255)
+                })
             end
         end
     end

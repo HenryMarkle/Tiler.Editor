@@ -168,7 +168,7 @@ void main()
 
     private Renderer? renderer;
 
-    private readonly Shader composeShader;
+    private readonly Raylib_cs.Shader composeShader;
     // private readonly Shader vflipShader;
 
     private RenderTexture preview;
@@ -323,7 +323,7 @@ void main()
             var ratio = space / new Vector2(preview.Width, preview.Height);
             var minRatio = MathF.Min(ratio.X, ratio.Y);
 
-            if (renderer?.State is Renderer.RenderState.Lighting or Renderer.RenderState.Done)
+            if (renderer?.State is Renderer.RenderState.Lighting)
             {
                 rlImGui_cs.rlImGui.ImageSize(renderer!.LightRenderer.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
             } 

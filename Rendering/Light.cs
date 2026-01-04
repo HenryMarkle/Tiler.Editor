@@ -18,8 +18,8 @@ public class LightRenderer
     public RenderTexture Final { get; private set; }
     public RenderTexture[] Layers { get; init; }
 
-    private Shader SilhouetteShader { get; init; }
-    private Shader MaskShader { get; init; }
+    private Raylib_cs.Shader SilhouetteShader { get; init; }
+    private Raylib_cs.Shader MaskShader { get; init; }
 
     private float Distance { get; init; }
     private int Direction { get; init; }
