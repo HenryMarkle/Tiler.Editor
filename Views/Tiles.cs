@@ -166,6 +166,7 @@ public class Tiles : BaseView
 
     public override void OnViewSelected()
     {
+        Array.Fill(redrawTiles, true);
         redrawMain = true;
     }
 
