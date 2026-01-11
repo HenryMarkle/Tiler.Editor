@@ -49,6 +49,63 @@ public class Geos : BaseView
     private (int x, int y) selectedGeoIndex;
     private Geo selectedGeo;
 
+    private int brushRadius;
+    private int brushCorner;
+
+    /// <summary>
+    /// Checks if a coordinate fits in the brush
+    /// </summary>
+    /// <param name="mx">Matrix X coordinate</param>
+    /// <param name="my">Matrix Y coordinate</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsInBrush(int mx, int my) => CheckCollisionPointCircle(
+                    new Vector2(mx, my) * 20 + (Vector2.One * 10), 
+                    (cursor.MXPos * 20) + (Vector2.One * 10), 
+                    (brushRadius + brushCorner) * 20 + 10
+                ) 
+                && CheckCollisionPointRec(
+                    new Vector2(mx + .5f, my + .5f) * 20, 
+                    new Rectangle(
+                        (cursor.MXPos - (Vector2.One * brushRadius)) * 20, 
+                        ((Vector2.One * brushRadius * 2) + Vector2.One) * 20
+                    )
+                );
+
+    private void DrawBrush()
+    {
+        if (brushRadius == 0)
+        {
+            cursor.DrawCursor();
+            return;
+        }
+
+        for (int x = cursor.MX - brushRadius; x < cursor.MX + brushRadius + 1; x++)
+            for (int y = cursor.MY - brushRadius; y < cursor.MY + brushRadius + 1; y++)
+            {
+                if (!IsInBrush(x, y)) continue;
+
+                var left   = IsInBrush(x - 1, y);
+                var top    = IsInBrush(x, y - 1);
+                var right  = IsInBrush(x + 1, y);
+                var bottom = IsInBrush(x, y + 1);
+
+                if (left && top && right && bottom) continue;
+                if (!left && !top && !right && !bottom) continue;
+
+                if (!left)
+                    DrawLineEx(new Vector2(x, y) * 20, new Vector2(x, y + 1) * 20, 1f, Color.White);
+                
+                if (!top)
+                    DrawLineEx(new Vector2(x, y) * 20, new Vector2(x + 1, y) * 20, 1f, Color.White);
+
+                if (!right)
+                    DrawLineEx(new Vector2(x + 1, y) * 20, new Vector2(x + 1, y + 1) * 20, 1f, Color.White);
+
+                if (!bottom)
+                    DrawLineEx(new Vector2(x, y + 1) * 20, new Vector2(x + 1, y + 1) * 20, 1f, Color.White);
+            }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Rectangle GeoMenuRect(Geo g) => g switch
     {
@@ -192,7 +249,6 @@ public class Geos : BaseView
         EndTextureMode();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PlaceOne(int mx, int my, int mz, Geo geo)
     {
         if (Context.SelectedLevel is not { } level || !level.Geos.IsInBounds(mx, my, mz)) return;
@@ -211,6 +267,49 @@ public class Geos : BaseView
             Color.White
         );
         EndBlendMode();
+        EndTextureMode();
+
+        redrawMain = true;
+    }
+
+    private void PlaceBrush(Geo geo)
+    {
+        if (brushRadius == 0)
+        {
+            PlaceOne(cursor.MX, cursor.MY, Context.Layer, geo);
+            return;
+        }
+
+        if (Context.SelectedLevel is not { } level) return;
+
+        var sourceRect = GeoAtlas.GetRect(atlas.GetIndex(geo));
+
+        BeginTextureMode(Context.Viewports.Geos[Context.Layer]);
+
+        for (int x = cursor.MX - brushRadius; x < cursor.MX + brushRadius + 1; x++)
+        {
+            if (x < 0 || x >= level.Geos.Width) continue;
+
+            for (int y = cursor.MY - brushRadius; y < cursor.MY + brushRadius + 1; y++)
+            {
+                if (y < 0 || y >= level.Geos.Height) continue;
+                if (!IsInBrush(x, y)) continue;
+                if (level.Geos[x, y, Context.Layer] == geo) continue;
+
+                level.Geos[x, y, Context.Layer] = geo;
+
+                BeginBlendMode(BlendMode.Custom);
+                Rlgl.SetBlendFactors(1, 0, 1);
+                DrawTextureRec(
+                    atlas.Texture, 
+                    sourceRect, 
+                    new Vector2(x * 20, y *20), 
+                    Color.White
+                );
+                EndBlendMode();
+            }
+        }
+
         EndTextureMode();
 
         redrawMain = true;
@@ -251,6 +350,17 @@ public class Geos : BaseView
                 if (Context.Config.GeoColoring == GeometryLayerColoring.Gray) redrawMain = true;
             }
 
+            // Change brush size/corner
+            var wheel = GetMouseWheelMove();
+            if (IsKeyDown(KeyboardKey.LeftAlt) && wheel != 0)
+            {
+                if (IsKeyDown(KeyboardKey.LeftControl))
+                    brushCorner = (int)Math.Clamp(brushCorner + wheel, 0, 10);                  
+                else
+                    brushRadius = (int)Math.Clamp(brushRadius + wheel, 0, 10);
+            }
+            //
+
             if (cursor.IsInMatrix)
             {
                 if (!cursor.IsSelecting)
@@ -268,13 +378,11 @@ public class Geos : BaseView
                             break;
                         }
 
-                        if (Context.SelectedLevel?.Geos[cursor.MX, cursor.MY, Context.Layer] != toplace)
-                            PlaceOne(cursor.MX, cursor.MY, Context.Layer, toplace);
+                        PlaceBrush(toplace);
                     }
                     else if (IsMouseButtonDown(MouseButton.Right))
                     {
-                        if (Context.SelectedLevel?.Geos[cursor.MX, cursor.MY, Context.Layer] != Geo.Air)
-                            PlaceOne(cursor.MX, cursor.MY, Context.Layer, Geo.Air);
+                        PlaceBrush(Geo.Air);
                     }
                 }
             }
@@ -342,7 +450,7 @@ public class Geos : BaseView
         DrawRectangleLinesEx(new Rectangle(0, 0, level.Width *20f, level.Height * 20f), 2, Color.White);
 
         cursor.DrawGrid();
-        cursor.DrawCursor();
+        DrawBrush();
         EndMode2D();
     }
 
@@ -394,5 +502,7 @@ public class Geos : BaseView
             }
         }
 
+        printer.PrintlnLabel("Brush Size", brushRadius, Color.Magenta);
+        printer.PrintlnLabel("Brush Corner", brushCorner, Color.Magenta);
     }
 }
