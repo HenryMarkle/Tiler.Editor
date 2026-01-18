@@ -17,7 +17,6 @@ float cross2d(vec2 a, vec2 b) {
 
 // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
 vec2 invbilinear_robust(vec2 p, vec2 a, vec2 b, vec2 c, vec2 d) {
-    // Pre-compute constants (same as k1-k5 in C# code)
     vec2 k1 = c - d + a - b;
     float k2 = -4.0 * cross2d(k1, d - a);
     float k3 = cross2d(a - d, b - a);

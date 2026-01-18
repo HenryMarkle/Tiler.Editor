@@ -56,6 +56,8 @@ public class Renderer
     public EffectRenderer EffectRenderer { get; private set; }
     public LightRenderer LightRenderer { get; private set; }
 
+    public RenderEncoder? Encoder { get; private set; }
+
     public Renderer(
         Level level, 
         TileDex tiles, 
@@ -219,6 +221,10 @@ public class Renderer
                 {
                     // Encode
 
+                    Encoder = new RenderEncoder(Layers, LightRenderer.Final, SelectedCamera);
+
+                    Encoder.Encode();
+
                     // Reset buffers & renderers
 
                     if (CurrentCameraIndex + 1 >= Level.Cameras.Count)
@@ -240,6 +246,7 @@ public class Renderer
             break;
 
             case RenderState.Finalizing:
+
             State = RenderState.Done;
             break;
         }

@@ -366,7 +366,11 @@ void main()
             if (renderer?.State is Renderer.RenderState.Lighting)
             {
                 rlImGui_cs.rlImGui.ImageSize(renderer!.LightRenderer.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
-            } 
+            }
+            else if (renderer?.State is Renderer.RenderState.Done)
+            {
+                rlImGui_cs.rlImGui.ImageSize(renderer!.Encoder!.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+            }
             else
             {
                 rlImGui_cs.rlImGui.ImageSize(preview.Raw.Texture, new Vector2(preview.Width, preview.Height) * minRatio);

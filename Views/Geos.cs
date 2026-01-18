@@ -31,6 +31,8 @@ public class Geos : BaseView
         selectedGeo = Geo.Solid;
         
         DrawGeosMenu();
+
+        memory = new Geo[0, 0];
     }
 
     ~Geos()
@@ -51,6 +53,9 @@ public class Geos : BaseView
 
     private int brushRadius;
     private int brushCorner;
+
+    private Geo[,] memory;
+    private bool isPasting;
 
     /// <summary>
     /// Checks if a coordinate fits in the brush
@@ -338,6 +343,8 @@ public class Geos : BaseView
 
     public override void Process()
     {
+        if (Context.SelectedLevel is not { } level) return;
+
         if (!cursor.IsInWindow)
         {
             cursor.ProcessCursor();
@@ -383,6 +390,28 @@ public class Geos : BaseView
                     else if (IsMouseButtonDown(MouseButton.Right))
                     {
                         PlaceBrush(Geo.Air);
+                    }
+                    else if (IsKeyPressed(KeyboardKey.C) && IsKeyDown(KeyboardKey.LeftControl))
+                    {
+                        memory = new Geo[brushRadius*2 + 1, brushRadius*2 + 1];
+
+                        for (int x = 0; x < memory.GetLength(0); x++)
+                        {
+                            var mx = x + cursor.MX + brushRadius + 1;
+                            if (mx < 0 || mx >= level.Width) continue;
+
+                            for (int y = 0; y < memory.GetLength(1); y++)
+                            {
+                                var my = y + cursor.MY + brushRadius + 1;
+                                if (my < 0 || my >= level.Height) continue;
+
+                                memory[x, y] = level.Geos[mx, my, Context.Layer];
+                            }
+                        }
+                    }
+                    else if (IsKeyPressed(KeyboardKey.V) && IsKeyDown(KeyboardKey.LeftControl))
+                    {
+                        isPasting = !isPasting;
                     }
                 }
             }
