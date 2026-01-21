@@ -17,6 +17,7 @@ public class AppDirectories
     public string Effects { get; init; }
     public string Scripts { get; init; }
     public string Light { get; init; }
+    public string Palettes { get; init; }
     public string Textures { get; init; }
     public string Fonts { get; init; }
     public string Shaders { get; init; }
@@ -53,6 +54,7 @@ public class AppDirectories
         Effects = Combine(Resources, "effects");
         Scripts = Combine(Resources, "scripts");
         Light = Combine(Resources, "light");
+        Palettes = Combine(Resources, "palettes");
 
         Textures = Combine(Assets, "textures");
         Fonts    = Combine(Assets, "fonts");

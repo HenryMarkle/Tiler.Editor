@@ -65,4 +65,6 @@ public class Context
     public int Layer { get; set; } = 0;
     public required AppConfiguration Config { get; set; }
     public required DebugPrinter DebugPrinter { get; set; }
+
+    public Dictionary<string, Managed.HybridImage> Palettes { get; init; } = [];
 }

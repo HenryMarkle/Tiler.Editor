@@ -12,6 +12,7 @@ using System.Globalization;
 
 using Tiler.Editor.Managed;
 using Serilog.Core;
+using System.IO;
 
 public class Program {
 	public static void Main(string[] args) {
@@ -51,7 +52,7 @@ public class Program {
 		Log.Information("Initializing window");
 
 		#if DEBUG
-		// Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
+		Raylib.SetTraceLogLevel(TraceLogLevel.Warning);
 		#else
 		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
 		#endif
@@ -100,6 +101,16 @@ public class Program {
 			Config = config,
 			DebugPrinter = printer
         };
+
+		if (Directory.Exists(paths.Palettes))
+		{
+			Log.Information("Loading palettes");
+			
+			foreach (var paletteFile in Directory.GetFiles(paths.Palettes).Where(f => f.EndsWith(".png")))
+			{
+				context.Palettes[Path.GetFileNameWithoutExtension(paletteFile)] = new HybridImage(Raylib.LoadImage(paletteFile));
+			}
+		}
 
 		Log.Information("Loading views");
 

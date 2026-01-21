@@ -17,7 +17,7 @@ public class Render : BaseView
 {
     public Render(Context context) : base(context)
     {
-        composeShader = LoadShaderFromMemory(
+        composeShader = new Managed.Shader(LoadShaderFromMemory(
             File.ReadAllText(Path.Combine(context.Dirs.Shaders, "inverse_bilinear_interpolation.vs")), 
             @"#version 330
 
@@ -151,7 +151,56 @@ void main()
     vec4 c = texture(texture0, uv);
     finalColor = clamp(vec4(c.r + tintAccum, c.g + tintAccum, c.b + tintAccum, c.a), vec4(0,0,0,0), vec4(1,1,1,1));
 }"
-        );
+        ));
+
+        paletteShader = new Managed.Shader(LoadShaderFromMemory(null, @"
+        #version 330
+
+in vec2 fragTexCoord;
+in vec4 fragColor;
+
+uniform sampler2D texture0;
+uniform sampler2D palette;
+
+out vec4 finalColor;
+
+vec4 white = vec4(1, 1, 1, 1);
+vec4 black = vec4(0, 0, 0, 1);
+
+vec2 darkPos = vec2(0.5 / 50.0, 0);
+vec2 skyPos = vec2((1 + 0.5) / 50.0, 0);
+vec2 fogPos = vec2((2 + 0.5) / 50.0, 0);
+vec2 fogIntenPos = vec2((3 + 0.5) / 50.0, 0);
+
+void main() {
+    vec4 pixel = texture(texture0, vec2(fragTexCoord.x, 1.0 - fragTexCoord.y));
+
+    if (pixel == black) {   // darkness
+        finalColor = texture(palette, darkPos);
+        return;
+    }
+
+    if (pixel == white) {   // sky
+        finalColor = texture(palette, skyPos);
+        return;
+    }
+
+    int isSunlit = int(pixel.r * 255 > 50);
+    int depth = int((pixel.r * 255) - (isSunlit * 50));
+    float value = pixel.g;
+
+    int valueRow = 0;
+    if (value == 0.5) valueRow = 1;
+    else if (value >= 0.988) valueRow = 2; 
+
+    vec4 fog = texture(palette, fogPos);
+    float fogIntensity = texture(palette, fogIntenPos).r;
+
+    vec4 layerColor = texture(palette, vec2((depth + 0.5) / 50.0, (1.5 + (isSunlit * 3) + valueRow) / 8.0));
+
+    finalColor = mix(layerColor, fog, fogIntensity * (depth / 50.0));
+}
+"));
 
         preview = new RenderTexture(
             Renderer.Width, 
@@ -159,22 +208,60 @@ void main()
             Color.White, 
             clear: true
         );
-    }
 
-    ~Render()
-    {
-        UnloadShader(composeShader);
+        previewWithPalette = new RenderTexture(
+            Renderer.Width, 
+            Renderer.Height, 
+            Color.White, 
+            clear: true
+        );
+
+        selectedPalette = Context.Palettes.FirstOrDefault().Value;
     }
 
     private Renderer? renderer;
 
-    private readonly Raylib_cs.Shader composeShader;
+    private readonly Managed.Shader composeShader;
+    private readonly Managed.Shader paletteShader;
     // private readonly Shader vflipShader;
 
     private RenderTexture preview;
+    private RenderTexture previewWithPalette;
 
     private bool showOptions;
     private Renderer.Configuration rendererConfig;
+
+    private Managed.HybridImage? selectedPalette;
+
+    private void DrawRenderWithPalette(Texture2D render, Texture2D palette)
+    {
+        BeginTextureMode(previewWithPalette);
+
+        BeginShaderMode(paletteShader);
+
+        SetShaderValueTexture(
+            shader: paletteShader,
+            locIndex: GetShaderLocation(paletteShader, "texture0"),
+            texture: render
+        );
+
+        SetShaderValueTexture(
+            shader: paletteShader,
+            locIndex: GetShaderLocation(paletteShader, "palette"),
+            texture: palette
+        );
+
+        DrawTexture(
+            texture: render,
+            0,
+            0,
+            Color.White
+        );
+
+        EndShaderMode();
+
+        EndTextureMode();
+    }
 
     public override void OnLevelSelected(Level level)
     {
@@ -200,13 +287,16 @@ void main()
 
     public override void Process()
     {
-        if (renderer 
-            is null or 
-            { 
-                State: Renderer.RenderState.Done or 
-                Renderer.RenderState.Aborted 
-            }
-        ) return;
+        if (renderer is null or { State: Renderer.RenderState.Aborted }) 
+            return;
+
+        if (renderer is { State: Renderer.RenderState.Done })
+        {
+            if (selectedPalette is null) return;
+
+            DrawRenderWithPalette(renderer.Encoder!.Final.Texture, selectedPalette);
+            return;
+        }
 
         try
         {
@@ -330,50 +420,103 @@ void main()
             ImGui.Columns(2);
             ImGui.SetColumnWidth(0, 200);
 
-            var isDisabled = renderer?.State is not null and not (Renderer.RenderState.Done or Renderer.RenderState.Idle or Renderer.RenderState.Aborted);
-            if (isDisabled) ImGui.BeginDisabled();
-            if (ImGui.Button("Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            if (ImGui.BeginTabBar("Tabs"))
             {
-                if (renderer is null or { State: Renderer.RenderState.Done })
+                if (ImGui.BeginTabItem("Main"))
                 {
-                    renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs.Levels)
+                    var isDisabled = renderer?.State is not null and not (Renderer.RenderState.Done or Renderer.RenderState.Idle or Renderer.RenderState.Aborted);
+                    if (isDisabled) ImGui.BeginDisabled();
+                    if (ImGui.Button("Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
-                        Config = rendererConfig
-                    };
-                    GC.Collect();
+                        if (renderer is null or { State: Renderer.RenderState.Done })
+                        {
+                            renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs.Levels)
+                            {
+                                Config = rendererConfig
+                            };
+                            GC.Collect();
+                        }
+                    }
+                    if (isDisabled) ImGui.EndDisabled();
+
+                    if (ImGui.Button("Options", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    {
+                        showOptions = true;
+                    }
+
+                    if (!isDisabled) ImGui.BeginDisabled();
+                    if (ImGui.Button("Abort", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                        renderer?.Abort();
+                    if (!isDisabled) ImGui.EndDisabled();
+
+                    isDisabled = renderer is { State: Renderer.RenderState.Done };
+
+                    if (!isDisabled) ImGui.BeginDisabled();
+                    if (ImGui.Button("Export", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                        renderer?.Export(Context.Dirs.Levels);
+                    if (!isDisabled) ImGui.EndDisabled();
+
+                    ImGui.Text($"State: {renderer?.State}");
+                
+                    ImGui.EndTabItem();
                 }
+
+                if (ImGui.BeginTabItem("Palettes"))
+                {
+                    if (ImGui.BeginListBox("##Palettes", ImGui.GetContentRegionAvail()))
+                    {
+                        var space = ImGui.GetContentRegionAvail();
+                        var ratio = space with { X = space.X - 10 } / new Vector2(50, 8);
+                        var minRatio = MathF.Min(ratio.X, ratio.Y);
+
+                        foreach (var palette in Context.Palettes)
+                        {
+                            palette.Value.ToTexture();
+
+                            var selected = rlImGui_cs.rlImGui.ImageButtonSize(
+                                palette.Key, 
+                                palette.Value.Texture, 
+                                new Vector2(palette.Value.Width, palette.Value.Height) * minRatio
+                            );
+
+                            if (ImGui.IsItemHovered())
+                            {
+                                ImGui.BeginTooltip();
+                                rlImGui_cs.rlImGui.ImageSize(palette.Value.Texture, new Vector2(palette.Value.Width, palette.Value.Height) * 10);
+                                ImGui.EndTooltip();
+                            }
+
+                            if (selected) selectedPalette = palette.Value;
+                        }
+
+                        ImGui.EndListBox();
+                    }
+                    
+                    ImGui.EndTabItem();
+                }
+
+                ImGui.EndTabBar();
             }
-            if (isDisabled) ImGui.EndDisabled();
 
-            if (ImGui.Button("Options", ImGui.GetContentRegionAvail() with { Y = 20 }))
-            {
-                showOptions = true;
-            }
-
-            if (!isDisabled) ImGui.BeginDisabled();
-            if (ImGui.Button("Abort", ImGui.GetContentRegionAvail() with { Y = 20 }))
-                renderer?.Abort();
-            if (!isDisabled) ImGui.EndDisabled();
-
-            ImGui.Text($"State: {renderer?.State}");
 
             ImGui.NextColumn();
+            {    
+                var space = ImGui.GetContentRegionAvail();
+                var ratio = space / new Vector2(preview.Width, preview.Height);
+                var minRatio = MathF.Min(ratio.X, ratio.Y);
 
-            var space = ImGui.GetContentRegionAvail();
-            var ratio = space / new Vector2(preview.Width, preview.Height);
-            var minRatio = MathF.Min(ratio.X, ratio.Y);
-
-            if (renderer?.State is Renderer.RenderState.Lighting)
-            {
-                rlImGui_cs.rlImGui.ImageSize(renderer!.LightRenderer.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
-            }
-            else if (renderer?.State is Renderer.RenderState.Done)
-            {
-                rlImGui_cs.rlImGui.ImageSize(renderer!.Encoder!.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
-            }
-            else
-            {
-                rlImGui_cs.rlImGui.ImageSize(preview.Raw.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                if (renderer?.State is Renderer.RenderState.Lighting)
+                {
+                    rlImGui_cs.rlImGui.ImageSize(renderer!.LightRenderer.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                }
+                else if (renderer?.State is Renderer.RenderState.Done)
+                {
+                    rlImGui_cs.rlImGui.ImageSize(previewWithPalette.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                }
+                else
+                {
+                    rlImGui_cs.rlImGui.ImageSize(preview.Raw.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                }
             }
         }
 

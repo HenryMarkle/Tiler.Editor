@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using Raylib_cs;
 using Serilog;
 
@@ -49,7 +50,7 @@ public class Renderer
 
     public Managed.RenderTexture[] Layers { get; private set; }
     public Managed.Texture Lightmap { get; private set; }
-    public Managed.RenderTexture Final { get; private set; }
+    public Managed.RenderTexture[] FinalRenders { get; private set; }
 
     public TileRenderer TileRenderer { get; private set; }
     public PropRenderer PropRenderer { get; private set; }
@@ -78,7 +79,7 @@ public class Renderer
 
         Lightmap = new Managed.Texture(Level.Lightmap);
 
-        Final = new(Width, Height);
+        FinalRenders = new Managed.RenderTexture[Level.Cameras.Count];
 
         if (level.Cameras.Count == 0) 
             throw new RenderException("Level must have at least one camera");
@@ -225,6 +226,8 @@ public class Renderer
 
                     Encoder.Encode();
 
+                    FinalRenders[CurrentCameraIndex] = Encoder.Final;
+
                     // Reset buffers & renderers
 
                     if (CurrentCameraIndex + 1 >= Level.Cameras.Count)
@@ -236,7 +239,6 @@ public class Renderer
                     CurrentCameraIndex++;
 
                     foreach (var layer in Layers) layer.Clear();
-                    Final.Clear();
 
                     TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
                     PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
@@ -255,5 +257,28 @@ public class Renderer
     public void Abort()
     {
         State = RenderState.Aborted;
+    }
+
+    public void Export(string directory)
+    {
+        if (!Directory.Exists(directory))
+            throw new DirectoryNotFoundException("Directory does not exist");
+
+        var levelDir = Path.Combine(directory, Level.Name!);
+
+        if (!Directory.Exists(levelDir))
+            Directory.CreateDirectory(levelDir);
+
+        // Export camera renders
+
+        for (var l = 0; l < FinalRenders.Length; l++)
+        {
+            using var image = new Managed.Image(Raylib.LoadImageFromTexture(FinalRenders[l].Texture));
+            Raylib.ExportImage(image, Path.Combine(levelDir, $"{l}.png"));
+        }
+
+        // Export geometry
+
+        // TODO: Complete this
     }
 }
