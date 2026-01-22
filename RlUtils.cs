@@ -93,11 +93,11 @@ public static class RlUtils
             source: source with { Y = source.Y + source.Height, Height = -source.Height },
             dest: new Rectangle(
                 destination.X,
-                rt.Texture.Height - destination.Height - destination.Y,
+                rt.Texture.Height - destination.Y,
                 destination.Width,
-                destination.Height
+                -destination.Height
             ),
-            origin: origin with { Y = -origin.Y },
+            origin: origin with { Y = destination.Height - origin.Y },
             rotation: -rotation,
             tint
         );
