@@ -47,7 +47,7 @@ function M.Render(tileset, x, y, z, layer, options)
         local bottom
 
         if x - 1 < 0 then 
-            left = true 
+            left = true
         else
             left = Level.Geos:StrAt(x - 1, y, z) == Solid and (Level.Tiles:At(x - 1, y, z) == Tile or math.random(100) < solidConnectChance);
         end
@@ -97,6 +97,8 @@ function M.Render(tileset, x, y, z, layer, options)
     else
         ---@type RLRect|integer
         local source = mapping[Level.Geos:StrAt(x, y, z)]
+        
+        if not source then return end
         
         local variation = math.random(variations)
         

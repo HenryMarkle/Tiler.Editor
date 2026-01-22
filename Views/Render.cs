@@ -185,12 +185,14 @@ void main() {
         return;
     }
 
-    int isSunlit = int(pixel.r * 255 > 50);
-    int depth = int((pixel.r * 255) - (isSunlit * 50));
+    int red = int(pixel.r * 255);
+
+    int isSunlit = int(red > 50);
+    int depth = red - (isSunlit * 50);
     float value = pixel.g;
 
     int valueRow = 0;
-    if (value == 0.5) valueRow = 1;
+    if (value >= 0.3 && value <= 0.8) valueRow = 1;
     else if (value >= 0.988) valueRow = 2; 
 
     vec4 fog = texture(palette, fogPos);
@@ -217,6 +219,7 @@ void main() {
         );
 
         selectedPalette = Context.Palettes.FirstOrDefault().Value;
+        selectedPalette?.ToTexture();
     }
 
     private Renderer? renderer;
@@ -232,6 +235,8 @@ void main() {
     private Renderer.Configuration rendererConfig;
 
     private Managed.HybridImage? selectedPalette;
+
+    private bool usePalettes;
 
     private void DrawRenderWithPalette(Texture2D render, Texture2D palette)
     {
@@ -463,6 +468,11 @@ void main() {
 
                 if (ImGui.BeginTabItem("Palettes"))
                 {
+                    if (ImGui.Checkbox("Use Palettes", ref usePalettes))
+                    {
+                        
+                    }
+
                     if (ImGui.BeginListBox("##Palettes", ImGui.GetContentRegionAvail()))
                     {
                         var space = ImGui.GetContentRegionAvail();
@@ -511,7 +521,14 @@ void main() {
                 }
                 else if (renderer?.State is Renderer.RenderState.Done)
                 {
-                    rlImGui_cs.rlImGui.ImageSize(previewWithPalette.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                    if (usePalettes)
+                    {
+                        rlImGui_cs.rlImGui.ImageSize(previewWithPalette.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                    }
+                    else
+                    {
+                        rlImGui_cs.rlImGui.ImageSize(renderer.Encoder!.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                    }
                 }
                 else
                 {

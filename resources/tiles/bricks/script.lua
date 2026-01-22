@@ -26,6 +26,8 @@ function Render(x, y, z)
     elseif geo == Slab then
         dest = Rect(x * 20, y * 20 + 10, 20, 10)
         source = Rect(x * 20, y * 20 + 10, 20, 10)
+    else
+        return
     end
 
     Draw(graphic, z * 10, dest, source)

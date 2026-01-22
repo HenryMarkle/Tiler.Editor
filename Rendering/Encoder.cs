@@ -74,7 +74,7 @@ in vec4 fragColor;
 uniform vec2 vertex_pos[4];
 uniform sampler2D texture0;
 uniform sampler2D lightmap;
-uniform float layer;
+uniform int layer;
 
 out vec4 finalColor;
 
@@ -213,7 +213,10 @@ void main() {
         value = 1;
     }
 
-    finalColor = vec4(int(layer != 0 && pixel != red) * (layer * 50 + 1 + int(light == white) * 50) / 255.0, value, 0, 1);
+    int isSunlit = int(light == white);
+    int isNotDark = int(!(layer == 0 && pixel == red));
+
+    finalColor = vec4((isNotDark * (layer + 1 + (isSunlit * 50))) / 255.0, value, 0, 1);
 }
         "));
     }
@@ -238,14 +241,14 @@ void main() {
                 texture: Lightmap.Texture
             );
 
-            var progress = l / (float)Layers.Length;
-
             SetShaderValue(
                 Shader, 
                 locIndex: GetShaderLocation(Shader, "layer"), 
-                progress, 
-                ShaderUniformDataType.Float
+                l, 
+                ShaderUniformDataType.Int
             );
+
+            var progress = l / (float)Layers.Length;
 
             // Initial positions
 
