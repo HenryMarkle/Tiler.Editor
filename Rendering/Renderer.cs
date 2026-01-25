@@ -3,6 +3,8 @@ using System.Linq;
 using System.IO;
 using Raylib_cs;
 using Serilog;
+using System.Text;
+using System;
 
 namespace Tiler.Editor.Rendering;
 
@@ -35,6 +37,21 @@ public class Renderer
         }
     }
 
+    public enum ConnectionTypes
+    {
+        Dead,
+        Shortcut,
+        Exit,
+        Spawn,
+        Warp
+    }
+    public struct Connection()
+    {
+        public ConnectionTypes Type = ConnectionTypes.Dead;
+    
+        public List<(int x, int y, int z)> Path = [];
+    }
+
     public Configuration Config { get; init; }
 
     public Level Level { get; init; }
@@ -47,6 +64,8 @@ public class Renderer
     public int CurrentCameraIndex { get; private set; }
 
     public LevelCamera SelectedCamera => Level.Cameras[CurrentCameraIndex];
+
+    public List<Connection> Connections = [];
 
     public Managed.RenderTexture[] Layers { get; private set; }
     public Managed.Texture Lightmap { get; private set; }
@@ -96,6 +115,7 @@ public class Renderer
         Tiles,
         Props,
         Poles,
+        Connections,
         Effects,
         Lighting,
         Encoding,
@@ -197,9 +217,100 @@ public class Renderer
                     }
 
 
-                    State = RenderState.Effects;
+                    State = RenderState.Connections;
                 }
                 break;
+            case RenderState.Connections:
+                {
+                    bool connects(int x, int y) => Level.Connections.IsInBounds(x, y, 0)
+                            && Level.Connections[x, y, 0] is not ConnectionType.None;
+
+                    // Camera dimensions
+
+                    var columns = (Width + LayerMargin*2) / 20;
+                    var rows = (Height + LayerMargin*2) / 20;
+
+                    for (var y = 0; y < rows; y++)
+                    {
+                        // Convert local coords to matrix coords
+
+                        var my = y + (int)(SelectedCamera.Position.Y/20) - (LayerMargin/20);
+                        if (my < 0 || my >= Level.Height) continue;
+
+                        for (var x = 0; x < columns; x++)
+                        {
+                            var mx = x + (int)(SelectedCamera.Position.X/20) - (LayerMargin/20);
+                            if (mx < 0 || mx >= Level.Width) continue;
+
+                            if (Level.Connections[mx, my, 0] != ConnectionType.Entrance) 
+                                continue;
+
+                            var connection = new Connection();
+
+                            var cx = mx;
+                            var cy = my;
+
+                            var prevPos = (-1, -1);
+
+                            do
+                            {
+                                // Look for next path node
+
+                                var left   = (cx - 1, cy) != prevPos && connects(cx - 1, cy);
+                                var top    = (cx, cy - 1) != prevPos && connects(cx, cy - 1);
+                                var right  = (cx + 1, cy) != prevPos && connects(cx + 1, cy);
+                                var bottom = (cx, cy + 1) != prevPos && connects(cx, cy + 1);
+
+                                prevPos = (cx, cy);
+
+                                switch ((left, top, right, bottom))
+                                {
+                                    case (true, false, false, false): cx--; break;
+                                    case (false, true, false, false): cy--; break;
+                                    case (false, false, true, false): cx++; break;
+                                    case (false, false, false, true): cy++; break;
+                                    
+                                    // Cross paths
+                                    case (true, true, true, false): cy--; break;
+                                    case (false, true, true, true): cx++; break;
+                                    case (true, false, true, true): cy++; break;
+                                    case (true, true, false, true): cx--; break;
+
+                                    default: goto skipLooking;
+                                }
+
+                                if (Level.Connections[cx, cy, 0] is not ConnectionType.Path)
+                                {
+                                    connection.Type = Level.Connections[cx, cy, 0] switch
+                                    {
+                                        ConnectionType.Exit => ConnectionTypes.Exit,
+                                        ConnectionType.Spawn => ConnectionTypes.Spawn,
+                                        ConnectionType.Warp => ConnectionTypes.Warp,
+                                        ConnectionType.Entrance => ConnectionTypes.Shortcut,
+                                        _ => ConnectionTypes.Dead
+                                    };
+                                }
+
+                                connection.Path.Add((cx, cy, 0));
+                            }   
+                            while (true);
+
+                        skipLooking:
+
+                            Connections.Add(connection);
+                        }
+                    }
+
+                    // Draw
+
+                    foreach (var connection in Connections)
+                    {
+                        // TODO: Complete this
+                    }
+
+                    State = RenderState.Effects;
+                }
+            break;
             case RenderState.Effects:
                 {
                     if (EffectRenderer.IsDone) State = RenderState.Lighting;
@@ -237,6 +348,7 @@ public class Renderer
                     }
 
                     CurrentCameraIndex++;
+                    Connections.Clear();
 
                     foreach (var layer in Layers) layer.Clear();
 
@@ -277,7 +389,47 @@ public class Renderer
             Raylib.ExportImage(image, Path.Combine(levelDir, $"{l}.png"));
         }
 
-        // Export geometry
+        // Export rest
+
+        var sb = new StringBuilder();
+
+        sb.AppendLine($"id = {Level.Name}");
+        sb.AppendLine($"width = {Level.Width}");
+        sb.AppendLine($"height = {Level.Height}");
+        sb.Append($"cameras = {string.Join('|', Level.Cameras.Select(c => $"{c.Position.X}/{c.Position.Y}"))}");
+        
+        sb.Append("\n\n---\n\n");
+        
+        // Serialize connections
+        foreach (var connection in Connections)
+        {
+            sb.AppendLine(
+                $"{connection.Path[0].x}/{connection.Path[0].y}"
+                + $"|{connection.Type}"
+                + '|'
+                + string.Join('|', connection.Path.Skip(1).Select(p => $"{p.x}/{p.y}/{p.z}"))
+            );
+        }
+        
+        sb.Append("\n\n---\n\n");
+
+        // Serialize geometry
+        for (var z = 0; z < Level.Depth; z++)
+        {
+            for (var y = 0; y < Level.Height; y++)
+            {
+                for (var x = 0; x < Level.Width; x++)
+                {
+                    sb.Append(Level.Geos[x, y, z] is Geo.Air ? "" : Level.Geos[x, y, z]);
+
+                    if (x < Level.Width - 1) sb.Append('|');
+                }
+
+                if (y < Level.Height - 1) sb.Append('|');
+            }
+
+            if (z < Level.Depth - 1) sb.Append('|');
+        }
 
         // TODO: Complete this
     }
