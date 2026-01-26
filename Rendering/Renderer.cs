@@ -5,6 +5,8 @@ using Raylib_cs;
 using Serilog;
 using System.Text;
 using System;
+using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Tiler.Editor.Rendering;
 
@@ -12,6 +14,18 @@ public class Renderer
 {
     public const int Width = 1400;
     public const int Height = 800;
+
+    private class ShortcutEntranceAtlas(Managed.Texture texture)
+    {
+        public readonly Managed.Texture Texture = texture;
+
+        public enum Directions { Left, Top, Right, Bottom }
+
+        public const int Width = 5 * 20;
+        public const int Height = 5 * 20;
+
+        public static Rectangle GetSource(Directions direction) => new((int)direction * Width, 0, Width, Height);
+    }
 
     public struct Configuration
     {
@@ -45,17 +59,18 @@ public class Renderer
         Spawn,
         Warp
     }
+
     public struct Connection()
     {
         public ConnectionTypes Type = ConnectionTypes.Dead;
     
-        public List<(int x, int y, int z)> Path = [];
+        public List<(int x, int y)> Path = [];
     }
 
     public Configuration Config { get; init; }
+    public AppDirectories Paths { get; set; }
 
     public Level Level { get; init; }
-    public string OutputDir { get; init; }
     public TileDex Tiles { get; init; }
     public PropDex Props { get; init; }
     public int SublayersPerLayer { get; init; } = 10;
@@ -66,6 +81,11 @@ public class Renderer
     public LevelCamera SelectedCamera => Level.Cameras[CurrentCameraIndex];
 
     public List<Connection> Connections = [];
+
+    private readonly ShortcutEntranceAtlas shortcutEntranceAtlas;
+    private Managed.Texture shortcutHorizontal;
+    private Managed.Texture shortcutVertical;
+    private Managed.Texture shortcutEnd;
 
     public Managed.RenderTexture[] Layers { get; private set; }
     public Managed.Texture Lightmap { get; private set; }
@@ -82,15 +102,14 @@ public class Renderer
         Level level, 
         TileDex tiles, 
         PropDex props, 
-        string outputDir
+        AppDirectories paths
     ) {
         Config = new();
         
         Level = level;
         Tiles = tiles;
         Props = props;
-
-        OutputDir = outputDir;
+        Paths = paths;
 
         Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
         for (var l = 0; l < Layers.Length; l++) Layers[l] =
@@ -99,6 +118,21 @@ public class Renderer
         Lightmap = new Managed.Texture(Level.Lightmap);
 
         FinalRenders = new Managed.RenderTexture[Level.Cameras.Count];
+
+        var renderingTexturesDir = Path.Combine(paths.Textures, "rendering");
+
+        shortcutEntranceAtlas = new ShortcutEntranceAtlas(
+            new Managed.Texture(Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_entrance.png")))
+        );
+        shortcutHorizontal = new Managed.Texture(
+            Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_horizontal.png"))
+        );
+        shortcutVertical = new Managed.Texture(
+            Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_vertical.png"))
+        );
+        shortcutEnd = new Managed.Texture(
+            Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_end.png"))
+        );
 
         if (level.Cameras.Count == 0) 
             throw new RenderException("Level must have at least one camera");
@@ -245,7 +279,7 @@ public class Renderer
                             if (Level.Connections[mx, my, 0] != ConnectionType.Entrance) 
                                 continue;
 
-                            var connection = new Connection();
+                            var connection = new Connection() { Path = [(mx, my)] };
 
                             var cx = mx;
                             var cy = my;
@@ -279,19 +313,20 @@ public class Renderer
                                     default: goto skipLooking;
                                 }
 
-                                if (Level.Connections[cx, cy, 0] is not ConnectionType.Path)
-                                {
-                                    connection.Type = Level.Connections[cx, cy, 0] switch
-                                    {
-                                        ConnectionType.Exit => ConnectionTypes.Exit,
-                                        ConnectionType.Spawn => ConnectionTypes.Spawn,
-                                        ConnectionType.Warp => ConnectionTypes.Warp,
-                                        ConnectionType.Entrance => ConnectionTypes.Shortcut,
-                                        _ => ConnectionTypes.Dead
-                                    };
-                                }
+                                var current = Level.Connections[cx, cy, 0];
 
-                                connection.Path.Add((cx, cy, 0));
+                                connection.Type = current switch
+                                {
+                                    ConnectionType.Exit => ConnectionTypes.Exit,
+                                    ConnectionType.Spawn => ConnectionTypes.Spawn,
+                                    ConnectionType.Warp => ConnectionTypes.Warp,
+                                    ConnectionType.Entrance => ConnectionTypes.Shortcut,
+                                    _ => ConnectionTypes.Dead
+                                };
+
+                                connection.Path.Add((cx, cy));
+
+                                if (current is not ConnectionType.Path) break;
                             }   
                             while (true);
 
@@ -303,8 +338,234 @@ public class Renderer
 
                     // Draw
 
+                    bool isGeo(int x, int y, Geo geo) => Level.Geos.IsInBounds(x, y, 0)
+                            && Level.Geos[x, y, 0] == geo;
+
+                    ReadOnlySpan<int> shortcutEntranceRepeat = [1, 8, 1];
+
                     foreach (var connection in Connections)
                     {
+                        // Determine entrance direction
+
+                        {
+                            var (x, y) = connection.Path[0];
+
+                            var leftCon   = connects(x - 1, y);
+                            var topCon    = connects(x, y - 1);
+                            var rightCon  = connects(x + 1, y);
+                            var bottomCon = connects(x, y + 1);
+
+                            var leftGeo   = isGeo(x - 1, y, Geo.Air);
+                            var topGeo    = isGeo(x, y - 1, Geo.Air);
+                            var rightGeo  = isGeo(x + 1, y, Geo.Air);
+                            var bottomGeo = isGeo(x, y + 1, Geo.Air);
+
+                            var direction = ShortcutEntranceAtlas.Directions.Left;
+
+                            // A dumb way for checking for direction; may need more validation
+                            switch ((leftCon || rightGeo, topCon || bottomGeo, rightCon || leftGeo, bottomCon || topGeo)) {
+                                case (false, false, true, false):
+                                direction = ShortcutEntranceAtlas.Directions.Left;
+                                break;
+
+                                case (false, false, false, true):
+                                direction = ShortcutEntranceAtlas.Directions.Top;
+                                break;
+
+                                case (true, false, false, false):
+                                direction = ShortcutEntranceAtlas.Directions.Right;
+                                break;
+
+                                case (false, true, false, false):
+                                direction = ShortcutEntranceAtlas.Directions.Bottom;
+                                break;
+
+                                default: goto skipEntrance;
+                            }
+
+                            var sourceRect = ShortcutEntranceAtlas.GetSource(direction);
+                            var destRect = new Rectangle(
+                                (x - 2) * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                (y - 2) * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                5 * 20, 
+                                5 * 20
+                            );
+
+                            var depth = 0;
+
+                            for (int l = 0; l < 3; l++)
+                            {
+                                for (var r = 0; r < shortcutEntranceRepeat[l]; r++)
+                                {
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[depth],
+                                        texture:     shortcutEntranceAtlas.Texture,
+                                        source:      sourceRect with { Y = l * sourceRect.Height },
+                                        destination: destRect,
+                                        tint:        Color.White
+                                    );
+
+                                    depth++;
+                                }
+                            }
+                        }
+
+                    skipEntrance:
+
+                        foreach (var (x, y) in connection.Path[1..^1])
+                        {
+                            var leftCon   = connects(x - 1, y);
+                            var topCon    = connects(x, y - 1);
+                            var rightCon  = connects(x + 1, y);
+                            var bottomCon = connects(x, y + 1);
+
+                            switch ((leftCon, topCon, rightCon, bottomCon))
+                            {
+                                case (true, false, true, false):
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[0],
+                                        texture:     shortcutHorizontal,
+                                        source:      new Rectangle(0, 0, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[1],
+                                        texture:     shortcutHorizontal,
+                                        source:      new Rectangle(0, 20, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    break;
+
+                                case (false, true, false, true):
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[0],
+                                        texture:     shortcutVertical,
+                                        source:      new Rectangle(0, 0, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[1],
+                                        texture:     shortcutVertical,
+                                        source:      new Rectangle(0, 20, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    break;
+
+                                case (true, true, false, false):
+                                case (false, true, true, false):
+                                case (false, false, true, true):
+                                case (true, false, false, true):
+                                case (true, true, true, true):
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[0],
+                                        texture:     shortcutHorizontal,
+                                        source:      new Rectangle(0, 0, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[1],
+                                        texture:     shortcutHorizontal,
+                                        source:      new Rectangle(0, 20, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[0],
+                                        texture:     shortcutVertical,
+                                        source:      new Rectangle(0, 0, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    RlUtils.DrawTextureRT(
+                                        rt:          Layers[1],
+                                        texture:     shortcutVertical,
+                                        source:      new Rectangle(0, 20, 20, 20),
+                                        destination: new Rectangle(
+                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        20, 
+                                                        20
+                                                     ),
+                                        tint:        Color.White
+                                    );
+                                    break;
+                            }
+                        }
+
+                        if (
+                            connection.Path is { Count: > 1 } && 
+                            Level.Connections[connection.Path[^1].x, connection.Path[^1].y, 0] is not ConnectionType.Entrance
+                        ) {
+                            var (x, y) = connection.Path[^1];
+
+                            RlUtils.DrawTextureRT(
+                                rt:          Layers[0],
+                                texture:     shortcutEnd,
+                                source:      new Rectangle(0, 0, 20, 20),
+                                destination: new Rectangle(
+                                                x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                20, 
+                                                20
+                                                ),
+                                tint:        Color.White
+                            );
+                            RlUtils.DrawTextureRT(
+                                rt:          Layers[1],
+                                texture:     shortcutEnd,
+                                source:      new Rectangle(0, 20, 20, 20),
+                                destination: new Rectangle(
+                                                x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                20, 
+                                                20
+                                                ),
+                                tint:        Color.White
+                            );
+                        }
+
+
                         // TODO: Complete this
                     }
 
@@ -371,12 +632,12 @@ public class Renderer
         State = RenderState.Aborted;
     }
 
-    public void Export(string directory)
+    public void Export()
     {
-        if (!Directory.Exists(directory))
+        if (!Directory.Exists(Paths.Levels))
             throw new DirectoryNotFoundException("Directory does not exist");
 
-        var levelDir = Path.Combine(directory, Level.Name!);
+        var levelDir = Path.Combine(Paths.Levels, Level.Name!);
 
         if (!Directory.Exists(levelDir))
             Directory.CreateDirectory(levelDir);
@@ -407,7 +668,7 @@ public class Renderer
                 $"{connection.Path[0].x}/{connection.Path[0].y}"
                 + $"|{connection.Type}"
                 + '|'
-                + string.Join('|', connection.Path.Skip(1).Select(p => $"{p.x}/{p.y}/{p.z}"))
+                + string.Join('|', connection.Path.Skip(1).Select(p => $"{p.x}/{p.y}"))
             );
         }
         

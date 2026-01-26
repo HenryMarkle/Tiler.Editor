@@ -435,7 +435,7 @@ void main() {
                     {
                         if (renderer is null or { State: Renderer.RenderState.Done })
                         {
-                            renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs.Levels)
+                            renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs)
                             {
                                 Config = rendererConfig
                             };
@@ -458,7 +458,7 @@ void main() {
 
                     if (!isDisabled) ImGui.BeginDisabled();
                     if (ImGui.Button("Export", ImGui.GetContentRegionAvail() with { Y = 20 }))
-                        renderer?.Export(Context.Dirs.Levels);
+                        renderer?.Export();
                     if (!isDisabled) ImGui.EndDisabled();
 
                     ImGui.Text($"State: {renderer?.State}");
