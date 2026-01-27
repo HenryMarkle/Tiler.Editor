@@ -35,7 +35,7 @@ public class EffectDef(string id, string resourceDir)
         var parser = new FileIniDataParser();
 
         var ini = parser.ReadFile(file);
-        var effIni = ini["effect"];
+        var effIni = ini.Global;
 
         var id = effIni["id"] ?? throw new EffectParseException("Required 'id' key");
         var name = effIni["name"];

@@ -78,7 +78,7 @@ public abstract class PropDef(string id, string resourceDir)
 
         var parser = new FileIniDataParser();
 
-        var data = parser.ReadFile(iniFile)["prop"];
+        var data = parser.ReadFile(iniFile).Global;
     
         if (!data.ContainsKey("id"))
             throw new PropParseException("Required 'id' key");

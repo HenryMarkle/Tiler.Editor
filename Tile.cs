@@ -34,7 +34,7 @@ public abstract class TileDef(string id, string resourceDir)
 
         var parser = new FileIniDataParser();
 
-        var data = parser.ReadFile(file)["tile"];
+        var data = parser.ReadFile(file).Global;
 
         if (!data.ContainsKey("id"))
             throw new TileParseException("Required 'id' key");
