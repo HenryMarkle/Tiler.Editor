@@ -110,6 +110,7 @@ public class Level
         levelSec.AddKey("name", asName);
         levelSec.AddKey("width", $"{Width}");
         levelSec.AddKey("height", $"{Height}");
+        if (DefaultTile is not null) levelSec.AddKey("default_tile", DefaultTile.ID);
 
         model.Sections.AddSection("light");
         var lightSec = model["light"];
