@@ -131,16 +131,16 @@ public class Program {
 			printer.Reset();
 			Unloader.Dequeue(20);
 
-			if (viewer.SelectedView.GetType() != typeof(Views.Start) && viewer.SelectedView.GetType() != typeof(Views.Create))
+			if (viewer.SelectedView is not Views.Start and not Views.Create)
 			{
-				if (Raylib.IsKeyPressed(KeyboardKey.One)) viewer.Select<Views.Geos>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Two)) viewer.Select<Views.Tiles>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Three)) viewer.Select<Views.Connections>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Four)) viewer.Select<Views.Cameras>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Five)) viewer.Select<Views.Light>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Six)) viewer.Select<Views.Light>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Seven)) viewer.Select<Views.Effects>();
-				else if (Raylib.IsKeyPressed(KeyboardKey.Eight)) viewer.Select<Views.Props>();
+				if (Raylib.IsKeyPressed(KeyboardKey.One)) viewer.Select(viewer.Geos);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Two)) viewer.Select(viewer.Tiles);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Three)) viewer.Select(viewer.Connections);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Four)) viewer.Select(viewer.Cameras);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Five)) viewer.Select(viewer.Light);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Six)) viewer.Select(viewer.Light);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Seven)) viewer.Select(viewer.Effects);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Eight)) viewer.Select(viewer.Props);
 			}
 
 			viewer.SelectedView.Process();
@@ -155,7 +155,7 @@ public class Program {
 			rlImGui.Begin();
 			
 			ImGui.BeginMainMenuBar();
-			if (viewer.SelectedView.GetType() != typeof(Views.Start) && viewer.SelectedView.GetType() != typeof(Views.Create))
+			if (viewer.SelectedView is not Views.Start and not Views.Create)
             {
                 if (ImGui.BeginMenu("Project")) {
 					if (ImGui.MenuItem("Save", "CTRL + S", false, context.SelectedLevel is not null))
@@ -176,38 +176,37 @@ public class Program {
 					}
 
 					ImGui.MenuItem("Save As", "CTRL + SHIFT + S", false, false);
-					if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select<Views.Start>();
-					if (ImGui.MenuItem("Create", "CTRL + N")) viewer.Select<Views.Create>();
+					if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select(viewer.Start);
+					if (ImGui.MenuItem("Create", "CTRL + N")) viewer.Select(viewer.Create);
 					ImGui.EndMenu();
 				}
-				if (ImGui.MenuItem("Geometry", "", viewer.SelectedView.GetType() == typeof(Views.Geos))) {
-					viewer.Select<Views.Geos>();
-				}
-				if (ImGui.MenuItem("Tiles", "", viewer.SelectedView.GetType() == typeof(Views.Tiles))) {
-					viewer.Select<Views.Tiles>();
-				}
-				if (ImGui.MenuItem("Connections", "", viewer.SelectedView.GetType() == typeof(Views.Connections))) {
-					viewer.Select<Views.Connections>();
-				}
-				if (ImGui.MenuItem("Cameras", "", viewer.SelectedView.GetType() == typeof(Views.Cameras))) {
-					viewer.Select<Views.Cameras>();
-				}
-				if (ImGui.MenuItem("Light", "",  viewer.SelectedView.GetType() == typeof(Views.Light))) {
-					viewer.Select<Views.Light>();
-				}
-				if (ImGui.MenuItem("Dimensions", null, false, false)) {
-				}
-				if (ImGui.MenuItem("Effects", "", viewer.SelectedView.GetType() == typeof(Views.Effects)))
-				{
-					viewer.Select<Views.Effects>();
-				}
-				if (ImGui.MenuItem("Props", "", viewer.SelectedView.GetType() == typeof(Views.Props)))
-				{
-					viewer.Select<Views.Props>();
-				}
-				if (ImGui.MenuItem("Render", "", viewer.SelectedView.GetType() == typeof(Views.Render))) {
-					viewer.Select<Views.Render>();
-				}
+				
+				if (ImGui.MenuItem("Geometry", "", viewer.SelectedView is Views.Geos)) 
+					viewer.Select(viewer.Geos);
+				
+				if (ImGui.MenuItem("Tiles", "", viewer.SelectedView is Views.Tiles)) 
+					viewer.Select(viewer.Tiles);
+				
+				if (ImGui.MenuItem("Connections", "", viewer.SelectedView is Views.Connections)) 
+					viewer.Select(viewer.Connections);
+				
+				if (ImGui.MenuItem("Cameras", "", viewer.SelectedView is Views.Cameras)) 
+					viewer.Select(viewer.Cameras);
+				
+				if (ImGui.MenuItem("Light", "",  viewer.SelectedView is Views.Light)) 
+					viewer.Select(viewer.Light);
+				
+				if (ImGui.MenuItem("Dimensions", null, false, false)) 
+				
+				if (ImGui.MenuItem("Effects", "", viewer.SelectedView is Views.Effects))
+					viewer.Select(viewer.Effects);
+				
+				if (ImGui.MenuItem("Props", "", viewer.SelectedView is Views.Props))
+					viewer.Select(viewer.Props);
+				
+				if (ImGui.MenuItem("Render", "", viewer.SelectedView is Views.Render)) 
+					viewer.Select(viewer.Render);
+				
             }
 			ImGui.EndMainMenuBar();
 

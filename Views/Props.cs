@@ -524,7 +524,6 @@ public class Props : BaseView
             switch (editMode)
             {
                 case EditMode.Placement:
-                placement_mode_case:
                     {
                         // Avoid loop
                         if (IsMouseButtonDown(MouseButton.Left) && !IsMouseButtonDown(MouseButton.Right) && !contPlacementLock)

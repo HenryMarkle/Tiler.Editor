@@ -239,7 +239,7 @@ public class EffectRenderingScriptRuntime : IDisposable
                 if (argsTable["shaderValues"] is LuaTable values) 
                     foreach (KeyValuePair<object, object> entry in values)
                     {
-                        shader.Set(entry.Key as string, entry.Value);
+                        shader.Set((entry.Key as string)!, entry.Value);
                     }
             }
             if (!alphaBlend)

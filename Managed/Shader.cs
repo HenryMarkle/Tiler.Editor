@@ -86,7 +86,7 @@ public class Shader(Raylib_cs.Shader shader) : IDisposable
     public void Set(NLua.LuaTable table)
     {
         foreach (KeyValuePair<object, object> entry in table)
-            Set(entry.Key as string, entry.Value);
+            Set((entry.Key as string)!, entry.Value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

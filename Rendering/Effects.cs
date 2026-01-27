@@ -28,7 +28,6 @@ public class EffectRenderer
 
     private readonly Managed.RenderTexture[] layers;
     public readonly Level level;
-    private readonly int sublayersPerLayer;
     private readonly LevelCamera camera;
 
     public bool IsDone { get; private set; }
@@ -39,7 +38,6 @@ public class EffectRenderer
         this.layers = layers;
         this.level = level;
         this.camera = camera;
-        sublayersPerLayer = 10;
         IsDone = false;
 
         if (level.Effects.Count == 0)

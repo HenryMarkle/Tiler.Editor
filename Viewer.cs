@@ -20,16 +20,8 @@ public class Viewer
 
     public BaseView SelectedView;
 
-    public void Select<T>() 
-        where T : BaseView
+    public void Select(BaseView view)
     {
-        var view = (BaseView?) GetType()
-            .GetFields()
-            .Single(v => v.FieldType == typeof(T))?
-            .GetValue(this);
-
-        if (view is null) return;
-
         SelectedView = view;
         SelectedView.OnViewSelected();
     }

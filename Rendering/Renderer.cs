@@ -138,7 +138,7 @@ public class Renderer
             throw new RenderException("Level must have at least one camera");
 
         TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
-        PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
+        PropRenderer = new PropRenderer(Layers, Level, SelectedCamera);
         EffectRenderer = new EffectRenderer(Layers, Level, SelectedCamera);
         LightRenderer = new LightRenderer(Layers, Lightmap, Level.LightDistance, Level.LightDirection);
     }
@@ -614,7 +614,7 @@ public class Renderer
                     foreach (var layer in Layers) layer.Clear();
 
                     TileRenderer = new TileRenderer(Layers, Level, SelectedCamera);
-                    PropRenderer = new PropRenderer(Layers, Level, Props, SelectedCamera);
+                    PropRenderer = new PropRenderer(Layers, Level, SelectedCamera);
                     EffectRenderer = new EffectRenderer(Layers, Level, SelectedCamera);
                     LightRenderer = new LightRenderer(Layers, Lightmap, Level.LightDistance, Level.LightDirection);
                 }

@@ -73,7 +73,7 @@ public class Start : BaseView
             // Context.AddLevel(level);
 
             // Context.SelectLevel(level);
-            Context.Viewer.Select<Create>();
+            Context.Viewer.Select(Context.Viewer.Create);
         }
     }
 
@@ -111,7 +111,7 @@ public class Start : BaseView
                     var level = Level.FromDir(entries[selectedEntryIndex], Context.Tiles, Context.Props, Context.Effects);
                     Context.AddLevel(level);
                     Context.SelectLevel(level);
-                    Context.Viewer.Select<Geos>();
+                    Context.Viewer.Select(Context.Viewer.Geos);
 
                     Log.Information("Level loaded successfully");
                 }
@@ -165,7 +165,7 @@ public class Start : BaseView
                                     var level = Level.FromDir(entries[i], Context.Tiles, Context.Props, Context.Effects);
                                     Context.AddLevel(level);
                                     Context.SelectLevel(level);
-                                    Context.Viewer.Select<Geos>();
+                                    Context.Viewer.Select(Context.Viewer.Geos);
 
                                     Log.Information("Level loaded successfully");
                                 }

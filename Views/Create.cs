@@ -157,7 +157,7 @@ public class Create : BaseView
                 Context.AddLevel(level);
 
                 Context.SelectLevel(level);
-                Context.Viewer.Select<Geos>();
+                Context.Viewer.Select(Context.Viewer.Geos);
             }
             if (nameExists) EndDisabled();
 
@@ -165,7 +165,7 @@ public class Create : BaseView
                 Reset();
 
             if (Button("Cancel"))
-                Context.Viewer.Select<Start>();
+                Context.Viewer.Select(Context.Viewer.Start);
         }
 
         End();

@@ -15,8 +15,6 @@ public class PropRenderer
 
     private readonly Managed.RenderTexture[] layers;
     public readonly Level level;
-    private readonly PropDex props;
-    private readonly int sublayersPerLayer;
     private readonly int layerMargin;
     private readonly LevelCamera camera;
 
@@ -31,14 +29,12 @@ public class PropRenderer
     public bool IsDone { get; private set; }
 
 
-    public PropRenderer(Managed.RenderTexture[] layers, Level level, PropDex props, LevelCamera camera)
+    public PropRenderer(Managed.RenderTexture[] layers, Level level, LevelCamera camera)
     {
         this.layers = layers;
         this.level = level;
-        this.props = props;
         this.camera = camera;
         layerMargin = 100;
-        sublayersPerLayer = 10;
         propsToDraw = [];
         IsDone = false;
 
