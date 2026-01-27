@@ -635,7 +635,7 @@ public class Renderer
     public void Export()
     {
         if (!Directory.Exists(Paths.Levels))
-            throw new DirectoryNotFoundException("Directory does not exist");
+            Directory.CreateDirectory(Paths.Levels);
 
         var levelDir = Path.Combine(Paths.Levels, Level.Name!);
 
@@ -657,7 +657,7 @@ public class Renderer
         sb.AppendLine($"id = {Level.Name}");
         sb.AppendLine($"width = {Level.Width}");
         sb.AppendLine($"height = {Level.Height}");
-        sb.Append($"cameras = {string.Join('|', Level.Cameras.Select(c => $"{c.Position.X}/{c.Position.Y}"))}");
+        sb.Append($"cameras = {string.Join('|', Level.Cameras.Select(c => $"{c.Position.X},{c.Position.Y}"))}");
         
         sb.Append("\n\n---\n\n");
         
@@ -665,10 +665,10 @@ public class Renderer
         foreach (var connection in Connections)
         {
             sb.AppendLine(
-                $"{connection.Path[0].x}/{connection.Path[0].y}"
+                $"{connection.Path[0].x},{connection.Path[0].y}"
                 + $"|{connection.Type}"
                 + '|'
-                + string.Join('|', connection.Path.Skip(1).Select(p => $"{p.x}/{p.y}"))
+                + string.Join('|', connection.Path.Skip(1).Select(p => $"{p.x},{p.y}"))
             );
         }
         
@@ -691,6 +691,10 @@ public class Renderer
 
             if (z < Level.Depth - 1) sb.Append('|');
         }
+
+        // Write
+
+        File.WriteAllText(Path.Combine(levelDir, "data.txt"), sb.ToString());
 
         // TODO: Complete this
     }
