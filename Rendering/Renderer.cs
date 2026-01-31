@@ -664,7 +664,7 @@ public class Renderer
         // Serialize connections
         foreach (var connection in Connections)
         {
-            sb.AppendLine(
+            sb.Append(
                 $"{connection.Path[0].x},{connection.Path[0].y}"
                 + $"|{connection.Type}"
                 + '|'
@@ -691,6 +691,8 @@ public class Renderer
 
             if (z < Level.Depth - 1) sb.Append('|');
         }
+
+        sb.AppendLine();
 
         // Write
 
