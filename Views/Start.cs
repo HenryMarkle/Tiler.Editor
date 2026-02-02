@@ -209,16 +209,25 @@ public class Start : BaseView
 
     public void GoTo(string path)
     {
-        if (File.Exists(path)) path = Directory.GetParent(path)!.FullName;
-
+        if (!Directory.Exists(path)) path = Directory.GetParent(path)!.FullName;
         if (!Directory.Exists(path)) return;
 
         urlBuffer = Encoding.UTF8.GetBytes(path);
         currentPath = path;
 
-        entries = [ ..Directory.GetDirectories(path).OrderBy((f) => !File.Exists(Path.Combine(f, "level.ini"))) ];
+        entries = [ ..Directory
+            .GetDirectories(path)
+            .Where(d => !Path.GetFileName(d).StartsWith('.'))
+            .OrderBy((f) => !File.Exists(Path.Combine(f, "level.ini"))) 
+        ];
         isDir = [ ..entries.Select(d => !File.Exists(Path.Combine(d, "level.ini"))) ];
-        projectNames = [ ..entries.Select((f) =>Path.GetFileNameWithoutExtension(f)!) ];
+        projectNames = [ ..entries.Select(f => Path.GetFileNameWithoutExtension(f)!) ];
+
+        if (entries.Count > 0)
+        {
+            selectedEntryIndex = 0;
+            if (!isDir[0]) SetPreview(entries[0]);
+        }
     }
 
     public void GoHome() => GoTo(basePath);
@@ -290,6 +299,11 @@ public class Start : BaseView
         {
             SetWindowPos(new Vector2(30, 60));
             SetWindowSize(new Vector2(Raylib.GetScreenWidth() - 60, Raylib.GetScreenHeight() - 120));
+
+            if (Button("Projects")) GoHome();
+            SameLine();
+            if (Button("Up")) GoUp();
+            SameLine();
 
             SetNextItemWidth(GetContentRegionAvail().X);
             InputText("##URL", urlBuffer, 256);
