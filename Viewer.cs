@@ -17,6 +17,7 @@ public class Viewer
     public Effects Effects;
     public Props Props;
     public Render Render;
+    public Palettes Palettes;
 
     public BaseView SelectedView;
 
@@ -40,6 +41,7 @@ public class Viewer
         Effects = new(context);
         Props = new(context);
         Render = new(context);
+        Palettes = new(context);
 
         context.LevelSelected += Start.OnLevelSelected;
         context.LevelSelected += Create.OnLevelSelected;
@@ -51,6 +53,7 @@ public class Viewer
         context.LevelSelected += Effects.OnLevelSelected;
         context.LevelSelected += Props.OnLevelSelected;
         context.LevelSelected += Render.OnLevelSelected;
+        context.LevelSelected += Palettes.OnLevelSelected;
 
         SelectedView = Start;
     } 
@@ -67,5 +70,6 @@ public class Viewer
         context.LevelSelected -= Effects.OnLevelSelected;
         context.LevelSelected -= Props.OnLevelSelected;
         context.LevelSelected -= Render.OnLevelSelected;
+        context.LevelSelected -= Palettes.OnLevelSelected;
     }
 }

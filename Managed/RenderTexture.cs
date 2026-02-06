@@ -1,6 +1,7 @@
 namespace Tiler.Editor.Managed;
 
 using System;
+using System.Numerics;
 using Raylib_cs;
 
 public class RenderTexture(RenderTexture2D rt) : IDisposable
@@ -9,6 +10,7 @@ public class RenderTexture(RenderTexture2D rt) : IDisposable
     public int Width => Raw.Texture.Width;
     public int Height => Raw.Texture.Height;
     public Texture2D Texture => Raw.Texture;
+    public Vector2 Size => new(Width, Height);
 
     public Color4 ClearColor = new(255, 255, 255);
 

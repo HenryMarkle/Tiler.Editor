@@ -1,6 +1,7 @@
 namespace Tiler.Editor.Managed;
 
 using System;
+using System.Numerics;
 using Raylib_cs;
 
 /// <summary>
@@ -15,6 +16,7 @@ public class HybridImage : IDisposable
 
     public int Width { get; private set; }
     public int Height { get; private set; }
+    public Vector2 Size => new(Width, Height);
 
     public static implicit operator Raylib_cs.Image(HybridImage h) => h.IsLoadedToVRAM 
         ? throw new InvalidOperationException("Image is loaded to VRAM; can't be used as a CPU image") 

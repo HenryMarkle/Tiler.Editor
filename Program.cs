@@ -155,32 +155,42 @@ public class Program {
 			rlImGui.Begin();
 			
 			ImGui.BeginMainMenuBar();
+			if (ImGui.BeginMenu("Project")) {
+				if (ImGui.MenuItem(
+					"Save", 
+					"CTRL + S", 
+					false, 
+					viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
+					)
+				) {
+					context.SelectedLevel!.Lightmap = new Managed.Image(
+						Raylib.LoadImageFromTexture(context.Viewports.Lightmap.Raw.Texture)
+					);
+					
+					try
+					{
+						context.SelectedLevel!.Save(paths.Projects);
+					}
+					catch (Exception e)
+					{
+						Log.Error("Failed to save level '{Name}'\n{Exception}", context.SelectedLevel!.Name, e);
+						levelSaveExcep = e;
+					}
+				}
+
+				ImGui.MenuItem(
+					"Save As", 
+					"CTRL + SHIFT + S", 
+					false, 
+					viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
+				);
+				if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select(viewer.Start);
+				if (ImGui.MenuItem("Create", "CTRL + N")) viewer.Select(viewer.Create);
+				ImGui.EndMenu();
+			}
+			
 			if (viewer.SelectedView is not Views.Start and not Views.Create)
             {
-                if (ImGui.BeginMenu("Project")) {
-					if (ImGui.MenuItem("Save", "CTRL + S", false, context.SelectedLevel is not null))
-					{
-						context.SelectedLevel!.Lightmap = new Managed.Image(
-							Raylib.LoadImageFromTexture(context.Viewports.Lightmap.Raw.Texture)
-						);
-						
-						try
-						{
-							context.SelectedLevel!.Save(paths.Projects);
-						}
-						catch (Exception e)
-						{
-							Log.Error("Failed to save level '{Name}'\n{Exception}", context.SelectedLevel!.Name, e);
-							levelSaveExcep = e;
-						}
-					}
-
-					ImGui.MenuItem("Save As", "CTRL + SHIFT + S", false, false);
-					if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select(viewer.Start);
-					if (ImGui.MenuItem("Create", "CTRL + N")) viewer.Select(viewer.Create);
-					ImGui.EndMenu();
-				}
-				
 				if (ImGui.MenuItem("Geometry", "", viewer.SelectedView is Views.Geos)) 
 					viewer.Select(viewer.Geos);
 				
@@ -206,8 +216,14 @@ public class Program {
 				
 				if (ImGui.MenuItem("Render", "", viewer.SelectedView is Views.Render)) 
 					viewer.Select(viewer.Render);
-				
             }
+
+			if (ImGui.BeginMenu("Misc")) {
+				if (ImGui.MenuItem("Palettes", "", viewer.SelectedView is Views.Palettes))
+					viewer.Select(viewer.Palettes);
+			
+				ImGui.EndMenu();
+			}
 			ImGui.EndMainMenuBar();
 
 			viewer.SelectedView.GUI();

@@ -1,6 +1,7 @@
 namespace Tiler.Editor.Managed;
 
 using System;
+using System.Numerics;
 using Raylib_cs;
 
 public class Image(Raylib_cs.Image image) : IDisposable
@@ -8,6 +9,7 @@ public class Image(Raylib_cs.Image image) : IDisposable
     public Raylib_cs.Image Raw = image;
     public int Width => Raw.Width;
     public int Height => Raw.Height;
+    public Vector2 Size => new(Width, Height);
 
     public Image(Texture2D texture) : this(Raylib.LoadImageFromTexture(texture)) {}
 
