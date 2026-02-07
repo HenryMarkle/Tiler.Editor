@@ -1,17 +1,13 @@
 namespace Tiler.Editor.Views;
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
+
 using ImGuiNET;
 using Raylib_cs;
-using Tiler.Editor.Managed;
-using Tiler.Editor.Tile;
-using Tiler.Editor.Views.Components;
 using static Raylib_cs.Raylib;
+
+using Tiler.Editor.Views.Components;
 
 public class Effects : BaseView
 {
@@ -41,15 +37,19 @@ public class Effects : BaseView
     {
         if (selectedEffect is null) return;
 
-        for (int x = mx - radius; x < mx + radius + 1; x++)
+        for (var x = mx - radius; x < mx + radius + 1; x++)
         {
             if (x < 0 || x >= selectedEffect.Matrix.Width) continue;
 
-            for (int y = my - radius; y < my + radius + 1; y++)
+            for (var y = my - radius; y < my + radius + 1; y++)
             {
                 if (y < 0 || y >= selectedEffect.Matrix.Height) continue;
 
-                if (CheckCollisionPointCircle((new Vector2(x, y) * 20) + (Vector2.One * 0.5f), (cursor.MXPos*20) + (Vector2.One * 0.5f), (brushSize + 1) * 20))
+                if (CheckCollisionPointCircle(
+                        point: (new Vector2(x, y) * 20) + (Vector2.One * 0.5f), 
+                        center: (cursor.MXPos*20) + (Vector2.One * 0.5f), 
+                        radius: (brushSize + 1) * 20)
+                    )
                 {
                     selectedEffect.Matrix[x, y, 0] = Math.Clamp(
                         selectedEffect.Matrix[x, y, 0] + (power * (1 - Raymath.Vector2Distance(cursor.MXPos, new Vector2(x, y))/radius)), 
@@ -149,7 +149,7 @@ public class Effects : BaseView
                     {
                         brushLock = true;
 
-                        Place(cursor.MX, cursor.MY, brushSize + 1, power);
+                        Place(cursor.MX, cursor.MY, radius: brushSize + 1, power);
                         redrawEffects = true;
 
                         prevMXPos = cursor.MXPos;
@@ -158,7 +158,7 @@ public class Effects : BaseView
                     {
                         brushLock = true;
 
-                        Place(cursor.MX, cursor.MY, brushSize + 1, -power);
+                        Place(cursor.MX, cursor.MY, radius: brushSize + 1, -power);
                         redrawEffects = true;
 
                         prevMXPos = cursor.MXPos;
@@ -194,7 +194,13 @@ public class Effects : BaseView
                     for (var x = 0; x < level.Width; x++)
                     {
                         if (x < 0 || x >= selectedEffect.Matrix.Width) continue;
-                        DrawRectangle(x * 20, y * 20, 20, 20, Color.Green with { A = (byte)(selectedEffect.Matrix[x, y, 0] * 240) });
+                        DrawRectangle(
+                            posX: x * 20, 
+                            posY: y * 20, 
+                            width: 20, 
+                            height: 20, 
+                            Color.Green with { A = (byte)(selectedEffect.Matrix[x, y, 0] * 240) }
+                            );
                     }
                 }
 
@@ -218,20 +224,20 @@ public class Effects : BaseView
             for (int l = Context.Viewports.Depth - 1; l > -1; --l)
             {
                 if (l == Context.Layer) continue;
-                DrawTexture(Context.Viewports.Geos[l].Raw.Texture, 0, 0, Color.Black with { A = 120 });
-                DrawTexture(Context.Viewports.Tiles[l].Raw.Texture, 0, 0, Color.White with { A = 120 });
+                DrawTexture(Context.Viewports.Geos[l].Raw.Texture, posX: 0, posY: 0, Color.Black with { A = 120 });
+                DrawTexture(Context.Viewports.Tiles[l].Raw.Texture, posX: 0, posY: 0, Color.White with { A = 120 });
             }
 
-            DrawRectangle(0, 0, level.Width * 20, level.Height * 20, Color.Red with { A = 40 });
+            DrawRectangle(posX: 0, posY: 0, width: level.Width * 20, height: level.Height * 20, Color.Red with { A = 40 });
 
-            DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, 0, 0, Color.Black with { A = 210 });
-            DrawTexture(Context.Viewports.Tiles[Context.Layer].Raw.Texture, 0, 0, Color.White with { A = 210 });
+            DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, posX: 0, posY: 0, Color.Black with { A = 210 });
+            DrawTexture(Context.Viewports.Tiles[Context.Layer].Raw.Texture, posX: 0, posY: 0, Color.White with { A = 210 });
 
-            DrawTexture(Context.Viewports.Props.Texture, 0, 0, Color.White);
+            DrawTexture(Context.Viewports.Props.Texture, posX: 0, posY: 0, tint: Color.White);
 
-            DrawRectangle(0, 0, Context.Viewports.Main.Width, Context.Viewports.Main.Height, Color.Magenta with { A = (byte)tintOpacity });
+            DrawRectangle(posX: 0, posY: 0, Context.Viewports.Main.Width, Context.Viewports.Main.Height, Color.Magenta with { A = (byte)tintOpacity });
             
-            DrawTexture(Context.Viewports.Effect.Texture, 0, 0, Color.White);
+            DrawTexture(Context.Viewports.Effect.Texture, posX: 0, posY: 0, tint: Color.White);
             
             EndTextureMode();
             
@@ -239,7 +245,7 @@ public class Effects : BaseView
         }
 
         BeginMode2D(Context.Camera);
-        DrawTexture(Context.Viewports.Main.Texture, 0, 0, Color.White);
+        DrawTexture(Context.Viewports.Main.Texture, posX: 0, posY: 0, tint: Color.White);
 
         cursor.DrawCursor();
 
@@ -247,9 +253,13 @@ public class Effects : BaseView
         {
             for (var y = cursor.MY - brushSize; y < cursor.MY + brushSize + 1; y++)
             {
-                if (CheckCollisionPointCircle((new Vector2(x, y) * 20) + (Vector2.One * 0.5f), (cursor.MXPos*20) + (Vector2.One * 0.5f), (brushSize + 1) * 20))
+                if (CheckCollisionPointCircle(
+                        point: (new Vector2(x, y) * 20) + (Vector2.One * 0.5f), 
+                        center: (cursor.MXPos*20) + (Vector2.One * 0.5f), 
+                        radius: (brushSize + 1) * 20)
+                    )
                 {
-                    DrawRectangle(x * 20, y * 20, 20, 20, Color.White with { A = 30 });
+                    DrawRectangle(posX: x * 20, posY: y * 20, width: 20, height: 20, Color.White with { A = 30 });
                 }
             }
         }
@@ -262,16 +272,16 @@ public class Effects : BaseView
 
         if (Context.SelectedLevel is not { } level) return;
 
-        if (ImGui.Begin("Menu##EffectMenu"))
+        if (ImGui.Begin(name: "Menu##EffectMenu"))
         {
             if (selectedEffectDef is null) ImGui.BeginDisabled();
-            if (ImGui.Button("Add", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            if (ImGui.Button(label: "Add", ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 level.Effects.Add(new Effect(selectedEffectDef!, level.Width, level.Height));
             }
             if (selectedEffectDef is null) ImGui.EndDisabled();
 
-            if (ImGui.BeginListBox("##Effects", ImGui.GetContentRegionAvail()))
+            if (ImGui.BeginListBox(label: "##Effects", size: ImGui.GetContentRegionAvail()))
             {
                 foreach (var category in Context.Effects.Categories)
                 {
@@ -279,7 +289,7 @@ public class Effects : BaseView
 
                     foreach (var effect in Context.Effects.CategoryEffects[category])
                     {
-                        if (ImGui.Selectable($"{effect.Name}##{effect.ID}", effect == selectedEffectDef))
+                        if (ImGui.Selectable(label: $"{effect.Name}##{effect.ID}", selected: effect == selectedEffectDef))
                         {
                             selectedEffectDef = effect;
                         }
@@ -292,12 +302,12 @@ public class Effects : BaseView
 
         ImGui.End();
 
-        if (ImGui.Begin("Effects##EffectList"))
+        if (ImGui.Begin(name: "Effects##EffectList"))
         {
             var disableRemove = selectedEffect is null;
 
             if (disableRemove) ImGui.BeginDisabled();
-            if (ImGui.Button("Remove", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            if (ImGui.Button(label: "Remove", size: ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 var index = level.Effects.IndexOf(selectedEffect!);
 
@@ -315,13 +325,13 @@ public class Effects : BaseView
             }
             if (disableRemove) ImGui.EndDisabled();
 
-            if (ImGui.BeginListBox("##Effects", ImGui.GetContentRegionAvail()))
+            if (ImGui.BeginListBox(label: "##Effects", size: ImGui.GetContentRegionAvail()))
             {
                 for (var e = 0; e < level.Effects.Count; e++)
                 {
                     var effect = level.Effects[e];
 
-                    if (ImGui.Selectable($"{e}. {effect.Def.Name}", effect == selectedEffect))
+                    if (ImGui.Selectable(label: $"{e}. {effect.Def.Name}", selected: effect == selectedEffect))
                     {
                         selectedEffect = effect;
                         redrawEffects = true;
@@ -334,9 +344,9 @@ public class Effects : BaseView
 
         ImGui.End();
 
-        if (ImGui.Begin("Settings##EffectEditorSettings"))
+        if (ImGui.Begin(name: "Settings##EffectEditorSettings"))
         {
-            if (ImGui.SliderInt("Tint Opacity", ref tintOpacity, 0, 250))
+            if (ImGui.SliderInt(label: "Tint Opacity", v: ref tintOpacity, v_min: 0, v_max: 250))
             {
                 redrawMain = true;
             }

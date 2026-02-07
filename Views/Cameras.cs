@@ -1,24 +1,18 @@
 namespace Tiler.Editor.Views;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using ImGuiNET;
 using Raylib_cs;
-using Tiler.Editor.Managed;
-using Tiler.Editor.Tile;
-using Tiler.Editor.Views.Components;
 using static Raylib_cs.Raylib;
+
+using Tiler.Editor.Managed;
+using Tiler.Editor.Views.Components;
 
 public class Cameras : BaseView
 {
     private readonly Texture cameraSprite;
     private readonly Cursor cursor;
     private LevelCamera? selectedCamera;
-    private static readonly Color[] cameraColors = [
+    private static readonly Color[] CameraColors = [
         Color.Green,
         Color.Red,
         Color.Blue,
@@ -81,7 +75,7 @@ public class Cameras : BaseView
                         if (selectedCamera is null)
                         {
                             if (
-                                CheckCollisionPointCircle(new Vector2(cursor.X, cursor.Y), center, 110) && 
+                                CheckCollisionPointCircle(new Vector2(cursor.X, cursor.Y), center, radius: 110) && 
                                 IsMouseButtonPressed(MouseButton.Left)
                             ) {
                                 selectedCamera = cam;
@@ -106,13 +100,13 @@ public class Cameras : BaseView
                                 }
                                 else
                                 {
-                                    if (CheckCollisionPointCircle(cursor.Pos, tl, 10) && IsMouseButtonPressed(MouseButton.Left))
+                                    if (CheckCollisionPointCircle(cursor.Pos, center: tl, radius: 10) && IsMouseButtonPressed(MouseButton.Left))
                                         quadLock = 1;
-                                    else if (CheckCollisionPointCircle(cursor.Pos, tr, 10) && IsMouseButtonPressed(MouseButton.Left))
+                                    else if (CheckCollisionPointCircle(cursor.Pos, center: tr, radius: 10) && IsMouseButtonPressed(MouseButton.Left))
                                         quadLock = 2;
-                                    else if (CheckCollisionPointCircle(cursor.Pos, br, 10) && IsMouseButtonPressed(MouseButton.Left))
+                                    else if (CheckCollisionPointCircle(cursor.Pos, center: br, radius: 10) && IsMouseButtonPressed(MouseButton.Left))
                                         quadLock = 3;
-                                    else if (CheckCollisionPointCircle(cursor.Pos, bl, 10) && IsMouseButtonPressed(MouseButton.Left))
+                                    else if (CheckCollisionPointCircle(cursor.Pos, center: bl, radius: 10) && IsMouseButtonPressed(MouseButton.Left))
                                         quadLock = 4;
 
                                     if (quadLock != 0) quadCamLock = cam;
@@ -123,8 +117,8 @@ public class Cameras : BaseView
                 }
                 else
                 {
-                    selectedCamera.Position.X = cursor.X - LevelCamera.Width / 2;
-                    selectedCamera.Position.Y = cursor.Y - LevelCamera.Height / 2;
+                    selectedCamera.Position.X = cursor.X - LevelCamera.Width / 2f;
+                    selectedCamera.Position.Y = cursor.Y - LevelCamera.Height / 2f;
                 
                     if (IsMouseButtonPressed(MouseButton.Left))
                     {
@@ -148,32 +142,32 @@ public class Cameras : BaseView
         var vp = Context.Viewports;
 
         BeginMode2D(Context.Camera);
-        DrawTexture(vp.Main.Raw.Texture, 0, 0, Color.White);
+        DrawTexture(vp.Main.Raw.Texture, posX: 0, posY: 0, tint: Color.White);
 
         for (var c = 0; c < level.Cameras.Count; c++)
         {
             var cam = level.Cameras[c];
 
-            var color = cameraColors[c % cameraColors.Length];
+            var color = CameraColors[c % CameraColors.Length];
 
-            DrawRectangleV(cam.Position, new Vector2(LevelCamera.Width, LevelCamera.Height), color with { A = 50 });
-            DrawTextureV(cameraSprite, cam.Position, Color.White);
-            DrawText($"{c}", (int)(cam.Position.X + 25), (int)(cam.Position.Y + 20), 20, Color.White);
+            DrawRectangleV(cam.Position, size: new Vector2(LevelCamera.Width, LevelCamera.Height), color with { A = 50 });
+            DrawTextureV(cameraSprite, cam.Position, tint: Color.White);
+            DrawText($"{c}", posX: (int)(cam.Position.X + 25), posY: (int)(cam.Position.Y + 20), fontSize: 20, Color.White);
 
             var tl = cam.Position + cam.TopLeft.Position;
             var tr = cam.Position + (Vector2.UnitX*LevelCamera.Width) + cam.TopRight.Position;
             var br = cam.Position + new Vector2(LevelCamera.Width, LevelCamera.Height) + cam.BottomRight.Position;
             var bl = cam.Position + (Vector2.UnitY*LevelCamera.Height) + cam.BottomLeft.Position;
 
-            DrawLineEx(tl, tr, 1, color);
-            DrawLineEx(tr, br, 1, color);
-            DrawLineEx(br, bl, 1, color);
-            DrawLineEx(bl, tl, 1, color);
+            DrawLineEx(tl, tr, thick: 1, color);
+            DrawLineEx(tr, br, thick: 1, color);
+            DrawLineEx(br, bl, thick: 1, color);
+            DrawLineEx(bl, tl, thick: 1, color);
 
-            DrawLineEx(cam.Position, tl, 1, color);
-            DrawLineEx(cam.Position + (Vector2.UnitX*LevelCamera.Width), tr, 1, color);
-            DrawLineEx(cam.Position + new Vector2(LevelCamera.Width, LevelCamera.Height), br, 1, color);
-            DrawLineEx(cam.Position + (Vector2.UnitY*LevelCamera.Height), bl, 1, color);
+            DrawLineEx(cam.Position, tl, thick: 1, color);
+            DrawLineEx(cam.Position + (Vector2.UnitX*LevelCamera.Width), tr, thick: 1, color);
+            DrawLineEx(cam.Position + new Vector2(LevelCamera.Width, LevelCamera.Height), br, thick: 1, color);
+            DrawLineEx(cam.Position + (Vector2.UnitY*LevelCamera.Height), bl, thick: 1, color);
 
             DrawCircleV(
                 center: tl,
@@ -196,9 +190,9 @@ public class Cameras : BaseView
                 color: Color.White with { A = 180 }
             );
 
-            if (CheckCollisionPointCircle(cursor.Pos, cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2), 50))
+            if (CheckCollisionPointCircle(cursor.Pos, center: cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2), radius: 50))
             {
-                DrawCircleV(cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2), 50, Color.White with { A = 50 });
+                DrawCircleV(center: cam.Position + (new Vector2(LevelCamera.Width, LevelCamera.Height) / 2), radius: 50, Color.White with { A = 50 });
             }
         }
         EndMode2D();

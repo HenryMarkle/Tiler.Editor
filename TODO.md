@@ -6,3 +6,4 @@
 - Add "long" prop type
 - Add more effects
 - Add palette editor/creator
+- Introduce a dynamic image type that references data on the disk

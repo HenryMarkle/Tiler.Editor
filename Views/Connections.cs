@@ -1,16 +1,15 @@
 namespace Tiler.Editor.Views;
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+
 using ImGuiNET;
 using Raylib_cs;
+using static Raylib_cs.Raylib;
+
 using Tiler.Editor.Managed;
 using Tiler.Editor.Views.Components;
-using static Raylib_cs.Raylib;
 
 public class Connections : BaseView
 {
@@ -61,7 +60,7 @@ public class Connections : BaseView
                 DrawTexturePro(
                     texture:  atlas.Texture,
                     source,
-                    dest:     new Rectangle(x * 20, y * 20, 20, 20),
+                    dest:     new Rectangle(x * 20, y * 20, width: 20, height: 20),
                     origin:   Vector2.Zero,
                     rotation: 0,
                     tint:     Color.White
@@ -77,17 +76,17 @@ public class Connections : BaseView
 
         BeginTextureMode(Context.Viewports.Main);
         ClearBackground(new Color(0, 0, 0, 0));
-        for (int l = Context.Viewports.Depth - 1; l > 0; --l)
+        for (var l = Context.Viewports.Depth - 1; l > 0; --l)
         {
-            DrawTexture(Context.Viewports.Geos[l].Texture, 0, 0, Color.Black with { A = 120 });
-            DrawTexture(Context.Viewports.Tiles[l].Texture, 0, 0, Color.White with { A = 120 });
+            DrawTexture(Context.Viewports.Geos[l].Texture, posX: 0, posY: 0, Color.Black with { A = 120 });
+            DrawTexture(Context.Viewports.Tiles[l].Texture, posX: 0, posY: 0, Color.White with { A = 120 });
         }
         
-        DrawRectangle(0, 0, level.Width * 20, level.Height * 20, Color.Red with { A = 40 });
+        DrawRectangle(posX: 0, posY: 0, width: level.Width * 20, height: level.Height * 20, Color.Red with { A = 40 });
 
-        DrawTexture(Context.Viewports.Geos[0].Texture, 0, 0, Color.Black with { A = 210 });
-        DrawTexture(Context.Viewports.Tiles[0].Texture, 0, 0, Color.White with { A = 210 });
-        DrawTexture(Context.Viewports.Connections.Texture, 0, 0, Color.White);
+        DrawTexture(Context.Viewports.Geos[0].Texture, posX: 0, posY: 0, Color.Black with { A = 210 });
+        DrawTexture(Context.Viewports.Tiles[0].Texture, posX: 0, posY: 0, Color.White with { A = 210 });
+        DrawTexture(Context.Viewports.Connections.Texture, posX: 0, posY: 0, tint: Color.White);
         EndTextureMode();
     }
 
@@ -103,7 +102,7 @@ public class Connections : BaseView
         // Clear area
         BeginBlendMode(BlendMode.Custom);
         Rlgl.SetBlendMode(BlendMode.Custom);
-        Rlgl.SetBlendFactors(1, 0, 1);
+        Rlgl.SetBlendFactors(glSrcFactor: 1, glDstFactor: 0, glEquation: 1);
         DrawRectangle(
             posX:   mx * 20, 
             posY:   my * 20, 
@@ -190,7 +189,7 @@ public class Connections : BaseView
         }
 
         BeginMode2D(Context.Camera);
-        DrawTexture(Context.Viewports.Main.Texture, 0, 0, Color.White);
+        DrawTexture(Context.Viewports.Main.Texture, posX: 0, posY: 0, tint: Color.White);
 
         if (drawGrid) cursor.DrawGrid();
         cursor.DrawCursor();
@@ -198,7 +197,7 @@ public class Connections : BaseView
         DrawTexturePro(
             texture:  atlas.Texture,
             source:   ConnectionAtlas.GetRect(atlas.GetIndex(selectedConnectionType)),
-            dest:     new Rectangle(cursor.MXPos * 20 + Vector2.One * 20, 40, 40),
+            dest:     new Rectangle(position: cursor.MXPos * 20 + Vector2.One * 20, width: 40, height: 40),
             origin:   Vector2.Zero,
             rotation: 0,
             tint:     Color.White with { A = 80 }
@@ -210,7 +209,7 @@ public class Connections : BaseView
     {
         cursor.ProcessGUI();
 
-        if (ImGui.Begin("Connections"))
+        if (ImGui.Begin(name: "Connections"))
         {
             var space = ImGui.GetContentRegionAvail();
             var imageSize = new Vector2(atlas.Texture.Width, atlas.Texture.Height);

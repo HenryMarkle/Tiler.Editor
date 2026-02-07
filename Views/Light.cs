@@ -5,13 +5,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
+
 using ImGuiNET;
 using Raylib_cs;
-using Tiler.Editor.Managed;
-using Tiler.Editor.Tile;
-using Tiler.Editor.Views.Components;
 using static Raylib_cs.Raylib;
+
+using Tiler.Editor.Managed;
+using Tiler.Editor.Views.Components;
 
 public class Light : BaseView
 {
@@ -23,7 +23,7 @@ public class Light : BaseView
     private float brushRotation;
     private bool isRotatingBrushWithCursor;
     private Vector2 pinnedBrushPos;
-    private readonly Raylib_cs.Shader eraseShader;
+    private readonly Managed.Shader eraseShader;
     private Rectangle lightConfigBkgRect = new(10, GetScreenHeight() - 210, 200, 200);
 
     public Light(Context context) : base(context)
@@ -48,49 +48,44 @@ public class Light : BaseView
             selectedBrushIndex = -1;
         }
 
-        eraseShader = LoadShaderFromMemory(
-            vsCode: null, 
-            fsCode: @"
-            #version 330
-            
-            uniform sampler2D texture0;
+        eraseShader = new Managed.Shader(LoadShaderFromMemory(
+            vsCode: null,
+            fsCode: """
 
-            in vec2 fragTexCoord;
-            in vec4 fragColor;
+                    #version 330
 
-            out vec4 finalColor;
+                    uniform sampler2D texture0;
 
-            void main() {
-                vec4 pixel = texture(texture0, fragTexCoord);
-                
-                if (pixel == vec4(1, 1, 1, 1)) {
-                    finalColor = vec4(0, 0, 0, 0);
-                } else {
-                    discard;
-                }
-            }
-            "
-        );
+                    in vec2 fragTexCoord;
+                    in vec4 fragColor;
+
+                    out vec4 finalColor;
+
+                    void main() {
+                        vec4 pixel = texture(texture0, fragTexCoord);
+                        
+                        if (pixel == vec4(1, 1, 1, 1)) {
+                            finalColor = vec4(0, 0, 0, 0);
+                        } else {
+                            discard;
+                        }
+                    }
+                                
+                    """
+        ));
     }
-
-    ~Light()
-    {
-        UnloadShader(eraseShader);
-    }
-    
 
     public override void OnLevelSelected(Level level)
     {
-        if (Context.SelectedLevel is not null)
-            Context.SelectedLevel.Lightmap = new Managed.Image(
-                LoadImageFromTexture(Context.Viewports.Lightmap.Raw.Texture)
-            );
+        Context.SelectedLevel?.Lightmap = new Managed.Image(
+            LoadImageFromTexture(Context.Viewports.Lightmap.Raw.Texture)
+        );
 
         var lightmap = new Texture(LoadTextureFromImage(level.Lightmap));
 
         BeginTextureMode(Context.Viewports.Lightmap);
         ClearBackground(new Color(0, 0, 0, 0));
-        DrawTexture(lightmap, 0, 0, Color.White);
+        DrawTexture(lightmap, posX: 0, posY: 0, tint: Color.White);
         EndTextureMode();
     }
 
@@ -176,7 +171,6 @@ public class Light : BaseView
             level.LightDistance = Math.Clamp(level.LightDistance - multiplier*0.1f, 0, 1f);
         }
 
-
         if (isRotatingBrushWithCursor)
         {
             brushRotation = MathF.Atan2(
@@ -231,13 +225,13 @@ public class Light : BaseView
                 {
                     Rlgl.SetBlendMode(BlendMode.Custom);
 
-                    Rlgl.SetBlendFactors(1, 0, 1);
+                    Rlgl.SetBlendFactors(glSrcFactor: 1, glDstFactor: 0, glEquation: 1);
 
                     BeginShaderMode(eraseShader);
 
                     SetShaderValueTexture(
                         shader:   eraseShader,
-                        locIndex: GetShaderLocation(eraseShader, "texture0"),
+                        locIndex: GetShaderLocation(eraseShader, uniformName: "texture0"),
                         texture:  selectedBrush
                     );
 
@@ -300,7 +294,7 @@ public class Light : BaseView
                 texture:  selectedBrush,
                 source:   new Rectangle(0, 0, selectedBrush.Width, selectedBrush.Height),
                 dest:     isRotatingBrushWithCursor 
-                            ? new Rectangle(pinnedBrushPos, brushSize) 
+                            ? new Rectangle(position: pinnedBrushPos, brushSize) 
                             : new Rectangle(cursor.X, cursor.Y, brushSize),
                 origin:   brushSize/2,
                 rotation: brushRotation, 
@@ -337,9 +331,9 @@ public class Light : BaseView
     {
         cursor.ProcessGUI();
 
-        if (ImGui.Begin("Brushes"))
+        if (ImGui.Begin(name: "Brushes"))
         {
-            if (ImGui.BeginListBox("##Brushes", ImGui.GetContentRegionAvail()))
+            if (ImGui.BeginListBox(label: "##Brushes", size: ImGui.GetContentRegionAvail()))
             {
                 var space = ImGui.GetContentRegionAvail();
 
@@ -354,7 +348,7 @@ public class Light : BaseView
                         drawl.AddRectFilled(
                             pos,
                             pos + Vector2.One * space.X,
-                            ImGui.ColorConvertFloat4ToU32(
+                            col: ImGui.ColorConvertFloat4ToU32(
                                 new Vector4(0, 0.87f, 0.1f, 1)
                             )
                         );
@@ -369,7 +363,7 @@ public class Light : BaseView
                         drawl.AddRectFilled(
                             pos,
                             pos + Vector2.One * space.X,
-                            ImGui.ColorConvertFloat4ToU32(
+                            col: ImGui.ColorConvertFloat4ToU32(
                                 new Vector4(0, 0.87f, 0.8f, 0.9f)
                             )
                         );
@@ -383,7 +377,7 @@ public class Light : BaseView
                         }
                     }
 
-                    rlImGui_cs.rlImGui.ImageSize(brush, new(space.X, space.X));
+                    rlImGui_cs.rlImGui.ImageSize(brush, size: Vector2.One * space.X);
                 }
 
                 ImGui.EndListBox();

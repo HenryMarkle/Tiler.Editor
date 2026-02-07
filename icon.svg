@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer1">
+    <rect
+       style="fill:#00cf1e;fill-opacity:1;stroke-width:1.26521"
+       id="rect3"
+       width="214.03693"
+       height="214.03693"
+       x="-16.290878"
+       y="68.508759"
+       transform="rotate(-15.694924)" />
+    <rect
+       style="fill:#000ee6;fill-opacity:1;stroke-width:0.904931"
+       id="rect4"
+       width="214.03693"
+       height="109.49445"
+       x="-16.07198"
+       y="67.536568"
+       transform="rotate(-15.625211)" />
+    <rect
+       style="fill:#00cf1e;fill-opacity:1;stroke-width:1.26521"
+       id="rect5"
+       width="214.03693"
+       height="214.03693"
+       x="281.27591"
+       y="23.249876"
+       transform="rotate(-0.08296842)" />
+    <rect
+       style="fill:#000ee6;fill-opacity:1;stroke-width:0.904931"
+       id="rect6"
+       width="214.03693"
+       height="109.49445"
+       x="281.43954"
+       y="21.915663"
+       transform="rotate(-0.01325542)" />
+    <rect
+       style="fill:#cf0000;fill-opacity:1;stroke-width:1.26521"
+       id="rect7"
+       width="214.03693"
+       height="214.03693"
+       x="280.96506"
+       y="237.91798"
+       transform="rotate(-0.08296842)" />
+    <rect
+       style="fill:#00cf1e;fill-opacity:1;stroke-width:0.904931"
+       id="rect8"
+       width="214.03693"
+       height="109.49445"
+       x="281.38989"
+       y="236.584"
+       transform="rotate(-0.01325542)" />
+    <rect
+       style="fill:#00cf1e;fill-opacity:1;stroke-width:1.26521"
+       id="rect9"
+       width="214.03693"
+       height="214.03693"
+       x="-350.78476"
+       y="205.2028"
+       transform="rotate(-59.665509)" />
+    <rect
+       style="fill:#00cf1e;fill-opacity:1;stroke-width:1.26521"
+       id="rect10"
+       width="214.03693"
+       height="214.03693"
+       x="-350.78476"
+       y="205.2028"
+       transform="rotate(-59.665509)" />
+    <rect
+       style="fill:#e60000;fill-opacity:1;stroke-width:0.333245"
+       id="rect11"
+       width="215.59996"
+       height="14.741003"
+       x="216.17586"
+       y="330.38489"
+       transform="matrix(0.84923327,0.52801786,-0.53429957,0.84529519,0,0)" />
+  </g>
+</svg>

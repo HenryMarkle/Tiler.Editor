@@ -1,17 +1,16 @@
 namespace Tiler.Editor.Views;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
+
 using ImGuiNET;
 using Raylib_cs;
-using Tiler.Editor.Managed;
-using Tiler.Editor.Tile;
-using Tiler.Editor.Views.Components;
 using static Raylib_cs.Raylib;
+
+using Tiler.Editor.Managed;
+using Tiler.Editor.Views.Components;
 
 public class Palettes : BaseView
 {
@@ -67,41 +66,27 @@ public class Palettes : BaseView
 
         paletteImage = new HybridImage(GenImageColor(50, 8, Color.White));
 
-        ImageFormat(ref paletteImage.Image, PixelFormat.UncompressedR8G8B8A8);
+        ImageFormat(ref paletteImage.Image, PixelFormat.UncompressedR8G8B8);
 
-        for (var layer = 0; layer < 50; layer++)
+        for (var lyr = 0; lyr < 50; lyr++)
         {
-            // BeginTextureMode(paletteCanvas);
-            // DrawRectangle(layer, 7 - 1, 1, 1, new Color(200, 0, 0, 255));
-            // DrawRectangle(layer, 7 - 2, 1, 1, new Color(0, 200, 0, 255));
-            // DrawRectangle(layer, 7 - 3, 1, 1, new Color(0, 0, 200, 255));
+            ImageDrawPixel(ref paletteImage.Image, posX: lyr, posY: 1, new Color(200, 0, 0, 255));
+            ImageDrawPixel(ref paletteImage.Image, posX: lyr, posY: 2, new Color(0, 200, 0, 255));
+            ImageDrawPixel(ref paletteImage.Image, posX: lyr, posY: 3, new Color(0, 0, 200, 255));
 
-            // DrawRectangle(layer, 7 - 3 - 1, 1, 1, new Color(255, 0, 0, 255));
-            // DrawRectangle(layer, 7 - 3 - 2, 1, 1, new Color(0, 255, 0, 255));
-            // DrawRectangle(layer, 7 - 3 - 3, 1, 1, new Color(0, 0, 255, 255));
-            // EndTextureMode();
-
-            ImageDrawPixel(ref paletteImage.Image, layer, 1, new Color(200, 0, 0, 255));
-            ImageDrawPixel(ref paletteImage.Image, layer, 2, new Color(0, 200, 0, 255));
-            ImageDrawPixel(ref paletteImage.Image, layer, 3, new Color(0, 0, 200, 255));
-
-            ImageDrawPixel(ref paletteImage.Image, layer, 1 + 3, new Color(255, 0, 0, 255));
-            ImageDrawPixel(ref paletteImage.Image, layer, 2 + 3, new Color(0, 255, 0, 255));
-            ImageDrawPixel(ref paletteImage.Image, layer, 3 + 3, new Color(0, 0, 255, 255));
+            ImageDrawPixel(ref paletteImage.Image, posX: lyr, posY: 1 + 3, new Color(255, 0, 0, 255));
+            ImageDrawPixel(ref paletteImage.Image, posX: lyr, posY: 2 + 3, new Color(0, 255, 0, 255));
+            ImageDrawPixel(ref paletteImage.Image, posX: lyr, posY: 3 + 3, new Color(0, 0, 255, 255));
         }
+        
+        ImageDrawPixel(ref paletteImage.Image, posX: 0, posY: 0, new Color(255, 0, 0, 255));
+        ImageDrawPixel(ref paletteImage.Image, posX: 1, posY: 0, new Color(255, 255, 255, 255));
+        ImageDrawPixel(ref paletteImage.Image, posX: 3, posY: 0, new Color(100, 0, 0, 255));
 
-        // BeginTextureMode(paletteCanvas);
-        // DrawRectangle(0, 7 - 0, 1, 1, new Color(255, 0, 0, 255));
-        // DrawRectangle(1, 7 - 0, 1, 1, new Color(255, 255, 255, 255));
-        // DrawRectangle(3, 7 - 0, 1, 1, new Color(100, 0, 0, 255));
-        // EndTextureMode();
-
-        ImageDrawPixel(ref paletteImage.Image, 0, 0, new Color(255, 0, 0, 255));
-        ImageDrawPixel(ref paletteImage.Image, 1, 0, new Color(255, 255, 255, 255));
-        ImageDrawPixel(ref paletteImage.Image, 3, 0, new Color(100, 0, 0, 255));
-
-        paletteShader = new Managed.Shader(LoadShaderFromMemory(null, @"
-        #version 330
+        paletteShader = new Managed.Shader(LoadShaderFromMemory(
+            vsCode: null, 
+            fsCode: """
+#version 330
 
 in vec2 fragTexCoord;
 in vec4 fragColor;
@@ -120,36 +105,37 @@ vec2 fogPos = vec2(2.1 / 50.0, 0);
 vec2 fogIntenPos = vec2(3.1 / 50.0, 0);
 
 void main() {
-    vec4 pixel = texture(texture0, vec2(fragTexCoord.x, 1.0 - fragTexCoord.y));
+  vec4 pixel = texture(texture0, vec2(fragTexCoord.x, 1.0 - fragTexCoord.y));
 
-    if (pixel == black) {   // darkness
-        finalColor = texture(palette, darkPos);
-        return;
-    }
+  if (pixel == black) {   // darkness
+      finalColor = texture(palette, darkPos);
+      return;
+  }
 
-    if (pixel == white) {   // sky
-        finalColor = texture(palette, skyPos);
-        return;
-    }
+  if (pixel == white) {   // sky
+      finalColor = texture(palette, skyPos);
+      return;
+  }
 
-    int red = int(pixel.r * 255);
+  int red = int(pixel.r * 255);
 
-    int isSunlit = int(red > 50);
-    int depth = red - (isSunlit * 50);
-    float value = pixel.g;
+  int isSunlit = int(red > 50);
+  int depth = red - (isSunlit * 50);
+  float value = pixel.g;
 
-    int valueRow = 0;
-    if (value >= 0.3 && value <= 0.8) valueRow = 1;
-    else if (value >= 0.988) valueRow = 2; 
+  int valueRow = 0;
+  if (value >= 0.3 && value <= 0.8) valueRow = 1;
+  else if (value >= 0.988) valueRow = 2; 
 
-    vec4 fog = texture(palette, fogPos);
-    float fogIntensity = texture(palette, fogIntenPos).r;
+  vec4 fog = texture(palette, fogPos);
+  float fogIntensity = texture(palette, fogIntenPos).r;
 
-    vec4 layerColor = texture(palette, vec2(depth / 50.0, (1 + (isSunlit * 3) + valueRow) / 8.0));
+  vec4 layerColor = texture(palette, vec2(depth / 50.0, (1 + (isSunlit * 3) + valueRow) / 8.0));
 
-    finalColor = mix(layerColor, fog, fogIntensity * (depth / 50.0));
+  finalColor = mix(layerColor, fog, fogIntensity * (depth / 50.0));
 }
-"));
+"""
+            ));
     }
 
     public override void OnViewSelected()
@@ -175,10 +161,10 @@ void main() {
 
             BeginTextureMode(Context.Viewports.Main);
             BeginShaderMode(paletteShader);
-            paletteShader.SetTexture("texture0", selectedLevel);
-            paletteShader.SetTexture("palette", paletteImage.Texture);
+            paletteShader.SetTexture(uniformName: "texture0", selectedLevel);
+            paletteShader.SetTexture(uniformName: "palette", paletteImage.Texture);
 
-            DrawTexture(selectedLevel, 0, 0, Color.White);
+            DrawTexture(selectedLevel, posX: 0, posY: 0, tint: Color.White);
             EndShaderMode();
             EndTextureMode();
 
@@ -188,7 +174,7 @@ void main() {
         }
 
         BeginMode2D(Context.Camera);
-        DrawTexture(Context.Viewports.Main.Texture, 0, 0, Color.White);
+        DrawTexture(Context.Viewports.Main.Texture, posX: 0, posY: 0, tint: Color.White);
         EndMode2D();
     }
 
@@ -196,11 +182,11 @@ void main() {
     {
         cursor.ProcessGUI();
 
-        if (ImGui.Begin("Editor##PaletteEditor"))
+        if (ImGui.Begin(name: "Editor##PaletteEditor"))
         {
             // TODO: Handle buttons
-            if (ImGui.Button("Import", ImGui.GetContentRegionAvail() with { Y = 20 })) openImport = true;
-            ImGui.Button("Export", ImGui.GetContentRegionAvail() with { Y = 20 });
+            if (ImGui.Button(label: "Import", ImGui.GetContentRegionAvail() with { Y = 20 })) openImport = true;
+            ImGui.Button(label: "Export", ImGui.GetContentRegionAvail() with { Y = 20 });
 
             ImGui.Spacing();
 
@@ -219,30 +205,30 @@ void main() {
 
             if (ImGui.BeginTabBar("EditSections"))
             {
-                if (ImGui.BeginTabItem("General"))
+                if (ImGui.BeginTabItem(label: "General"))
                 {
-                    ImGui.Combo("Section", ref general, "Darkness\0Sky\0Fog");
-                    if (ImGui.SliderInt("Fog Intensity", ref fogIntensity, 0, 255))
+                    ImGui.Combo(label: "Section", ref general, "Darkness\0Sky\0Fog");
+                    if (ImGui.SliderInt(label: "Fog Intensity", v: ref fogIntensity, v_min: 0, v_max: 255))
                     {
                         ImageDrawPixel(
                             ref paletteImage.Image, 
-                            3, 
-                            0, 
+                            posX: 3, 
+                            posY: 0, 
                             new Color(fogIntensity, 0, 0)
                         );
 
                         updatePaletteCanvas = true;
                     }
 
-                    var color = GetImageColor(paletteImage, general, 0);
+                    var color = GetImageColor(paletteImage, x: general, y: 0);
                     var colorV3 = new Vector3(color.R/255.0f, color.G/255.0f, color.B/255.0f);
 
-                    if (ImGui.ColorPicker3("##LayerColor", ref colorV3))
+                    if (ImGui.ColorPicker3(label: "##LayerColor", ref colorV3))
                     {
                         ImageDrawPixel(
                             ref paletteImage.Image, 
-                            general, 
-                            0, 
+                            posX: general, 
+                            posY: 0, 
                             new Color((byte)(colorV3.X * 255), (byte)(colorV3.Y * 255), (byte)(colorV3.Z * 255))
                         );
                         updatePaletteCanvas = true;
@@ -251,62 +237,62 @@ void main() {
                     ImGui.EndTabItem();
                 }
 
-                if (ImGui.BeginTabItem("Layers"))
+                if (ImGui.BeginTabItem(label: "Layers"))
                 {
-                    if (ImGui.InputInt("Layer", ref layer))
+                    if (ImGui.InputInt(label: "Layer", ref layer))
                     {
                         layer = Math.Clamp(layer, 0, 49);
                     }
 
-                    ImGui.Combo("Value", ref value, "Shadow\0Base\0Highlit");
-                    ImGui.Checkbox("Sunlit", ref sunlit);
+                    ImGui.Combo(label: "Value", ref value, "Shadow\0Base\0Highlight");
+                    ImGui.Checkbox(label: "Sunlit", ref sunlit);
 
-                    var layerColor = GetImageColor(paletteImage, layer, 1 + value + (sunlit ? 3 : 0));
+                    var layerColor = GetImageColor(paletteImage, x: layer, y: 1 + value + (sunlit ? 3 : 0));
                     var layerColorV3 = new Vector3(layerColor.R/255.0f, layerColor.G/255.0f, layerColor.B/255.0f);
 
-                    if (ImGui.Button("Copy to next layer", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    if (ImGui.Button(label: "Copy to next layer", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
                         ImageDrawPixel(
                             ref paletteImage.Image, 
-                            Math.Clamp(layer + 1, 0, 49), 
-                            1 + value + (sunlit ? 3 : 0), 
+                            posX: Math.Clamp(layer + 1, 0, 49), 
+                            posY: 1 + value + (sunlit ? 3 : 0), 
                             new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
                         );
                         updatePaletteCanvas = true;
                     }
 
-                    if (ImGui.Button("Copy to all layers", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    if (ImGui.Button(label: "Copy to all layers", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
                         ImageDrawRectangle(
                             ref paletteImage.Image, 
-                            0, 
-                            1 + value + (sunlit ? 3 : 0), 
-                            50,
-                            1,
+                            posX: 0, 
+                            posY: 1 + value + (sunlit ? 3 : 0), 
+                            width: 50,
+                            height: 1,
                             new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
                         );
                         updatePaletteCanvas = true;
                     }
 
-                    if (ImGui.Button("Copy to all", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    if (ImGui.Button(label: "Copy to all", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
                         ImageDrawRectangle(
                             ref paletteImage.Image, 
-                            0, 
-                            1, 
-                            50,
-                            6,
+                            posX: 0, 
+                            posY: 1, 
+                            width: 50,
+                            height: 6,
                             new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
                         );
                         updatePaletteCanvas = true;
                     }
 
-                    if (ImGui.ColorPicker3("##LayerColor", ref layerColorV3))
+                    if (ImGui.ColorPicker3(label: "##LayerColor", ref layerColorV3))
                     {
                         ImageDrawPixel(
                             ref paletteImage.Image, 
-                            layer, 
-                            1 + value + (sunlit ? 3 : 0), 
+                            posX: layer, 
+                            posY: 1 + value + (sunlit ? 3 : 0), 
                             new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
                         );
                         updatePaletteCanvas = true;
@@ -322,9 +308,9 @@ void main() {
         ImGui.End();
 
 
-        if (ImGui.Begin("Renders##PaletteEditorLevels"))
+        if (ImGui.Begin(name: "Renders##PaletteEditorLevels"))
         {
-            if (ImGui.BeginListBox("##Levels", ImGui.GetContentRegionAvail()))
+            if (ImGui.BeginListBox(label: "##Levels", size: ImGui.GetContentRegionAvail()))
             {
                 for (var level = 0; level < levels.Length; level++)
                 {
@@ -338,7 +324,7 @@ void main() {
 
                     var pos = ImGui.GetCursorScreenPos();
 
-                    if (ImGui.Selectable($"##{level}", selectedLevel == image, ImGuiSelectableFlags.None, ImGui.GetContentRegionAvail() with { Y = imageSize.Y }))
+                    if (ImGui.Selectable(label: $"##{level}", selectedLevel == image, ImGuiSelectableFlags.None, ImGui.GetContentRegionAvail() with { Y = imageSize.Y }))
                     {
                         selectedLevel = image;
                     }
@@ -360,10 +346,10 @@ void main() {
             openImport = false;
         }
 
-        if (ImGui.BeginPopupModal("Import##PaletteImportPopup", ImGuiWindowFlags.NoCollapse))
+        if (ImGui.BeginPopupModal(name: "Import##PaletteImportPopup", ImGuiWindowFlags.NoCollapse))
         {
             var avail = ImGui.GetContentRegionAvail();
-            if (ImGui.BeginListBox("##Menu", avail with { Y = avail.Y - 30 }))
+            if (ImGui.BeginListBox(label: "##Menu", avail with { Y = avail.Y - 30 }))
             {
                 for (var p = 0; p < orderedPalettes.Length; p++)
                 {
@@ -380,8 +366,12 @@ void main() {
 
                     var pos = ImGui.GetCursorScreenPos();
 
-                    if (ImGui.Selectable($"##{p}", false, ImGuiSelectableFlags.None, ImGui.GetContentRegionAvail() with { Y = imageSize.Y }))
-                    {
+                    if (ImGui.Selectable(
+                            label: $"##{p}", 
+                            selected: false, 
+                            ImGuiSelectableFlags.None, 
+                            ImGui.GetContentRegionAvail() with { Y = imageSize.Y })
+                        ) {
                         paletteImage = image;
                         updatePaletteCanvas = true;
                         ImGui.CloseCurrentPopup();
@@ -390,7 +380,7 @@ void main() {
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.BeginTooltip();
-                        rlImGui_cs.rlImGui.ImageSize(image, image.Size * 10);
+                        rlImGui_cs.rlImGui.ImageSize(image, size: image.Size * 10);
                         ImGui.EndTooltip();
                     }
 
@@ -403,7 +393,7 @@ void main() {
                 ImGui.EndListBox();
             }
 
-            if (ImGui.Button("Cancel", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            if (ImGui.Button(label: "Cancel", ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 ImGui.CloseCurrentPopup();
             }
@@ -417,16 +407,17 @@ void main() {
             openExport = false;
         }
 
-        if (ImGui.BeginPopupModal("Export##PaletteExportPopup", ImGuiWindowFlags.NoCollapse))
+        if (ImGui.BeginPopupModal(name: "Export##PaletteExportPopup", ImGuiWindowFlags.NoCollapse))
         {
             if (!canExport)
             {
                 ImGui.TextColored(
                     new Vector4(1f, 0.1f, 0.1f, 1f), 
-                    (string.IsNullOrEmpty(exportName) || string.IsNullOrWhiteSpace(exportName)) ? "Name can't be empty" : "Name already exists"
+                    string.IsNullOrEmpty(exportName) || string.IsNullOrWhiteSpace(exportName)
+                        ? "Name can't be empty" : "Name already exists"
                 );
             }
-            if (ImGui.InputText("Name", ref exportName, 256))
+            if (ImGui.InputText(label: "Name", input: ref exportName, maxLength: 256))
             {
                 canExport = !string.IsNullOrEmpty(exportName) && 
                     !string.IsNullOrWhiteSpace(exportName) && 
@@ -436,7 +427,7 @@ void main() {
             }
 
             if (!canExport) ImGui.BeginDisabled();
-            if (ImGui.Button("Export", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            if (ImGui.Button(label: "Export", size: ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 paletteImage.ToImage();
                 ExportImage(paletteImage.Image, exportName);
@@ -445,7 +436,7 @@ void main() {
             }
             if (!canExport) ImGui.EndDisabled();
 
-            if (ImGui.Button("Cancel", ImGui.GetContentRegionAvail() with { Y = 20 }))
+            if (ImGui.Button(label: "Cancel", size: ImGui.GetContentRegionAvail() with { Y = 20 }))
             {
                 ImGui.CloseCurrentPopup();
             }

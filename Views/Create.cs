@@ -1,18 +1,15 @@
 namespace Tiler.Editor.Views;
 
+using System.Numerics;
+using System.IO;
+using System.Linq;
+using System;
+
 using Raylib_cs;
 using ImGuiNET;
 using static ImGuiNET.ImGui;
 
 using Tiler.Editor;
-
-using System.Numerics;
-using System.IO;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
-using System;
-using Serilog;
 
 public class Create : BaseView
 {
@@ -24,7 +21,7 @@ public class Create : BaseView
 
     private bool nameExists;
 
-    Managed.RenderTexture preview;
+    private readonly Managed.RenderTexture preview;
 
     private void Reset()
     {
@@ -51,7 +48,7 @@ public class Create : BaseView
             for (var column = 0; column < columns; column++)
             {
                 Raylib.DrawRectangleLinesEx(
-                    rec:       new Rectangle(new Vector2(column, row) * size * min, size * min),
+                    rec:       new Rectangle(position: new Vector2(column, row) * size * min, size: size * min),
                     lineThick: 1f,
                     color:     Color.White
                 );
@@ -74,8 +71,8 @@ public class Create : BaseView
         nameExists = DoesNameExist();
 
         preview = new Managed.RenderTexture(
-            Level.DefaultWidth * 4, 
-            Level.DefaultHeight * 4, 
+            width: Level.DefaultWidth * 4, 
+            height: Level.DefaultHeight * 4, 
             clearColor: new Color4(0, 0, 0, 0), 
             clear: true
         );
@@ -86,48 +83,48 @@ public class Create : BaseView
     public override void GUI()
     {
         if (Begin(
-            "Create New Level##CreateNewLevel", 
-            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse
+            name: "Create New Level##CreateNewLevel", 
+            flags: ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse
         )) {
             SetWindowPos(new Vector2(30, 60));
             SetWindowSize(new Vector2(Raylib.GetScreenWidth() - 60, Raylib.GetScreenHeight() - 120));
 
-            if (BeginTable("Table", 2))
+            if (BeginTable("Table", columns: 2))
             {
                 TableNextRow();
 
                 TableSetColumnIndex(0);
 
                 if (nameExists) TextColored(new Vector4(1f, 0.1f, 0.1f, 1f), "Name already exists");
-                if (InputText("Name", ref name, 256)) nameExists = DoesNameExist();
-                if (InputInt("Rows", ref rows)) { rows = Math.Clamp(rows, 1, 6); UpdatePreview(); }
-                if (InputInt("Columns", ref columns)) { columns = Math.Clamp(columns, 1, 6); UpdatePreview(); }
-                if (InputInt("Layers", ref layers)) layers = Math.Clamp(layers, 0, 5);
-                if (Checkbox("Cameras", ref cameras)) UpdatePreview();
+                if (InputText(label: "Name", input: ref name, maxLength: 256)) nameExists = DoesNameExist();
+                if (InputInt(label: "Rows", ref rows)) { rows = Math.Clamp(rows, 1, 6); UpdatePreview(); }
+                if (InputInt(label: "Columns", ref columns)) { columns = Math.Clamp(columns, 1, 6); UpdatePreview(); }
+                if (InputInt(label: "Layers", ref layers)) layers = Math.Clamp(layers, 0, 5);
+                if (Checkbox(label: "Cameras", ref cameras)) UpdatePreview();
 
                 TableSetColumnIndex(1);
 
-                rlImGui_cs.rlImGui.ImageRenderTextureFit(preview, false);
+                rlImGui_cs.rlImGui.ImageRenderTextureFit(preview, center: false);
 
                 EndTable();
             }
 
             if (nameExists) BeginDisabled();
-            if (Button("Create"))
+            if (Button(label: "Create"))
             {
                 var level = new Level(
-                    columns*Level.DefaultWidth + Viewports.LightmapMargin*2/20, 
-                    rows*Level.DefaultHeight + Viewports.LightmapMargin*2/20
+                    width: columns*Level.DefaultWidth + Viewports.LightmapMargin*2/20, 
+                    height: rows*Level.DefaultHeight + Viewports.LightmapMargin*2/20
                 ) {
                     Name = name,
                     Directory = Context.Dirs.Projects,
                 };
 
-                for (int z = 0; z < 2; z++)
+                for (var z = 0; z < 2; z++)
                 {
-                    for (int y = 0; y < level.Height; y++)
+                    for (var y = 0; y < level.Height; y++)
                     {
-                        for (int x = 0; x < level.Width; x++)
+                        for (var x = 0; x < level.Width; x++)
                         {
                             level.Geos[x, y, z] = Geo.Solid;
                         }
@@ -161,10 +158,10 @@ public class Create : BaseView
             }
             if (nameExists) EndDisabled();
 
-            if (Button("Reset to default"))
+            if (Button(label: "Reset to default"))
                 Reset();
 
-            if (Button("Cancel"))
+            if (Button(label: "Cancel"))
                 Context.Viewer.Select(Context.Viewer.Start);
         }
 

@@ -1,12 +1,5 @@
 namespace Tiler.Editor.Views;
 
-
-using Raylib_cs;
-using ImGuiNET;
-using static ImGuiNET.ImGui;
-
-using Tiler.Editor;
-
 using System.Numerics;
 using System.IO;
 using System.Text;
@@ -14,6 +7,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using Serilog;
+
+using Raylib_cs;
+using ImGuiNET;
+using static ImGuiNET.ImGui;
+
+using Tiler.Editor;
 
 public class Start : BaseView
 {
@@ -28,8 +27,8 @@ public class Start : BaseView
 
     private int selectedEntryIndex;
 
-    private Managed.RenderTexture levelPreview = new(1, 1, clearColor: Color.LightGray, clear: true);
-    private Matrix<Geo> previewMatrix = new(0, 0, 0);
+    private Managed.RenderTexture levelPreview = new(width: 1, height: 1, clearColor: Color.LightGray, clear: true);
+    private Matrix<Geo> previewMatrix = new(width: 0, height: 0, depth: 0);
     private int previewScale = 4;
     private int previewX;
     private int previewY;
@@ -47,7 +46,7 @@ public class Start : BaseView
         var text = File.ReadAllText(geoPath);
 
         {
-            var matrix = new Matrix<Geo>(width, height, 3);
+            var matrix = new Matrix<Geo>(width, height, depth: 3);
 
             var cells = File
                 .ReadAllText(geoPath)
@@ -70,8 +69,8 @@ public class Start : BaseView
         if (levelPreview.Width != width || levelPreview.Height != height)
         {
             levelPreview = new Managed.RenderTexture(
-                width * previewScale, 
-                height * previewScale, 
+                width: width * previewScale, 
+                height: height * previewScale, 
                 
                 clearColor: Color.LightGray, 
                 clear:      true
@@ -109,88 +108,80 @@ public class Start : BaseView
             }
 
             for (var z = 2; z >= 0; z--)
-            switch (previewMatrix[previewX, previewY, z])
-            {
-                case Geo.Solid:
-                case Geo.Exit:
-                Raylib.DrawRectangle(
-                    previewX * previewScale, 
-                    previewY * previewScale, 
-                    previewScale, 
-                    previewScale, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
+                switch (previewMatrix[previewX, previewY, z])
+                {
+                    case Geo.Solid or Geo.Exit:
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale,
+                            posY: previewY * previewScale,
+                            width: previewScale,
+                            height: previewScale,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                    case Geo.Platform:
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale,
+                            posY: previewY * previewScale,
+                            width: previewScale,
+                            height: previewScale / 2,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                    case Geo.Slab:
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale,
+                            posY: previewY * previewScale + previewScale / 2,
+                            width: previewScale,
+                            height: previewScale / 2,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                    case Geo.VerticalPole:
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale + previewScale / 2,
+                            posY: previewY * previewScale,
+                            width: previewScale / 4,
+                            height: previewScale,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                    case Geo.HorizontalPole:
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale,
+                            posY: previewY * previewScale + previewScale / 2,
+                            width: previewScale,
+                            height: previewScale / 4,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                    case Geo.CrossPole:
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale + previewScale / 2,
+                            posY: previewY * previewScale,
+                            width: previewScale / 4,
+                            height: previewScale,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        Raylib.DrawRectangle(
+                            posX: previewX * previewScale,
+                            posY: previewY * previewScale + previewScale / 2,
+                            width: previewScale,
+                            height: previewScale / 4,
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                    case Geo.SlopeNW:
+                        Raylib.DrawTriangle(
+                            v1: new Vector2(previewX * previewScale + previewScale, previewY * previewScale),
+                            v2: new Vector2(previewX * previewScale, previewY * previewScale + previewScale),
+                            v3: new Vector2(previewX * previewScale + previewScale, previewY * previewScale + previewScale),
+                            new Color(z * 100, z * 100, z * 100, 255)
+                        );
+                        break;
+                }
 
-                case Geo.Platform:
-                Raylib.DrawRectangle(
-                    previewX * previewScale, 
-                    previewY * previewScale, 
-                    previewScale, 
-                    previewScale/2, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
-
-                case Geo.Slab:
-                Raylib.DrawRectangle(
-                    previewX * previewScale, 
-                    previewY * previewScale + previewScale/2, 
-                    previewScale, 
-                    previewScale/2, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
-
-                case Geo.VerticalPole:
-                Raylib.DrawRectangle(
-                    previewX * previewScale + previewScale/2, 
-                    previewY * previewScale, 
-                    previewScale/4, 
-                    previewScale, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
-
-                case Geo.HorizontalPole:
-                Raylib.DrawRectangle(
-                    previewX * previewScale, 
-                    previewY * previewScale + previewScale/2, 
-                    previewScale, 
-                    previewScale/4, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
-
-                case Geo.CrossPole:
-                Raylib.DrawRectangle(
-                    previewX * previewScale + previewScale/2, 
-                    previewY * previewScale, 
-                    previewScale/4, 
-                    previewScale, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                Raylib.DrawRectangle(
-                    previewX * previewScale, 
-                    previewY * previewScale + previewScale/2, 
-                    previewScale, 
-                    previewScale/4, 
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
-
-                case Geo.SlopeNW:
-                Raylib.DrawTriangle(
-                    new(previewX * previewScale + previewScale, previewY * previewScale),
-                    new(previewX * previewScale, previewY * previewScale + previewScale),
-                    new(previewX * previewScale + previewScale, previewY * previewScale + previewScale),
-                    new Color(z*100, z*100, z*100, 255)
-                );
-                break;
-
-                // TODO: Complete the rest of slopes
-            }
-
+            // TODO: Complete the rest of slopes
             previewX++;
         }
 
@@ -290,33 +281,31 @@ public class Start : BaseView
         }
 
         if (Begin(
-            "Project Explorer", 
-            ImGuiWindowFlags.NoMove | 
-            ImGuiWindowFlags.NoCollapse | 
-            ImGuiWindowFlags.NoResize
+            name: "Project Explorer", 
+            flags: ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
             )
         )
         {
             SetWindowPos(new Vector2(30, 60));
             SetWindowSize(new Vector2(Raylib.GetScreenWidth() - 60, Raylib.GetScreenHeight() - 120));
 
-            if (Button("Projects")) GoHome();
+            if (Button(label: "Projects")) GoHome();
             SameLine();
-            if (Button("Up")) GoUp();
+            if (Button(label: "Up")) GoUp();
             SameLine();
 
             SetNextItemWidth(GetContentRegionAvail().X);
-            InputText("##URL", urlBuffer, 256);
+            InputText(label: "##URL", urlBuffer, buf_size: 256);
 
-            Columns(2);
+            Columns(count: 2);
 
-            if (BeginListBox("##Projects", GetContentRegionAvail()))
+            if (BeginListBox(label: "##Projects", size: GetContentRegionAvail()))
             {
-                for (int i = 0; i < entries.Count; i++)
+                for (var i = 0; i < entries.Count; i++)
                 {
                     var selected = Selectable(
                         projectNames[i], 
-                        selectedEntryIndex == i, 
+                        selected: selectedEntryIndex == i, 
                         ImGuiSelectableFlags.None, 
                         GetContentRegionAvail() with { Y = 20 }
                     );
@@ -363,17 +352,17 @@ public class Start : BaseView
         
             NextColumn();
             
-            rlImGui_cs.rlImGui.ImageRenderTextureFit(levelPreview, false);
+            rlImGui_cs.rlImGui.ImageRenderTextureFit(levelPreview, center: false);
         }
 
         End();
 
         if (loadExcep is not null) OpenPopup("Error##LevelLoadError");
 
-        if (BeginPopupModal("Error##LevelLoadError", ImGuiWindowFlags.NoCollapse))
+        if (BeginPopupModal(name: "Error##LevelLoadError", ImGuiWindowFlags.NoCollapse))
         {
             Text("Failed to load level. View logs for more information");
-            if (Button("Ok"))
+            if (Button(label: "Ok"))
             {
                 loadExcep = null; // Ineffective
                 CloseCurrentPopup();

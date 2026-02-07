@@ -1,7 +1,10 @@
 bin/
 obj/
 
+.idea/
 .vscode/
 
 projects/
 levels/
+
+Tiler.Editor.sln.DotSettings.user

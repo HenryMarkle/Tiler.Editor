@@ -91,49 +91,49 @@ public class Tiles : BaseView
                 {
                     case Geo.Solid:
                     case Geo.Wall:
-                        DrawRectangle(x * 20 + 5, y * 20 + 5, 20 - 10, 20 - 10, tile.Color);
+                        DrawRectangle(posX: x * 20 + 5, posY: y * 20 + 5, width: 20 - 10, height: 20 - 10, tile.Color);
                     break;
 
                     case Geo.Slab:
-                        DrawRectangle(x * 20 + 5, y * 20 + 10 + 5, 20 - 10, 10 - 10, tile.Color);
+                        DrawRectangle(posX: x * 20 + 5, posY: y * 20 + 10 + 5, width: 20 - 10, height: 10 - 10, tile.Color);
                     break;
 
                     case Geo.Platform:
-                        DrawRectangle(x * 20 + 5, y * 20 + 5, 20 - 10, 10 - 10, tile.Color);
+                        DrawRectangle(posX: x * 20 + 5, posY: y * 20 + 5, width: 20 - 10, height: 10 - 10, tile.Color);
                     break;
 
                     case Geo.SlopeNW:
                         DrawTriangle(
-                            new Vector2((x + 1) * 20, y * 20),
-                            new Vector2(x * 20, (y + 1) * 20),
-                            new Vector2((x + 1) * 20, (y + 1) * 20),
+                            v1: new Vector2((x + 1) * 20, y * 20),
+                            v2: new Vector2(x * 20, (y + 1) * 20),
+                            v3: new Vector2((x + 1) * 20, (y + 1) * 20),
                             tile.Color
                         );
                     break;                    
 
                     case Geo.SlopeNE:
                         DrawTriangle(
-                            new Vector2(x * 20, y * 20),
-                            new Vector2(x * 20, (y + 1) * 20),
-                            new Vector2((x + 1) * 20, (y + 1) * 20),
+                            v1: new Vector2(x * 20, y * 20),
+                            v2: new Vector2(x * 20, (y + 1) * 20),
+                            v3: new Vector2((x + 1) * 20, (y + 1) * 20),
                             tile.Color
                         );
                     break;
 
                     case Geo.SlopeSE:
                         DrawTriangle(
-                            new Vector2((x + 1) * 20, y * 20),
-                            new Vector2(x * 20, y * 20),
-                            new Vector2(x * 20, (y + 1) * 20),
+                            v1: new Vector2((x + 1) * 20, y * 20),
+                            v2: new Vector2(x * 20, y * 20),
+                            v3: new Vector2(x * 20, (y + 1) * 20),
                             tile.Color
                         );
                     break;
 
                     case Geo.SlopeSW:
                         DrawTriangle(
-                            new Vector2(x * 20, y * 20),
-                            new Vector2((x + 1) * 20, (y + 1) * 20),
-                            new Vector2((x + 1) * 20, y * 20),
+                            v1: new Vector2(x * 20, y * 20),
+                            v2: new Vector2((x + 1) * 20, (y + 1) * 20),
+                            v3: new Vector2((x + 1) * 20, y * 20),
                             tile.Color
                         );
                     break;
@@ -150,17 +150,17 @@ public class Tiles : BaseView
 
         BeginTextureMode(Context.Viewports.Main);
         ClearBackground(new Color(0, 0, 0, 0));
-        for (int l = Context.Viewports.Depth - 1; l > -1; --l)
+        for (var l = Context.Viewports.Depth - 1; l > -1; --l)
         {
             if (l == Context.Layer) continue;
-            DrawTexture(Context.Viewports.Geos[l].Raw.Texture, 0, 0, Color.Black with { A = 120 });
-            DrawTexture(Context.Viewports.Tiles[l].Raw.Texture, 0, 0, Color.White with { A = 120 });
+            DrawTexture(Context.Viewports.Geos[l].Raw.Texture, posX: 0, posY: 0, Color.Black with { A = 120 });
+            DrawTexture(Context.Viewports.Tiles[l].Raw.Texture, posX: 0, posY: 0, Color.White with { A = 120 });
         }
         
-        DrawRectangle(0, 0, level.Width * 20, level.Height * 20, Color.Red with { A = 40 });
+        DrawRectangle(posX: 0, posY: 0, width: level.Width * 20, height: level.Height * 20, Color.Red with { A = 40 });
 
-        DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, 0, 0, Color.Black with { A = 210 });
-        DrawTexture(Context.Viewports.Tiles[Context.Layer].Raw.Texture, 0, 0, Color.White with { A = 210 });
+        DrawTexture(Context.Viewports.Geos[Context.Layer].Raw.Texture, posX: 0, posY: 0, Color.Black with { A = 210 });
+        DrawTexture(Context.Viewports.Tiles[Context.Layer].Raw.Texture, posX: 0, posY: 0, Color.White with { A = 210 });
         EndTextureMode();
     }
 
@@ -188,9 +188,9 @@ public class Tiles : BaseView
         // Clear area
         BeginBlendMode(BlendMode.Custom);
         Rlgl.SetBlendMode(BlendMode.Custom);
-        Rlgl.SetBlendFactors(1, 0, 1);
+        Rlgl.SetBlendFactors(glSrcFactor: 1, glDstFactor: 0, glEquation: 1);
         DrawRectangle(
-            mx * 20, my * 20, 20, 20,
+            posX: mx * 20, posY: my * 20, width: 20, height: 20,
             new Color(0, 0, 0, 0)
         );
         EndBlendMode();
@@ -203,49 +203,49 @@ public class Tiles : BaseView
             {
                 case Geo.Solid:
                 case Geo.Wall:
-                    DrawRectangle(mx * 20 + 5, my * 20 + 5, 20 - 10, 20 - 10, tile.Color);
+                    DrawRectangle(posX: mx * 20 + 5, posY: my * 20 + 5, width: 20 - 10, height: 20 - 10, tile.Color);
                 break;
 
                 case Geo.Slab:
-                    DrawRectangle(mx * 20 + 5, my * 20 + 10 + 5, 20 - 10, 10 - 10, tile.Color);
+                    DrawRectangle(posX: mx * 20 + 5, posY: my * 20 + 10 + 5, width: 20 - 10, height: 10 - 10, tile.Color);
                 break;
 
                 case Geo.Platform:
-                    DrawRectangle(mx * 20 + 5, my * 20 + 5, 20 - 10, 10 - 10, tile.Color);
+                    DrawRectangle(posX: mx * 20 + 5, posY: my * 20 + 5, width: 20 - 10, height: 10 - 10, tile.Color);
                 break;
 
                 case Geo.SlopeNW:
                     DrawTriangle(
-                        new Vector2((mx + 1) * 20 - 8, my * 20 + 4),
-                        new Vector2(mx * 20 + 4, (my + 1) * 20 - 8),
-                        new Vector2((mx + 1) * 20 - 8, (my + 1) * 20 - 8),
+                        v1: new Vector2((mx + 1) * 20 - 8, my * 20 + 4),
+                        v2: new Vector2(mx * 20 + 4, (my + 1) * 20 - 8),
+                        v3: new Vector2((mx + 1) * 20 - 8, (my + 1) * 20 - 8),
                         tile.Color
                     );
                 break;                    
 
                 case Geo.SlopeNE:
                     DrawTriangle(
-                        new Vector2(mx * 20 + 4, my * 20 + 8),
-                        new Vector2(mx * 20 + 4, (my + 1) * 20 - 4),
-                        new Vector2((mx + 1) * 20 - 8, (my + 1) * 20 - 4),
+                        v1: new Vector2(mx * 20 + 4, my * 20 + 8),
+                        v2: new Vector2(mx * 20 + 4, (my + 1) * 20 - 4),
+                        v3: new Vector2((mx + 1) * 20 - 8, (my + 1) * 20 - 4),
                         tile.Color
                     );
                 break;
 
                 case Geo.SlopeSE:
                     DrawTriangle(
-                        new Vector2((mx + 1) * 20 - 8, my * 20 + 4),
-                        new Vector2(mx * 20 + 4, my * 20 + 4),
-                        new Vector2(mx * 20 + 4, (my + 1) * 20 - 8),
+                        v1: new Vector2((mx + 1) * 20 - 8, my * 20 + 4),
+                        v2: new Vector2(mx * 20 + 4, my * 20 + 4),
+                        v3: new Vector2(mx * 20 + 4, (my + 1) * 20 - 8),
                         tile.Color
                     );
                 break;
 
                 case Geo.SlopeSW:
                     DrawTriangle(
-                        new Vector2(mx * 20 + 8, my * 20 + 4),
-                        new Vector2((mx + 1) * 20 - 4, (my + 1) * 20 - 8),
-                        new Vector2((mx + 1) * 20 - 4, my * 20 + 4),
+                        v1: new Vector2(mx * 20 + 8, my * 20 + 4),
+                        v2: new Vector2((mx + 1) * 20 - 4, (my + 1) * 20 - 8),
+                        v3: new Vector2((mx + 1) * 20 - 4, my * 20 + 4),
                         tile.Color
                     );
                 break;
@@ -261,8 +261,8 @@ public class Tiles : BaseView
     {
         if (selectedTile is null) return;
 
-        for (int y = (int)rect.Y; y < rect.Y + rect.Height; y++)
-        for (int x = (int)rect.X; x < rect.X + rect.Width; x++)
+        for (var y = (int)rect.Y; y < rect.Y + rect.Height; y++)
+        for (var x = (int)rect.X; x < rect.X + rect.Width; x++)
         {
             PlaceOne(x, y, Context.Layer, isErasing ? null : selectedTile);
         }
@@ -294,7 +294,7 @@ public class Tiles : BaseView
                     else if (IsMouseButtonDown(MouseButton.Right))
                     {
                         if (Context.SelectedLevel?.Tiles[cursor.MX, cursor.MY, Context.Layer] is not null)
-                            PlaceOne(cursor.MX, cursor.MY, Context.Layer, null);
+                            PlaceOne(cursor.MX, cursor.MY, Context.Layer, tile: null);
                     }
                 }
             }
@@ -365,7 +365,7 @@ public class Tiles : BaseView
 
         var level = Context.SelectedLevel;
 
-        for (int l = 0; l < Context.Viewports.Depth; l++)
+        for (var l = 0; l < Context.Viewports.Depth; l++)
         {
             if (redrawTiles[l]) {
                 DrawTilesViewport(l);
@@ -383,9 +383,9 @@ public class Tiles : BaseView
         ref var camera = ref Context.Camera;
         
         BeginMode2D(camera);
-        DrawTexture(Context.Viewports.Main.Raw.Texture, 0, 0, Color.White);
-        DrawRectangleLinesEx(new Rectangle(0, 0, level.Width *20f, level.Height * 20f), 4, Color.Black);
-        DrawRectangleLinesEx(new Rectangle(0, 0, level.Width *20f, level.Height * 20f), 2, Color.White);
+        DrawTexture(Context.Viewports.Main.Raw.Texture, posX: 0, posY: 0, tint: Color.White);
+        DrawRectangleLinesEx(new Rectangle(0, 0, width: level.Width *20f, height: level.Height * 20f), lineThick: 4, Color.Black);
+        DrawRectangleLinesEx(new Rectangle(0, 0, width: level.Width *20f, height: level.Height * 20f), lineThick: 2, Color.White);
 
         cursor.DrawCursor();
         EndMode2D();
@@ -395,7 +395,7 @@ public class Tiles : BaseView
     {
         cursor.ProcessGUI();
 
-        if (ImGui.Begin("Tiles"))
+        if (ImGui.Begin(name: "Tiles"))
         {
             var level = Context.SelectedLevel;
 
@@ -403,7 +403,7 @@ public class Tiles : BaseView
             var isDefault = (selectedTile is not null) && selectedTile == level?.DefaultTile;
             if (level is null || selectedTile is null) ImGui.EndDisabled();
 
-            if (ImGui.Checkbox("Default Tile", ref isDefault))
+            if (ImGui.Checkbox(label: "Default Tile", ref isDefault))
             {
                 if (isDefault)
                 {
@@ -417,13 +417,13 @@ public class Tiles : BaseView
         
             var avail = ImGui.GetContentRegionAvail();
 
-            if (ImGui.BeginListBox("##Categories", new Vector2(avail.X/2, avail.Y)))
+            if (ImGui.BeginListBox(label: "##Categories", new Vector2(avail.X/2, avail.Y)))
             {
-                for (int c = 0; c < Context.Tiles.Categories.Count; c++)
+                for (var c = 0; c < Context.Tiles.Categories.Count; c++)
                 {
                     var category = Context.Tiles.Categories[c];
 
-                    if (ImGui.Selectable($"{category}##{c}", selectedTileMenuCategoryIndex == c))
+                    if (ImGui.Selectable(label: $"{category}##{c}", selected: selectedTileMenuCategoryIndex == c))
                     {
                         selectedTileMenuCategory = category;
                         selectedTileMenuCategoryTiles = Context.Tiles.CategoryTiles[category];
@@ -446,24 +446,24 @@ public class Tiles : BaseView
 
             ImGui.SameLine();
 
-            if (ImGui.BeginListBox("##Tiles", ImGui.GetContentRegionAvail()))
+            if (ImGui.BeginListBox(label: "##Tiles", size: ImGui.GetContentRegionAvail()))
             {
                 var drawl = ImGui.GetWindowDrawList();
                 var textHeight = ImGui.GetTextLineHeight();
 
-                for (int t = 0; t < (selectedTileMenuCategoryTiles?.Count ?? 0); t++)
+                for (var t = 0; t < (selectedTileMenuCategoryTiles?.Count ?? 0); t++)
                 {
                     var tile = selectedTileMenuCategoryTiles![t];
                     var pos = ImGui.GetCursorScreenPos();
                     drawl.AddRectFilled(
                         pos, 
                         pos + Vector2.One * textHeight, 
-                        ImGui.ColorConvertFloat4ToU32(tile.Color)
+                        col: ImGui.ColorConvertFloat4ToU32(tile.Color)
                     );
 
                     ImGui.SetCursorScreenPos(pos with { X = pos.X + textHeight + 6 });
 
-                    if (ImGui.Selectable($"{tile.Name}##{tile.ID}", selectedTileMenuIndex == t))
+                    if (ImGui.Selectable(label: $"{tile.Name}##{tile.ID}", selected: selectedTileMenuIndex == t))
                     {
                         selectedTileMenuIndex = t;
                         selectedTile = tile;
