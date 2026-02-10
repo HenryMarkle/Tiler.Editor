@@ -3,6 +3,7 @@ namespace Tiler.Editor;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+
 using Raylib_cs;
 
 public class Quad
@@ -14,18 +15,18 @@ public class Quad
 
     public Quad()
     {
-        TopLeft = Vector2.Zero;
-        TopRight = Vector2.Zero;
+        TopLeft     = Vector2.Zero;
+        TopRight    = Vector2.Zero;
         BottomRight = Vector2.Zero;
-        BottomLeft = Vector2.Zero;
+        BottomLeft  = Vector2.Zero;
     }
 
     public Quad(Quad quad)
     {
-        TopLeft = quad.TopLeft;
-        TopRight = quad.TopRight;
+        TopLeft     = quad.TopLeft;
+        TopRight    = quad.TopRight;
         BottomRight = quad.BottomRight;
-        BottomLeft = quad.BottomLeft;
+        BottomLeft  = quad.BottomLeft;
     }
 
     public Quad(
@@ -35,48 +36,48 @@ public class Quad
         Vector2 bottomLeft
     )
     {
-        TopLeft = topLeft;
-        TopRight = topRight;
+        TopLeft     = topLeft;
+        TopRight    = topRight;
         BottomRight = bottomRight;
-        BottomLeft = bottomLeft;
+        BottomLeft  = bottomLeft;
     }
 
     public Quad(in Rectangle rectangle)
     {
-        TopLeft = rectangle.Position;
-        TopRight = new Vector2(rectangle.X + rectangle.Width, rectangle.Y);
+        TopLeft     = rectangle.Position;
+        TopRight    = new Vector2(rectangle.X + rectangle.Width, rectangle.Y);
         BottomRight = new Vector2(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height);
-        BottomLeft = new Vector2(rectangle.X, rectangle.Y + rectangle.Height);
+        BottomLeft  = new Vector2(rectangle.X, rectangle.Y + rectangle.Height);
     }
 
     public static Quad operator+(Quad lhs, Quad rhs) => new(
-        lhs.TopLeft + rhs.TopLeft, 
-        lhs.TopRight + rhs.TopRight, 
-        lhs.BottomRight + rhs.BottomRight, 
-        lhs.BottomLeft + rhs.BottomLeft
+        topLeft:     lhs.TopLeft + rhs.TopLeft, 
+        topRight:    lhs.TopRight + rhs.TopRight, 
+        bottomRight: lhs.BottomRight + rhs.BottomRight, 
+        bottomLeft:  lhs.BottomLeft + rhs.BottomLeft
     );
 
     public static Quad operator-(Quad lhs, Quad rhs) => new(
-        lhs.TopLeft - rhs.TopLeft, 
-        lhs.TopRight - rhs.TopRight, 
-        lhs.BottomRight - rhs.BottomRight, 
-        lhs.BottomLeft - rhs.BottomLeft
+        topLeft:     lhs.TopLeft - rhs.TopLeft, 
+        topRight:    lhs.TopRight - rhs.TopRight, 
+        bottomRight: lhs.BottomRight - rhs.BottomRight, 
+        bottomLeft:  lhs.BottomLeft - rhs.BottomLeft
     );
 
     public static Quad operator+(Quad lhs, Vector2 rhs) => new(
-        lhs.TopLeft + rhs, 
-        lhs.TopRight + rhs, 
-        lhs.BottomRight + rhs, 
-        lhs.BottomLeft + rhs
+        topLeft:     lhs.TopLeft + rhs, 
+        topRight:    lhs.TopRight + rhs, 
+        bottomRight: lhs.BottomRight + rhs, 
+        bottomLeft:  lhs.BottomLeft + rhs
     );
 
     public static Quad operator-(Quad lhs, Vector2 rhs) => new(
-        lhs.TopLeft - rhs, 
-        lhs.TopRight - rhs, 
-        lhs.BottomRight - rhs, 
-        lhs.BottomLeft - rhs
+        topLeft:     lhs.TopLeft - rhs, 
+        topRight:    lhs.TopRight - rhs, 
+        bottomRight: lhs.BottomRight - rhs, 
+        bottomLeft:  lhs.BottomLeft - rhs
     );
-
+    
     public Vector2 Center => (TopLeft + TopRight + BottomRight + BottomLeft) / 4;
 
     public void Rotate(int degrees, Vector2 center)
@@ -106,7 +107,9 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            TopRight = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
+            TopRight = new Vector2(
+                center.X + dx * cosRotation - dy * sinRotation, 
+                center.Y + dx * sinRotation + dy * cosRotation);
         }
         
         { // Rotate the bottom right corner
@@ -116,7 +119,9 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            BottomRight = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
+            BottomRight = new Vector2(
+                center.X + dx * cosRotation - dy * sinRotation, 
+                center.Y + dx * sinRotation + dy * cosRotation);
         }
         
         { // Rotate the bottom left corner
@@ -126,7 +131,9 @@ public class Quad
             var dx = x - center.X;
             var dy = y - center.Y;
 
-            BottomLeft = new Vector2(center.X + dx * cosRotation - dy * sinRotation, center.Y + dx * sinRotation + dy * cosRotation);
+            BottomLeft = new Vector2(
+                center.X + dx * cosRotation - dy * sinRotation, 
+                center.Y + dx * sinRotation + dy * cosRotation);
         }
     }
 
@@ -142,7 +149,7 @@ public class Quad
         var maxX = MathF.Max(MathF.Max(TopLeft.X, TopRight.X), MathF.Max(BottomRight.X, BottomLeft.X));
         var maxY = MathF.Max(MathF.Max(TopLeft.Y, TopRight.Y), MathF.Max(BottomRight.Y, BottomLeft.Y));
 
-        return new(minX, minY, maxX - minX, maxY - minY);
+        return new Rectangle(minX, minY, width: maxX - minX, height: maxY - minY);
     }
 
     public override string ToString() => $"Quad({TopLeft}, {TopRight}, {BottomRight}, {BottomLeft})";

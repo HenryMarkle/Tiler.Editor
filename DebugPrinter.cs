@@ -1,9 +1,9 @@
 namespace Tiler.Editor;
 
-using Raylib_cs;
-using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+
+using Raylib_cs;
 
 public class DebugPrinter
 {
@@ -30,14 +30,14 @@ public class DebugPrinter
     public void Print<T>(T e, Color4 color)
     {
         var text = e?.ToString() ?? "NULL";
-        var measured = Raylib.MeasureTextEx(Font, text, Size, 0.1f);
+        var measured = Raylib.MeasureTextEx(Font, text, Size, spacing: 0.1f);
 
         Raylib.DrawRectangleRec(
-            new Rectangle(Cursor.X, Cursor.Y, measured.X + Margin.X * 2, measured.Y + Margin.Y * 2),
+            new Rectangle(Cursor.X, Cursor.Y, width: measured.X + Margin.X * 2, height: measured.Y + Margin.Y * 2),
             BackgroundColor
         );
 
-        Raylib.DrawTextEx(Font, text, Cursor + Margin, Size, 0.1f, color);
+        Raylib.DrawTextEx(Font, text, position: Cursor + Margin, Size, spacing: 0.1f, color);
 
         Cursor.X += measured.X + Margin.X*2;
     }
@@ -51,14 +51,14 @@ public class DebugPrinter
     public void Println<T>(T e, Color4 color)
     {
         var text = e?.ToString() ?? "NULL";
-        var measured = Raylib.MeasureTextEx(Font, text, Size, 0.1f);
+        var measured = Raylib.MeasureTextEx(Font, text, Size, spacing: 0.1f);
 
         Raylib.DrawRectangleRec(
-            new Rectangle(Cursor.X, Cursor.Y, measured.X + Margin.X * 2, measured.Y + Margin.Y * 2),
+            new Rectangle(Cursor.X, Cursor.Y, width: measured.X + Margin.X * 2, height: measured.Y + Margin.Y * 2),
             BackgroundColor
         );
 
-        Raylib.DrawTextEx(Font, text, Cursor + Margin, Size, 0.1f, color);
+        Raylib.DrawTextEx(Font, text, position: Cursor + Margin, Size, spacing: 0.1f, color);
         
         NewLine();
     }

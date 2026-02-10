@@ -2,33 +2,37 @@ using System;
 
 namespace Tiler.Editor;
 
+/// <summary>
+/// Represents a state that can be either <see cref="TLeft"/> or <see cref="TRight"/>.
+/// </summary>
 public readonly struct Either<TLeft, TRight>
 {
     private readonly TLeft? left;
     private readonly TRight? right;
+    
+    public enum StateStatus { Left, Right }
+    public StateStatus Status { get; }
 
-    /// <summary>
-    /// -1: left
-    ///  1: right
-    /// </summary>
-    private readonly int status;
+    public TLeft Left => Status is StateStatus.Left 
+        ? left ?? throw new InvalidOperationException("Either was right")
+        : throw new InvalidOperationException("Either was right");
+    public TRight Right => Status is StateStatus.Right 
+        ? right ?? throw new InvalidOperationException("Either was left")
+        : throw new InvalidOperationException("Either was left");
 
-    public TLeft Left => left ?? throw new InvalidOperationException("Either was right");
-    public TRight Right => right ?? throw new InvalidOperationException("Either was left");
-
-    public bool IsLeft => status is -1;
-    public bool IsRight => status is 1;
+    public bool IsLeft => Status is StateStatus.Left;
+    public bool IsRight => Status is StateStatus.Right;
 
     public Either(TLeft left)
     {
-        status = -1;
+        Status = StateStatus.Left;
         
         this.left = left;
     }
 
     public Either(TRight right)
     {
-        status = 1;
+        Status = StateStatus.Right;
 
         this.right = right;
     }
@@ -37,5 +41,5 @@ public readonly struct Either<TLeft, TRight>
     public static Either<TLeft, TRight> FromRight(TRight right) => new(right);
 
     public override string ToString() => 
-        $"Result({status switch { -1 => left?.ToString(), 1 => right?.ToString(), _ => throw new InvalidOperationException() }})";
+        $"Result({Status switch { StateStatus.Left => left?.ToString(), StateStatus.Right => right?.ToString(), _ => throw new InvalidOperationException() }})";
 }

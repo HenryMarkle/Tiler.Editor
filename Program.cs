@@ -33,6 +33,8 @@ public class Program {
 
 
 		Log.Information("---------------------------------- Starting program");
+		
+		Log.Information("Inspecting directories:\n{DIRS}", paths);
 
 		Log.Information("Loading configuration");
 
