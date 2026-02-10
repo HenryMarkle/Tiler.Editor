@@ -318,7 +318,11 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
         var name = levelSec["name"];
         var width = levelSec["width"]?.ToInt() ?? DefaultWidth;
         var height = levelSec["height"]?.ToInt() ?? DefaultHeight;
-        _ = tiles.Tiles.TryGetValue(levelSec["default_tile"] ?? "", out TileDef? defaultTile);
+
+        var def_tile_name = levelSec["default_tile"];
+
+        if (!tiles.Tiles.TryGetValue(def_tile_name ?? "", out TileDef? defaultTile) && def_tile_name is not (null or ""))
+            Log.Warning("Default tile '{TILE}' not found", def_tile_name);
 
         var lightSec = data["light"];
 

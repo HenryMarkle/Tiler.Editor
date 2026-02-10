@@ -26,7 +26,7 @@ public class AppConfiguration
         if (!Enum.TryParse(view["GeoColoring"], false, out GeometryLayerColoring geoColoring)) 
             geoColoring = GeometryLayerColoring.RGB;
 
-        return new()
+        return new AppConfiguration
         {
             GeoColoring = geoColoring
         };

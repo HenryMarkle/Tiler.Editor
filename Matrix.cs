@@ -16,6 +16,11 @@ public class Matrix<T>
 
     public T At(int x, int y = 0, int z = 0) => array[x, y, z];
     public string? StrAt(int x, int y, int z) => array[x, y, z]?.ToString();
+    public T AtFlatIndex(int index) => array[
+        index % Width,
+        (index % (Width * Height)) / Width,
+        index / (Width * Height)
+    ];
 
     public int Width => array.GetLength(0);
     public int Height => array.GetLength(1);

@@ -36,7 +36,7 @@ public class Palettes : BaseView
     private (string name, HybridImage image)[] orderedPalettes = [];
 
     private string exportName = "";
-    private bool canExport;
+    private bool duplicateExportName;
 
     private void ReloadPalettes()
     {
@@ -186,7 +186,7 @@ void main() {
         {
             // TODO: Handle buttons
             if (ImGui.Button(label: "Import", ImGui.GetContentRegionAvail() with { Y = 20 })) openImport = true;
-            ImGui.Button(label: "Export", ImGui.GetContentRegionAvail() with { Y = 20 });
+            if (ImGui.Button(label: "Export", ImGui.GetContentRegionAvail() with { Y = 20 })) openExport = true;
 
             ImGui.Spacing();
 
@@ -249,6 +249,8 @@ void main() {
 
                     var layerColor = GetImageColor(paletteImage, x: layer, y: 1 + value + (sunlit ? 3 : 0));
                     var layerColorV3 = new Vector3(layerColor.R/255.0f, layerColor.G/255.0f, layerColor.B/255.0f);
+                    var layerColor3 = new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255),
+                        (byte)(layerColorV3.Z * 255));
 
                     if (ImGui.Button(label: "Copy to next layer", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
@@ -256,7 +258,20 @@ void main() {
                             ref paletteImage.Image, 
                             posX: Math.Clamp(layer + 1, 0, 49), 
                             posY: 1 + value + (sunlit ? 3 : 0), 
-                            new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
+                            layerColor3
+                        );
+                        updatePaletteCanvas = true;
+                    }
+
+                    if (ImGui.Button(label: "Copy to sublayer space", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    {
+                        ImageDrawRectangle(
+                            ref paletteImage.Image,
+                            posX: layer / 10 * 10,
+                            posY: 1 + value + (sunlit ? 3 : 0),
+                            width: 10,
+                            height: 1,
+                            layerColor3
                         );
                         updatePaletteCanvas = true;
                     }
@@ -269,8 +284,60 @@ void main() {
                             posY: 1 + value + (sunlit ? 3 : 0), 
                             width: 50,
                             height: 1,
-                            new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
+                            layerColor3
                         );
+                        updatePaletteCanvas = true;
+                    }
+
+                    if (ImGui.Button(label: "Copy all shadow to sunlit", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    {
+                        for (var x = 0; x < 49; x++)
+                        {
+                            ImageDrawPixel(
+                                ref paletteImage.Image, 
+                                posX: x, 
+                                posY: 1 + 0 + 3, 
+                                GetImageColor(paletteImage, x, y: 1 + 0)
+                            );
+                            ImageDrawPixel(
+                                ref paletteImage.Image, 
+                                posX: x, 
+                                posY: 1 + 1 + 3, 
+                                GetImageColor(paletteImage, x, y: 1 + 1)
+                            );
+                            ImageDrawPixel(
+                                ref paletteImage.Image, 
+                                posX: x, 
+                                posY: 1 + 2 + 3, 
+                                GetImageColor(paletteImage, x, y: 1 + 2)
+                            );
+                        }
+                        updatePaletteCanvas = true;
+                    }
+
+                    if (ImGui.Button(label: "Copy all sunlit to shadow", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    {
+                        for (var x = 0; x < 49; x++)
+                        {
+                            ImageDrawPixel(
+                                ref paletteImage.Image, 
+                                posX: x, 
+                                posY: 1 + 0, 
+                                GetImageColor(paletteImage, x, y: 1 + 0 + 3)
+                            );
+                            ImageDrawPixel(
+                                ref paletteImage.Image, 
+                                posX: x, 
+                                posY: 1 + 1, 
+                                GetImageColor(paletteImage, x, y: 1 + 1 + 3)
+                            );
+                            ImageDrawPixel(
+                                ref paletteImage.Image, 
+                                posX: x, 
+                                posY: 1 + 2, 
+                                GetImageColor(paletteImage, x, y: 1 + 2 + 3)
+                            );
+                        }
                         updatePaletteCanvas = true;
                     }
 
@@ -282,7 +349,7 @@ void main() {
                             posY: 1, 
                             width: 50,
                             height: 6,
-                            new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
+                            layerColor3
                         );
                         updatePaletteCanvas = true;
                     }
@@ -293,7 +360,8 @@ void main() {
                             ref paletteImage.Image, 
                             posX: layer, 
                             posY: 1 + value + (sunlit ? 3 : 0), 
-                            new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255), (byte)(layerColorV3.Z * 255))
+                            new Color((byte)(layerColorV3.X * 255), (byte)(layerColorV3.Y * 255),
+                                (byte)(layerColorV3.Z * 255))
                         );
                         updatePaletteCanvas = true;
                     }
@@ -409,32 +477,26 @@ void main() {
 
         if (ImGui.BeginPopupModal(name: "Export##PaletteExportPopup", ImGuiWindowFlags.NoCollapse))
         {
-            if (!canExport)
-            {
-                ImGui.TextColored(
-                    new Vector4(1f, 0.1f, 0.1f, 1f), 
-                    string.IsNullOrEmpty(exportName) || string.IsNullOrWhiteSpace(exportName)
-                        ? "Name can't be empty" : "Name already exists"
-                );
-            }
             if (ImGui.InputText(label: "Name", input: ref exportName, maxLength: 256))
             {
-                canExport = !string.IsNullOrEmpty(exportName) && 
-                    !string.IsNullOrWhiteSpace(exportName) && 
+                duplicateExportName =
                     Directory
-                    .GetFiles(Context.Dirs.Palettes)
-                    .All(f => Path.GetFileNameWithoutExtension(f) != exportName);
+                        .GetFiles(Context.Dirs.Palettes)
+                        .Any(f => Path.GetFileNameWithoutExtension(f) == exportName);
             }
+            
+            if (string.IsNullOrWhiteSpace(exportName)) ImGui.BeginDisabled();
 
-            if (!canExport) ImGui.BeginDisabled();
-            if (ImGui.Button(label: "Export", size: ImGui.GetContentRegionAvail() with { Y = 20 }))
-            {
+            if (ImGui.Button(
+                    label: duplicateExportName ? "Replace" : "Export", 
+                    size: ImGui.GetContentRegionAvail() with { Y = 20 })
+                ) {
                 paletteImage.ToImage();
                 ExportImage(paletteImage.Image, exportName);
 
                 ImGui.CloseCurrentPopup();
             }
-            if (!canExport) ImGui.EndDisabled();
+            if (string.IsNullOrWhiteSpace(exportName)) ImGui.EndDisabled();
 
             if (ImGui.Button(label: "Cancel", size: ImGui.GetContentRegionAvail() with { Y = 20 }))
             {

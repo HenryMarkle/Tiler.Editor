@@ -26,6 +26,7 @@ public class AppDirectories
     {
         public required string ImGui { get; init; }
         public required string Config { get; init; }
+        public required string Keybinds { get; init; }
         public required string DefaultFont { get; init; }
         public required string CameraSprite { get; init; }
         public required string ConnectionsAtlas { get; init; }
@@ -64,6 +65,7 @@ public class AppDirectories
         {
             ImGui  = Combine(Executable, "imgui.ini"),
             Config = Combine(Executable, "config.ini"),
+            Keybinds = Combine(Executable, "keybinds.ini"),
             DefaultFont = Combine(Fonts, "default.ttf"),
             CameraSprite = Combine(Textures, "camera_sprite.png"),
             ConnectionsAtlas = Combine(Textures, "geometry", "connections.png")

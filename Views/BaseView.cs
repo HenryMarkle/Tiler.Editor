@@ -2,9 +2,23 @@ namespace Tiler.Editor.Views;
 
 using Tiler.Editor;
 
-public abstract class BaseView(Context context)
+public abstract class BaseView
 {
-    protected Context Context = context;
+    protected readonly Context Context;
+    protected internal ViewKeybinds Keybinds;
+
+    protected BaseView(Context context)
+    {
+        Context = context;
+        Keybinds = new ViewKeybinds();
+        
+        Context.LevelSelected += OnLevelSelected;
+    }
+
+    ~BaseView()
+    {
+        Context.LevelSelected -= OnLevelSelected;
+    }
 
     public virtual void Process() {}
     public virtual void Draw() {}

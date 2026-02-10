@@ -17,6 +17,8 @@ public class Tiles : BaseView
 {
     public Tiles(Context context) : base(context)
     {
+        Keybinds = new TilesKeybinds();
+        
         cursor = new Cursor(context);
 
         redrawMain = true;

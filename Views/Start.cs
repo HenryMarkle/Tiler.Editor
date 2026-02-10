@@ -298,6 +298,8 @@ public class Start : BaseView
             InputText(label: "##URL", urlBuffer, buf_size: 256);
 
             Columns(count: 2);
+            
+            SetColumnWidth(column_index: 0, width: 400);
 
             if (BeginListBox(label: "##Projects", size: GetContentRegionAvail()))
             {

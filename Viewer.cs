@@ -1,26 +1,26 @@
+using System.Runtime.CompilerServices;
+
 namespace Tiler.Editor;
 
-using System.Linq;
 using Tiler.Editor.Views;
 
 public class Viewer
 {
-    private readonly Context context;
-
-    public Start Start;
-    public Create Create;
-    public Geos Geos;
-    public Tiles Tiles;
-    public Connections Connections;
-    public Cameras Cameras;
-    public Light Light;
-    public Effects Effects;
-    public Props Props;
-    public Render Render;
-    public Palettes Palettes;
+    public readonly Start Start;
+    public readonly Create Create;
+    public readonly Geos Geos;
+    public readonly Tiles Tiles;
+    public readonly Connections Connections;
+    public readonly Cameras Cameras;
+    public readonly Light Light;
+    public readonly Effects Effects;
+    public readonly Props Props;
+    public readonly Render Render;
+    public readonly Palettes Palettes;
 
     public BaseView SelectedView;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Select(BaseView view)
     {
         SelectedView = view;
@@ -29,47 +29,33 @@ public class Viewer
 
     public Viewer(Context context)
     {
-        this.context = context;
+        Start = new Start(context);
+        Create = new Create(context);
+        Geos = new Geos(context);
+        Tiles = new Tiles(context);
+        Connections = new Connections(context);
+        Cameras = new Cameras(context);
+        Light = new Light(context);
+        Effects = new Effects(context);
+        Props = new Props(context);
+        Render = new Render(context);
+        Palettes = new Palettes(context);
+        
+        // Load keybinds
 
-        Start = new(context);
-        Create = new(context);
-        Geos = new(context);
-        Tiles = new(context);
-        Connections = new(context);
-        Cameras = new(context);
-        Light = new(context);
-        Effects = new(context);
-        Props = new(context);
-        Render = new(context);
-        Palettes = new(context);
+        var parser = new IniParser.FileIniDataParser();
+        var data = parser.ReadFile(context.Dirs.Files.Keybinds);
+        
+        // TODO: Find a way to dynamically do this
 
-        context.LevelSelected += Start.OnLevelSelected;
-        context.LevelSelected += Create.OnLevelSelected;
-        context.LevelSelected += Geos.OnLevelSelected;
-        context.LevelSelected += Tiles.OnLevelSelected;
-        context.LevelSelected += Connections.OnLevelSelected;
-        context.LevelSelected += Cameras.OnLevelSelected;
-        context.LevelSelected += Light.OnLevelSelected;
-        context.LevelSelected += Effects.OnLevelSelected;
-        context.LevelSelected += Props.OnLevelSelected;
-        context.LevelSelected += Render.OnLevelSelected;
-        context.LevelSelected += Palettes.OnLevelSelected;
+        if (data.Sections.ContainsSection("Geos"))
+            Geos.Keybinds.FromIni(data["Geos"]);
+
+        if (data.Sections.ContainsSection("Tiles"))
+            Tiles.Keybinds.FromIni(data["Tiles"]);
+        
+        // TODO: Complete this
 
         SelectedView = Start;
     } 
-
-    ~Viewer()
-    {
-        context.LevelSelected -= Start.OnLevelSelected;
-        context.LevelSelected -= Create.OnLevelSelected;
-        context.LevelSelected -= Geos.OnLevelSelected;
-        context.LevelSelected -= Tiles.OnLevelSelected;
-        context.LevelSelected -= Connections.OnLevelSelected;
-        context.LevelSelected -= Cameras.OnLevelSelected;
-        context.LevelSelected -= Light.OnLevelSelected;
-        context.LevelSelected -= Effects.OnLevelSelected;
-        context.LevelSelected -= Props.OnLevelSelected;
-        context.LevelSelected -= Render.OnLevelSelected;
-        context.LevelSelected -= Palettes.OnLevelSelected;
-    }
 }

@@ -15,6 +15,8 @@ public class Geos : BaseView
 {
     public Geos(Context context) : base(context)
     {
+        Keybinds = new GeosKeybinds();
+        
         redrawMain = true;
         redrawGeos = new bool[context.Viewports.Depth];
         Array.Fill(redrawGeos, true);

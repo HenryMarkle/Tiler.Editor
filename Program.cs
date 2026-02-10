@@ -57,10 +57,14 @@ public class Program {
 		Raylib.SetTraceLogLevel(TraceLogLevel.Error);
 		#endif
 
+		// --------------------------------------------------------------
+		// -------------------------- WINDOW ----------------------------
+
 		Raylib.SetTargetFPS(45);
 		Raylib.InitWindow(1400, 800, "Tiler Editor");
 		Raylib.SetWindowState(ConfigFlags.ResizableWindow);
 		Raylib.SetWindowMinSize(1200, 800);
+		Raylib.SetWindowIcon(Raylib.LoadImage(Path.Combine(paths.Executable, "icon.png")));
 
 		Rlgl.DisableBackfaceCulling();
 
@@ -80,7 +84,7 @@ public class Program {
         {
             Font = fonts.List.Single(f => f.name == "FiraCode-Regular" && f.size == 20).font,
 			Size = 20,
-			Ancor = new(0, 30)
+			Anchor = new(0, 30)
         };
 
 		Log.Information("Loading resources");
@@ -131,7 +135,7 @@ public class Program {
 			printer.Reset();
 			Unloader.Dequeue(20);
 
-			if (viewer.SelectedView is not Views.Start and not Views.Create)
+			if (viewer.SelectedView is not Views.Start and not Views.Create && Raylib.IsKeyDown(KeyboardKey.LeftAlt))
 			{
 				if (Raylib.IsKeyPressed(KeyboardKey.One)) viewer.Select(viewer.Geos);
 				else if (Raylib.IsKeyPressed(KeyboardKey.Two)) viewer.Select(viewer.Tiles);

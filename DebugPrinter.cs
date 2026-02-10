@@ -13,12 +13,12 @@ public class DebugPrinter
     public required Font Font;
     public required int Size;
     public Vector2 Margin = new(3, 4);
-    public Vector2 Ancor = Vector2.Zero;
+    public Vector2 Anchor = Vector2.Zero;
     public Vector2 Cursor = Vector2.Zero;
 
     public void Reset()
     {
-        Cursor = Ancor;
+        Cursor = Anchor;
     } 
 
     public void NewLine(int count = 1)

@@ -2,6 +2,7 @@ namespace Tiler.Editor;
 
 using System;
 using System.Linq;
+
 using Raylib_cs;
 
 public class LevelPalette
