@@ -78,6 +78,13 @@ public class TileRenderingScriptRuntime : IDisposable
         ),
         _ => throw new ScriptingException("Invalid arguments"),
     };
+
+    public Triangle CreateTriangle(params object[] args) => args switch
+    {
+        [Triangle t] => new Triangle(t),
+        [Vector2 a, Vector2 b, Vector2 c] => new Triangle(a, b, c),
+        _ => throw new ScriptingException("Invalid arguments")
+    };
     
     public Quad CreateQuad(params object[] args) => args switch
     {
@@ -163,8 +170,35 @@ public class TileRenderingScriptRuntime : IDisposable
                 // Raylib.EndTextureMode();
             }
             break;
+            
+            case [ Texture texture, long layer, Triangle destination, Triangle source, .. ]:
+            {        
+                // Raylib.BeginTextureMode(layers[layer]);
+                RlUtils.DrawTextureTriangleRT(
+                    rt:   layers[layer],
+                    texture,
+                    source,
+                    destination with { 
+                        A = new Vector2(
+                            destination.A.X + layerMargin - camera.Position.X, 
+                            destination.A.Y + layerMargin - camera.Position.Y
+                            ),
+                        B = new Vector2(
+                            destination.B.X + layerMargin - camera.Position.X, 
+                            destination.B.Y + layerMargin - camera.Position.Y
+                            ),
+                        C = new Vector2(
+                            destination.C.X + layerMargin - camera.Position.X, 
+                            destination.C.Y + layerMargin - camera.Position.Y
+                            ),
+                    },
+                    tint: args.Last() is Color4 c ? c : Color.White
+                );
+                // Raylib.EndTextureMode();
+            }
+            break;
 
-            default: throw new ScriptingException("Invalid arguments");
+            default: throw new InvalidScriptFunctionArgumentException("Invalid arguments", args);
         }
     }
 
@@ -229,6 +263,12 @@ public class TileRenderingScriptRuntime : IDisposable
             "Rect",
             this,
             typeof(TileRenderingScriptRuntime).GetMethod("CreateRect")
+        );
+
+        lua.RegisterFunction(
+            "Triangle",
+            this,
+            typeof(TileRenderingScriptRuntime).GetMethod("CreateTriangle")
         );
 
         lua.RegisterFunction(

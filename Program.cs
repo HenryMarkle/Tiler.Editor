@@ -212,7 +212,7 @@ public class Program {
 				if (ImGui.MenuItem("Light", "",  viewer.SelectedView is Views.Light)) 
 					viewer.Select(viewer.Light);
 				
-				if (ImGui.MenuItem("Dimensions", null, false, false)) 
+				if (ImGui.MenuItem("Dimensions", null, false, false)) {}
 				
 				if (ImGui.MenuItem("Effects", "", viewer.SelectedView is Views.Effects))
 					viewer.Select(viewer.Effects);

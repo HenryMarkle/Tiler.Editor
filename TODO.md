@@ -7,3 +7,5 @@
 - Add more effects
 - Add palette editor/creator
 - Introduce a dynamic image type that references data on the disk
+---
+- Fix texture rendering on slopes

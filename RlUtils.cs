@@ -37,6 +37,36 @@ public static class RlUtils
         Rlgl.SetTexture(0);
     }
 
+    public static void DrawTextureTriangle(
+        in Texture2D texture,
+        in Triangle source,
+        in Triangle triangle,
+        Color4 tint
+    )
+    {
+        Rlgl.SetTexture(texture.Id);
+
+        Rlgl.Begin(DrawMode.Triangles);
+
+        Rlgl.Color4ub(tint.R, tint.G, tint.B, tint.A);
+
+        var width = texture.Width;
+        var height = texture.Height;
+
+        Rlgl.TexCoord2f(source.A.X / width, source.A.Y / height);
+        Rlgl.Vertex2f(triangle.A.X, triangle.A.Y);
+     
+        Rlgl.TexCoord2f(source.B.X / width, source.B.Y / height);
+        Rlgl.Vertex2f(triangle.B.X, triangle.B.Y);
+     
+        Rlgl.TexCoord2f(source.C.X / width, source.C.Y / height);
+        Rlgl.Vertex2f(triangle.C.X, triangle.C.Y);
+    
+        Rlgl.End();
+
+        Rlgl.SetTexture(id: 0);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void DrawTextureQuad(
         in Texture2D texture,
@@ -70,6 +100,32 @@ public static class RlUtils
             rotation: 0,
             tint
         );
+        EndTextureMode();
+    }
+
+    /// <summary>
+    /// Draws a rectangular portion of a texture into a framebuffer inside a 
+    /// rectangle avoiding the vertical flip of the drawing.
+    /// </summary>
+    public static void DrawTextureTriangleRT(
+        in RenderTexture2D rt, 
+        in Texture2D texture, 
+        in Triangle source, 
+        in Triangle destination,
+        Color4 tint
+    )
+    {
+        BeginTextureMode(rt);
+        DrawTextureTriangle(
+            texture,
+            source,
+            triangle: new Triangle(
+                destination.A with { Y = rt.Texture.Height - destination.A.Y },
+                destination.C with { Y = rt.Texture.Height - destination.C.Y },
+                destination.B with { Y = rt.Texture.Height - destination.B.Y }
+                ),
+            // triangle: destination,
+            tint);
         EndTextureMode();
     }
 

@@ -25,10 +25,12 @@ public class Props : BaseView
     private PropDef? selectedProp;
     private PropDef? hoveredProp;
 
-    private RenderTexture propPreview;
-    private RenderTexture propTooltip;
+    private readonly RenderTexture propPreview;
+    private readonly RenderTexture propTooltip;
 
     private bool redrawMain;
+
+    private RopeModel? ropeModel;
 
     public enum Precision
     {
@@ -71,7 +73,7 @@ public class Props : BaseView
     private Rectangle selectionRect;
 
     private List<Prop> selectedPlacedProps;
-    private Timer unloadTimer;
+    private readonly Timer unloadTimer;
     
     private Vector2 selectedPlacedPropsCenter;
 
@@ -128,19 +130,19 @@ public class Props : BaseView
         );
 
         propPreview = new RenderTexture(
-            width: 1,
-            height: 1,
+            width:      1,
+            height:     1,
             clearColor: new Color4(0, 0, 0, 0),
-            clear: true
+            clear:      true
         );
         propTooltip = new RenderTexture(
-            width: 1,
-            height: 1,
+            width:      1,
+            height:     1,
             clearColor: new Color4(0, 0, 0, 0),
-            clear: true
+            clear:      true
         );
 
-        SelectPropCategory(0);
+        SelectPropCategory(index: 0);
         if (selectedProp is not null) DrawPropRT(propPreview, selectedProp);
 
         invbShader = LoadShader(
