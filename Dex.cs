@@ -1,3 +1,5 @@
+using System.IO.Compression;
+
 namespace Tiler.Editor;
 
 using System.Collections.Generic;
@@ -204,6 +206,7 @@ public class PropDex
 
         return dex;
     }
+
 }
 
 public class EffectDex

@@ -250,7 +250,7 @@ public class Geos : BaseView
 
             case GeometryLayerColoring.Gray:
                 ClearBackground(new Color(0, 0, 0, 0));
-                for (int l = 0; l < Context.Viewports.Depth; l++)
+                for (var l = 0; l < Context.Viewports.Depth; l++)
                 {
                     if (l == Context.Layer) continue;
                     DrawTexture(Context.Viewports.Geos[l].Raw.Texture, posX: 0, posY: 0, Color.Black with { A = 120 });

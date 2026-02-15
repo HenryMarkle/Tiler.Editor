@@ -1,4 +1,7 @@
-﻿namespace Tiler.Editor;
+﻿using Serilog.Core;
+using Serilog.Events;
+
+namespace Tiler.Editor;
 
 using Serilog;
 using Raylib_cs;
@@ -6,23 +9,44 @@ using rlImGui_cs;
 using ImGuiNET;
 
 using System;
+using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Globalization;
 
 using Tiler.Editor.Managed;
-using Serilog.Core;
-using System.IO;
 
-public class Program {
-	public static void Main(string[] args) {
+public static class Program {
+	public static void Main(string[] args)
+	{
+		var logLevelIndex = Array.FindIndex(args, str => str == "-l") + 1;
+		var logLevel = args.Length > logLevelIndex 
+			? args[logLevelIndex] 
+			: null;
+
+		var loggingLevelSwitch = new LoggingLevelSwitch
+		{
+			MinimumLevel = logLevel switch
+			{
+				"d" or "debug" => LogEventLevel.Debug,
+				"e" or "error" => LogEventLevel.Error,
+				"f" or "fatal" => LogEventLevel.Fatal,
+				"v" or "verbose" => LogEventLevel.Verbose,
+				"i" or "information" => LogEventLevel.Information,
+				"w" or "warning" => LogEventLevel.Warning,
+			
+				_ => LogEventLevel.Debug
+			}
+		};
+
 		Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
 
 		var paths = new AppDirectories();
 
 		#if DEBUG
 		Log.Logger = new LoggerConfiguration()
-			.MinimumLevel.Debug()
+			.MinimumLevel.ControlledBy(loggingLevelSwitch)
 			.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
 			.CreateLogger();
 		#else
@@ -63,16 +87,16 @@ public class Program {
 		// -------------------------- WINDOW ----------------------------
 
 		Raylib.SetTargetFPS(45);
-		Raylib.InitWindow(1400, 800, "Tiler Editor");
-		Raylib.SetWindowState(ConfigFlags.ResizableWindow);
-		Raylib.SetWindowMinSize(1200, 800);
-		Raylib.SetWindowIcon(Raylib.LoadImage(Path.Combine(paths.Executable, "icon.png")));
+		Raylib.InitWindow(width: 1400, height: 800, title: "Tiler Editor");
+		Raylib.SetWindowState(flag: ConfigFlags.ResizableWindow);
+		Raylib.SetWindowMinSize(width: 1200, height: 800);
+		Raylib.SetWindowIcon(Raylib.LoadImage(fileName: Path.Combine(paths.Executable, "icon.png")));
 
 		Rlgl.DisableBackfaceCulling();
 
 		// Raylib.SetExitKey(KeyboardKey.Null);
 
-        rlImGui.Setup(true, true);
+        rlImGui.Setup(darkTheme: true, enableDocking: true);
 
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         ImGui.GetIO().ConfigDockingWithShift = true;
@@ -84,9 +108,9 @@ public class Program {
 
 		var printer = new DebugPrinter
         {
-            Font = fonts.List.Single(f => f.name == "FiraCode-Regular" && f.size == 20).font,
+            Font = fonts.List.Single(f => f is { name: "FiraCode-Regular", size: 20 }).font,
 			Size = 20,
-			Anchor = new(0, 30)
+			Anchor = new Vector2(0, 30)
         };
 
 		Log.Information("Loading resources");

@@ -29,7 +29,7 @@ public class Level
     public int Height { get; private set; } = DefaultHeight;
     public int Depth { get; private set; } = DefaultDepth;
 
-    /// TODO: Use Either<> instead 
+    /// TODO: Use Either instead 
     public TileDef? DefaultTile { get; set; }
     public Managed.Image Lightmap = new(
         Raylib.GenImageColor(

@@ -1,12 +1,39 @@
+using System;
+using System.Buffers.Binary;
+using System.IO.Compression;
+
 namespace Tiler.Editor;
 
+using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+
 using Raylib_cs;
 using static Raylib_cs.Raylib;
 
+
+
 public static class RlUtils
 {
+    public static (int width, int height) GetImageSize(string path)
+    {
+        if (!File.Exists(path) || Path.GetExtension(path) is not ".png")
+            throw new FileNotFoundException(path);
+
+        using var stream = File.OpenRead(path);
+        var buffer = new byte[24];
+
+        stream.ReadExactly(buffer, offset: 0, count: 24);
+        
+        if (buffer is not [0x89, 0x50, 0x4E, 0x47])
+            throw new Exception("Not a valid PNG image");
+
+        var width = BinaryPrimitives.ReadInt32BigEndian(source: buffer.AsSpan(start: 16, length: 4));
+        var height = BinaryPrimitives.ReadInt32BigEndian(source: buffer.AsSpan(start: 20, length: 4));
+            
+        return (width, height);
+    }
+    
     public static void DrawTextureQuad(
         in Texture2D texture,
         in Rectangle source,
@@ -212,4 +239,25 @@ public static class RlUtils
         in Rectangle source, 
         in Quad destination
     ) => DrawTextureRT(rt, texture, source, destination, Color.White);
+
+    /// <param name="zipFile">The .zip file path</param>
+    /// <param name="entryName">The image entry in the .zip file.</param>
+    /// <returns>An image stored in RAM</returns>
+    /// <exception cref="Exception">If the image entry was not found.</exception>
+    public static Image LoadImageFromZipFile(string zipFile, string entryName)
+    {
+        using var archive = ZipFile.OpenRead(zipFile);
+
+        var pngEntry = archive.GetEntry(entryName);
+        if (pngEntry is null) throw new Exception("Image file entry not found");
+
+        using var stream = pngEntry.Open();
+        using var ms = new MemoryStream();
+        
+        stream.CopyTo(ms);
+
+        var imageData = ms.ToArray();
+
+        return LoadImageFromMemory(".png", imageData);
+    }
 }
