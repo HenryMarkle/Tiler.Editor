@@ -158,7 +158,12 @@ public static class Program {
 			// -------------------------------------------------------------
 			// ------------------------ PROCESS ----------------------------
 
-			printer.Reset();
+			if (Raylib.IsKeyPressed(KeyboardKey.F3)) 
+				config.ShowDebugScreen = !config.ShowDebugScreen;
+
+			if (config.ShowDebugScreen)
+				printer.Reset();
+
 			Unloader.Dequeue(20);
 
 			if (viewer.SelectedView is not Views.Start and not Views.Create && Raylib.IsKeyDown(KeyboardKey.LeftAlt))
@@ -278,21 +283,24 @@ public static class Program {
 
 			// -------------------------------------------------------------
 			// ------------------------- DEBUG -----------------------------
-			
-			printer.Print("Tiler | Debug |" );
-			printer.PrintlnLabel("FPS", Raylib.GetFPS(), new Color4(20, 255, 20));
 
-			var totalMemUsed = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024f / 1024f;
-			
-			printer.PrintlnLabel(
-				"Memory", 
-				$"{(totalMemUsed > 1001 ? totalMemUsed / 1024f : totalMemUsed) :F2} {(totalMemUsed > 1001 ? "GB" : "MB")}", 
-				Color.SkyBlue
-				);
-			
-			printer.PrintlnLabel("View", viewer.SelectedView.GetType().Name ?? "NULL", new Color4(245, 70, 110));
-
-			viewer.SelectedView.Debug();
+			if (config.ShowDebugScreen)
+			{
+				printer.Print("Tiler | Debug |" );
+				printer.PrintlnLabel("FPS", Raylib.GetFPS(), new Color4(20, 255, 20));
+	
+				var totalMemUsed = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024f / 1024f;
+				
+				printer.PrintlnLabel(
+					"Memory", 
+					$"{(totalMemUsed > 1001 ? totalMemUsed / 1024f : totalMemUsed) :F2} {(totalMemUsed > 1001 ? "GB" : "MB")}", 
+					Color.SkyBlue
+					);
+				
+				printer.PrintlnLabel("View", viewer.SelectedView.GetType().Name, new Color4(245, 70, 110));
+	
+				viewer.SelectedView.Debug();
+			}
 			
 			Raylib.EndDrawing();
 		}

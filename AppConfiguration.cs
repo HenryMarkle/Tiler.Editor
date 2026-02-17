@@ -13,6 +13,7 @@ public enum GeometryLayerColoring
 public class AppConfiguration
 {
     public GeometryLayerColoring GeoColoring = GeometryLayerColoring.RGB;
+    public bool ShowDebugScreen = true;
 
     public static AppConfiguration FromFile(string path)
     {
@@ -28,7 +29,8 @@ public class AppConfiguration
 
         return new AppConfiguration
         {
-            GeoColoring = geoColoring
+            GeoColoring = geoColoring,
+            ShowDebugScreen = view["ShowDebugScreen"] switch { "true" => true, _ => false }
         };
     }
 }
