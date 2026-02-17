@@ -289,6 +289,9 @@ public class Start : BaseView
             SetWindowPos(new Vector2(30, 60));
             SetWindowSize(new Vector2(Raylib.GetScreenWidth() - 60, Raylib.GetScreenHeight() - 120));
 
+            if (Button(label: "New Project")) 
+                Context.Viewer.Select(Context.Viewer.Create);
+            SameLine();
             if (Button(label: "Projects")) GoHome();
             SameLine();
             if (Button(label: "Up")) GoUp();

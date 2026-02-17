@@ -164,7 +164,7 @@ public static class Program {
 			if (config.ShowDebugScreen)
 				printer.Reset();
 
-			Unloader.Dequeue(20);
+			Unloader.Dequeue(cap: 20);
 
 			if (viewer.SelectedView is not Views.Start and not Views.Create && Raylib.IsKeyDown(KeyboardKey.LeftAlt))
 			{
@@ -173,7 +173,7 @@ public static class Program {
 				else if (Raylib.IsKeyPressed(KeyboardKey.Three)) viewer.Select(viewer.Connections);
 				else if (Raylib.IsKeyPressed(KeyboardKey.Four)) viewer.Select(viewer.Cameras);
 				else if (Raylib.IsKeyPressed(KeyboardKey.Five)) viewer.Select(viewer.Light);
-				else if (Raylib.IsKeyPressed(KeyboardKey.Six)) viewer.Select(viewer.Light);
+				else if (Raylib.IsKeyPressed(KeyboardKey.Six)) viewer.Select(viewer.Light); // TODO: Fix duplicate
 				else if (Raylib.IsKeyPressed(KeyboardKey.Seven)) viewer.Select(viewer.Effects);
 				else if (Raylib.IsKeyPressed(KeyboardKey.Eight)) viewer.Select(viewer.Props);
 			}
@@ -190,12 +190,26 @@ public static class Program {
 			rlImGui.Begin();
 			
 			ImGui.BeginMainMenuBar();
-			if (ImGui.BeginMenu("Project")) {
+			if (ImGui.BeginMenu(label: "Project")) {
+				if (ImGui.BeginMenu(label: "Projects"))
+				{
+					foreach (var project in context.Levels)
+					{
+						if (ImGui.MenuItem(
+							    label: $"{project.Name}##{project.GetHashCode()}", 
+							    shortcut: "", 
+							    selected: context.SelectedLevel == project))
+							context.SelectLevel(project);
+					}
+					
+					ImGui.EndMenu();
+				}
+				
 				if (ImGui.MenuItem(
-					"Save", 
-					"CTRL + S", 
-					false, 
-					viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
+					label: "Save", 
+					shortcut: "CTRL + S", 
+					selected: false, 
+					enabled: viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
 					)
 				) {
 					context.SelectedLevel!.Lightmap = new Managed.Image(
@@ -214,47 +228,60 @@ public static class Program {
 				}
 
 				ImGui.MenuItem(
-					"Save As", 
-					"CTRL + SHIFT + S", 
-					false, 
-					viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
+					label: "Save As", 
+					shortcut: "CTRL + SHIFT + S", 
+					selected: false, 
+					enabled: viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
 				);
-				if (ImGui.MenuItem("Open", "CTRL + O")) viewer.Select(viewer.Start);
-				if (ImGui.MenuItem("Create", "CTRL + N")) viewer.Select(viewer.Create);
+				if (ImGui.MenuItem(label: "Open", shortcut: "CTRL + O")) viewer.Select(viewer.Start);
+				if (ImGui.MenuItem(label: "Create", shortcut: "CTRL + N")) viewer.Select(viewer.Create);
+				if (ImGui.MenuItem(
+					    label: "Close", 
+					    shortcut: "", 
+					    selected: false, 
+					    enabled: viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null))
+				{
+					context.RemoveLevel(context.SelectedLevel!);
+					if (context.Levels.Count == 0) viewer.Select(viewer.Start);
+				}
 				ImGui.EndMenu();
 			}
 			
 			if (viewer.SelectedView is not Views.Start and not Views.Create)
             {
-				if (ImGui.MenuItem("Geometry", "", viewer.SelectedView is Views.Geos)) 
+				if (ImGui.MenuItem(label: "Geometry", shortcut: "", viewer.SelectedView is Views.Geos)) 
 					viewer.Select(viewer.Geos);
 				
-				if (ImGui.MenuItem("Tiles", "", viewer.SelectedView is Views.Tiles)) 
+				if (ImGui.MenuItem(label: "Tiles", shortcut: "", viewer.SelectedView is Views.Tiles)) 
 					viewer.Select(viewer.Tiles);
 				
-				if (ImGui.MenuItem("Connections", "", viewer.SelectedView is Views.Connections)) 
+				if (ImGui.MenuItem(label: "Connections", shortcut: "", viewer.SelectedView is Views.Connections)) 
 					viewer.Select(viewer.Connections);
 				
-				if (ImGui.MenuItem("Cameras", "", viewer.SelectedView is Views.Cameras)) 
+				if (ImGui.MenuItem(label: "Cameras", shortcut: "", viewer.SelectedView is Views.Cameras)) 
 					viewer.Select(viewer.Cameras);
 				
-				if (ImGui.MenuItem("Light", "",  viewer.SelectedView is Views.Light)) 
+				if (ImGui.MenuItem(label: "Light", shortcut: "",  viewer.SelectedView is Views.Light)) 
 					viewer.Select(viewer.Light);
 				
-				if (ImGui.MenuItem("Dimensions", null, false, false)) {}
+				if (ImGui.MenuItem(label: "Dimensions", shortcut: null, selected: false, enabled: false)) {}
 				
-				if (ImGui.MenuItem("Effects", "", viewer.SelectedView is Views.Effects))
+				if (ImGui.MenuItem(label: "Effects", shortcut: "", viewer.SelectedView is Views.Effects))
 					viewer.Select(viewer.Effects);
 				
-				if (ImGui.MenuItem("Props", "", viewer.SelectedView is Views.Props))
+				if (ImGui.MenuItem(label: "Props", shortcut: "", viewer.SelectedView is Views.Props))
 					viewer.Select(viewer.Props);
 				
-				if (ImGui.MenuItem("Render", "", viewer.SelectedView is Views.Render)) 
+				if (ImGui.MenuItem(label: "Render", shortcut: "", viewer.SelectedView is Views.Render)) 
 					viewer.Select(viewer.Render);
             }
 
-			if (ImGui.BeginMenu("Misc")) {
-				if (ImGui.MenuItem("Palettes", "", viewer.SelectedView is Views.Palettes))
+			if (ImGui.BeginMenu(label: "Misc"))
+			{
+				if (ImGui.MenuItem(label: "Debug Screen", shortcut: "F3", selected: config.ShowDebugScreen))
+					config.ShowDebugScreen = !config.ShowDebugScreen;
+				
+				if (ImGui.MenuItem(label: "Palettes", shortcut: "", viewer.SelectedView is Views.Palettes))
 					viewer.Select(viewer.Palettes);
 			
 				ImGui.EndMenu();
@@ -266,10 +293,10 @@ public static class Program {
 			{ // Error message
 				if (levelSaveExcep is not null) ImGui.OpenPopup("Error##LevelSaveError");
 				
-				if (ImGui.BeginPopupModal("Error##LevelSaveError", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize))
+				if (ImGui.BeginPopupModal(name: "Error##LevelSaveError", flags: ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize))
 				{
 					ImGui.Text("Failed to save level. View logs for more information");
-					if (ImGui.Button("Ok"))
+					if (ImGui.Button(label: "Ok"))
 					{
 						levelSaveExcep = null;
 						ImGui.CloseCurrentPopup();
