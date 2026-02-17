@@ -18,11 +18,11 @@ public class LevelPalette
     public Color3 Darkness = new(10, 10, 10);
     public Color3 Sky = new(200, 200, 200);
     public Color3 Fog = new(200, 200, 200);
-    public float FogIntensity { get => field; set => field = Math.Clamp(value, 0, 1); }
+    public float FogIntensity { get; set => field = Math.Clamp(value, 0, 1f); }
 
-    public Raylib_cs.Image ToImage()
+    public Image ToImage()
     {
-        var image = Raylib.GenImageColor(50, 8, Color.White);
+        var image = Raylib.GenImageColor(width: 50, height: 8, Color.White);
         
         Raylib.ImageFormat(ref image, PixelFormat.UncompressedR8G8B8);
         

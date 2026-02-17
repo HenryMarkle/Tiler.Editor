@@ -281,6 +281,15 @@ public static class Program {
 			
 			printer.Print("Tiler | Debug |" );
 			printer.PrintlnLabel("FPS", Raylib.GetFPS(), new Color4(20, 255, 20));
+
+			var totalMemUsed = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024f / 1024f;
+			
+			printer.PrintlnLabel(
+				"Memory", 
+				$"{(totalMemUsed > 1001 ? totalMemUsed / 1024f : totalMemUsed) :F2} {(totalMemUsed > 1001 ? "GB" : "MB")}", 
+				Color.SkyBlue
+				);
+			
 			printer.PrintlnLabel("View", viewer.SelectedView.GetType().Name ?? "NULL", new Color4(245, 70, 110));
 
 			viewer.SelectedView.Debug();
@@ -295,5 +304,36 @@ public static class Program {
 		Log.Information("---------------------------------- Program terminated");
 
 		Log.CloseAndFlush();
+	}
+
+	public readonly struct ProgramArguments
+	{
+		public string? LogLevel { get; init; }
+		public int FPS { get; init; }
+
+		public ProgramArguments()
+		{
+			LogLevel = null;
+			FPS = 45;
+		}
+
+		public static ProgramArguments Parse(string[] args)
+		{
+			return new ProgramArguments
+			{
+				LogLevel = GetFlag("-l"),
+				FPS = int.Parse(GetFlag("--fps") ?? "45"),
+			};
+
+			string? GetFlag(string name)
+			{
+				var index = Array.FindIndex(args, a => a == name);
+
+				if (index >= 0 && index < args.Length - 1)
+					return args[index + 1];
+				
+				return null;
+			}
+		}
 	}
 }
