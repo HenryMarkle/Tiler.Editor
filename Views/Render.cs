@@ -153,56 +153,59 @@ void main()
 }"
         ));
 
-        paletteShader = new Managed.Shader(LoadShaderFromMemory(null, @"
-        #version 330
+        paletteShader = new Managed.Shader(LoadShaderFromMemory(null, """
 
-in vec2 fragTexCoord;
-in vec4 fragColor;
+              #version 330
 
-uniform sampler2D texture0;
-uniform sampler2D palette;
+      in vec2 fragTexCoord;
+      in vec4 fragColor;
 
-out vec4 finalColor;
+      uniform sampler2D texture0;
+      uniform sampler2D palette;
 
-vec4 white = vec4(1, 1, 1, 1);
-vec4 black = vec4(0, 0, 0, 1);
+      out vec4 finalColor;
 
-vec2 darkPos = vec2(0.5 / 50.0, 0);
-vec2 skyPos = vec2((1 + 0.5) / 50.0, 0);
-vec2 fogPos = vec2((2 + 0.5) / 50.0, 0);
-vec2 fogIntenPos = vec2((3 + 0.5) / 50.0, 0);
+      vec4 white = vec4(1, 1, 1, 1);
+      vec4 black = vec4(0, 0, 0, 1);
 
-void main() {
-    vec4 pixel = texture(texture0, vec2(fragTexCoord.x, 1.0 - fragTexCoord.y));
+      vec2 darkPos = vec2(0.5 / 50.0, 0);
+      vec2 skyPos = vec2((1 + 0.5) / 50.0, 0);
+      vec2 fogPos = vec2((2 + 0.5) / 50.0, 0);
+      vec2 fogIntenPos = vec2((3 + 0.5) / 50.0, 0);
 
-    if (pixel == black) {   // darkness
-        finalColor = texture(palette, darkPos);
-        return;
-    }
+      void main() {
+          vec4 pixel = texture(texture0, vec2(fragTexCoord.x, 1.0 - fragTexCoord.y));
 
-    if (pixel == white) {   // sky
-        finalColor = texture(palette, skyPos);
-        return;
-    }
+          if (pixel == black) {   // darkness
+              finalColor = texture(palette, darkPos);
+              return;
+          }
 
-    int red = int(pixel.r * 255);
+          if (pixel == white) {   // sky
+              finalColor = texture(palette, skyPos);
+              return;
+          }
 
-    int isSunlit = int(red > 50);
-    int depth = red - (isSunlit * 50);
-    float value = pixel.g;
+          int red = int(pixel.r * 255);
 
-    int valueRow = 0;
-    if (value >= 0.3 && value <= 0.8) valueRow = 1;
-    else if (value >= 0.988) valueRow = 2; 
+          float sunlight = pixel.b;
+          int depth = red;
+          float value = pixel.g;
 
-    vec4 fog = texture(palette, fogPos);
-    float fogIntensity = texture(palette, fogIntenPos).r;
+          int valueRow = 0;
+          if (value >= 0.3 && value <= 0.8) valueRow = 1;
+          else if (value >= 0.988) valueRow = 2; 
 
-    vec4 layerColor = texture(palette, vec2((depth + 0.5) / 50.0, (1.5 + (isSunlit * 3) + valueRow) / 8.0));
+          vec4 fog = texture(palette, fogPos);
+          float fogIntensity = texture(palette, fogIntenPos).r;
 
-    finalColor = mix(layerColor, fog, fogIntensity * (depth / 50.0));
-}
-"));
+          vec4 layerColor = texture(palette, vec2((depth + 0.5) / 50.0, (1.5 + valueRow) / 8.0));
+          vec4 layerColorSunlit = texture(palette, vec2((depth + 0.5) / 50.0, (1.5 + 3 + valueRow) / 8.0));
+
+          finalColor = mix(mix(layerColor, layerColorSunlit, sunlight), fog, fogIntensity * (depth / 50.0));
+      }
+
+      """));
 
         preview = new RenderTexture(
             Renderer.Width, 

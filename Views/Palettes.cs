@@ -119,8 +119,8 @@ void main() {
 
   int red = int(pixel.r * 255);
 
-  int isSunlit = int(red > 50);
-  int depth = red - (isSunlit * 50);
+  float sunlight = pixel.b;
+  int depth = red;
   float value = pixel.g;
 
   int valueRow = 0;
@@ -130,9 +130,10 @@ void main() {
   vec4 fog = texture(palette, fogPos);
   float fogIntensity = texture(palette, fogIntenPos).r;
 
-  vec4 layerColor = texture(palette, vec2(depth / 50.0, (1 + (isSunlit * 3) + valueRow) / 8.0));
+  vec4 layerColor = texture(palette, vec2(depth / 50.0, (1 + valueRow) / 8.0));
+  vec4 layerColorSunlit = texture(palette, vec2(depth / 50.0, (1 + 3 + valueRow) / 8.0));
 
-  finalColor = mix(layerColor, fog, fogIntensity * (depth / 50.0));
+  finalColor = mix(mix(layerColor, layerColorSunlit, sunlight), fog, fogIntensity * (depth / 50.0));
 }
 """
             ));
