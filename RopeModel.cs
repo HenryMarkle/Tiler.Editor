@@ -252,8 +252,10 @@ public class RopeModel
         return 1;
     }
 
-    public void Update(Quad quad, int layer) 
+    public void Update(Quad quad, int layer)
     {
+        if (SegmentCount < 3) return;
+        
         var (posA, posB) = GetRopeEnds(quad);
         var segments = Segments;
 

@@ -29,9 +29,7 @@ public class Props : BaseView
     private readonly RenderTexture propTooltip;
 
     private bool redrawMain;
-
-    private RopeModel? ropeModel;
-
+    
     public enum Precision
     {
         Free,
@@ -52,7 +50,8 @@ public class Props : BaseView
     private enum EditMode
     {
         Selection,
-        Placement
+        Placement,
+        Rope
     }
 
     private EditMode editMode;
@@ -67,6 +66,9 @@ public class Props : BaseView
     }
 
     private SelectionAction selectionAction;
+    
+    private RopeModel? ropeModel;
+    private RopeProperties? ropeModelProperties;
 
     private bool isSelecting;
     private Vector2 initialSelectionPos;
@@ -157,6 +159,23 @@ public class Props : BaseView
         unloadTimer.Dispose();
     }
 
+    /// <exception cref="NullReferenceException">If <see cref="selectedProp"/>
+    /// or <see cref="Context.SelectedLevel"/> is null</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private Prop CreateNewProp() => new Prop(
+        def:    selectedProp!,
+        config: selectedProp!.CreateConfig(),
+        quad:   new Quad(
+            new Rectangle(position: Vector2.Zero, size: new Vector2(propPreview.Width, propPreview.Height))
+        ) + TransPos - (new Vector2(propPreview.Width, propPreview.Height)/2),
+        depth:  Context.Layer * 10
+    )
+    {
+        Preview = Context.SelectedLevel!.Props.Find(p => p.Def == selectedProp) is { } replica
+            ? replica.Preview
+            : new HybridImage(LoadImageFromTexture(propPreview.Texture))
+    };
+    
     private void SelectPropCategory(int index)
     {
         if (index >= Context.Props.Categories.Count) return;
@@ -930,6 +949,13 @@ public class Props : BaseView
                 #endregion
             }
                 break;
+
+            case EditMode.Rope:
+            {
+                // TODO: Complete this
+                if (IsKeyPressed(KeyboardKey.A)) editMode = EditMode.Selection;
+            }
+                break;
         }
 
         #endregion
@@ -1209,6 +1235,32 @@ public class Props : BaseView
 
         if (ImGui.Begin(name: "Settings##PlacementSettings"))
         {
+            if (selectedProp is null) ImGui.BeginDisabled();
+            if (ImGui.Button(label: "Rope-ify"))
+            {
+                editMode = EditMode.Rope;
+
+                ropeModel = new RopeModel(
+                    level:      Context.SelectedLevel,
+                    prop:       CreateNewProp(),
+                    properties: ropeModelProperties ??= new RopeProperties( // TODO: Auto-adjust the initial values
+                        segmentLength: 1,
+                        collisionDepth: 1,
+                        segmentRadius: 1,
+                        gravity: 1,
+                        friction: 1,
+                        airFriction: 0.1f,
+                        stiff: false,
+                        edgeDirection: 0,
+                        rigid: 0.1f,
+                        selfPush: 0.1f,
+                        sourcePush: 0
+                    ),
+                    segments:   [ cursor.Pos - (Vector2.UnitX * 20), cursor.Pos, cursor.Pos + (Vector2.UnitX * 20) ]
+                );
+            }
+            if (selectedProp is null) ImGui.EndDisabled();
+            
             {
                 var pres = (int)gridPrecision;
                 ImGui.SetNextItemWidth(80);
