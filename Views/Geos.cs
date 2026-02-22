@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+
 using ImGuiNET;
 using Raylib_cs;
+using static Raylib_cs.Raylib;
+
 using Tiler.Editor.Managed;
 using Tiler.Editor.Views.Components;
-using static Raylib_cs.Raylib;
 
 public class Geos : BaseView
 {
@@ -23,7 +25,7 @@ public class Geos : BaseView
 
         atlas = new GeoAtlas(
             new Texture(
-                LoadTexture(Path.Combine(Context.Dirs.Textures, "geometry", "atlas.png"))));
+                LoadTexture(fileName: Path.Combine(Context.Dirs.Textures, "geometry", "atlas.png"))));
 
         cursor = new Cursor(context);
 
@@ -167,7 +169,7 @@ public class Geos : BaseView
         BeginTextureMode(geosMenu);
         ClearBackground(new Color(0, 0, 0, 0));
 
-        for (var x = 0; x < 14; x++)
+        for (var x = 0; x < 15; x++)
             DrawTexturePro(
                 atlas.Texture,
                 source: GeoAtlas.GetRect(atlas.GetIndex((Geo)x)),
@@ -178,7 +180,7 @@ public class Geos : BaseView
             );
 
         DrawRectangleLinesEx(
-            new Rectangle(
+            rec: new Rectangle(
                 20 * selectedGeoIndex.x, 
                 20 * selectedGeoIndex.y, 
                 20, 
@@ -301,11 +303,11 @@ public class Geos : BaseView
 
         BeginTextureMode(Context.Viewports.Geos[Context.Layer]);
 
-        for (int x = cursor.MX - brushRadius; x < cursor.MX + brushRadius + 1; x++)
+        for (var x = cursor.MX - brushRadius; x < cursor.MX + brushRadius + 1; x++)
         {
             if (x < 0 || x >= level.Geos.Width) continue;
 
-            for (int y = cursor.MY - brushRadius; y < cursor.MY + brushRadius + 1; y++)
+            for (var y = cursor.MY - brushRadius; y < cursor.MY + brushRadius + 1; y++)
             {
                 if (y < 0 || y >= level.Geos.Height) continue;
                 if (!IsInBrush(x, y)) continue;
@@ -378,51 +380,47 @@ public class Geos : BaseView
             }
             //
 
-            if (cursor.IsInMatrix)
+            if (cursor is { IsInMatrix: true, IsSelecting: false })
             {
-                if (!cursor.IsSelecting)
+                if (IsMouseButtonDown(MouseButton.Left))
                 {
-                    if (IsMouseButtonDown(MouseButton.Left))
-                    {
-                        var toplace = selectedGeo;
-                        var cell = Context.SelectedLevel?.Geos[cursor.MX, cursor.MY, Context.Layer];
+                    var toPlace = selectedGeo;
+                    var cell = Context.SelectedLevel?.Geos[cursor.MX, cursor.MY, Context.Layer];
 
-                        switch ((cell, toplace))
+                    toPlace = (cell, toplace: toPlace) switch
+                    {
+                        (Geo.VerticalPole, Geo.HorizontalPole) or (Geo.HorizontalPole, Geo.VerticalPole) => Geo
+                            .CrossPole,
+                        _ => toPlace
+                    };
+
+                    PlaceBrush(toPlace);
+                }
+                else if (IsMouseButtonDown(MouseButton.Right))
+                {
+                    PlaceBrush(Geo.Air);
+                }
+                else if (IsKeyPressed(KeyboardKey.C) && IsKeyDown(KeyboardKey.LeftControl))
+                {
+                    memory = new Geo[brushRadius*2 + 1, brushRadius*2 + 1];
+
+                    for (var x = 0; x < memory.GetLength(dimension: 0); x++)
+                    {
+                        var mx = x + cursor.MX + brushRadius + 1;
+                        if (mx < 0 || mx >= level.Width) continue;
+
+                        for (var y = 0; y < memory.GetLength(dimension: 1); y++)
                         {
-                            case (Geo.VerticalPole, Geo.HorizontalPole):
-                            case (Geo.HorizontalPole, Geo.VerticalPole):
-                            toplace = Geo.CrossPole;
-                            break;
-                        }
+                            var my = y + cursor.MY + brushRadius + 1;
+                            if (my < 0 || my >= level.Height) continue;
 
-                        PlaceBrush(toplace);
-                    }
-                    else if (IsMouseButtonDown(MouseButton.Right))
-                    {
-                        PlaceBrush(Geo.Air);
-                    }
-                    else if (IsKeyPressed(KeyboardKey.C) && IsKeyDown(KeyboardKey.LeftControl))
-                    {
-                        memory = new Geo[brushRadius*2 + 1, brushRadius*2 + 1];
-
-                        for (var x = 0; x < memory.GetLength(dimension: 0); x++)
-                        {
-                            var mx = x + cursor.MX + brushRadius + 1;
-                            if (mx < 0 || mx >= level.Width) continue;
-
-                            for (var y = 0; y < memory.GetLength(dimension: 1); y++)
-                            {
-                                var my = y + cursor.MY + brushRadius + 1;
-                                if (my < 0 || my >= level.Height) continue;
-
-                                memory[x, y] = level.Geos[mx, my, Context.Layer];
-                            }
+                            memory[x, y] = level.Geos[mx, my, Context.Layer];
                         }
                     }
-                    else if (IsKeyPressed(KeyboardKey.V) && IsKeyDown(KeyboardKey.LeftControl))
-                    {
-                        isPasting = !isPasting;
-                    }
+                }
+                else if (IsKeyPressed(KeyboardKey.V) && IsKeyDown(KeyboardKey.LeftControl))
+                {
+                    isPasting = !isPasting;
                 }
             }
         }

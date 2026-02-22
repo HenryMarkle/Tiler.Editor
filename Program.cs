@@ -92,6 +92,7 @@ public static class Program {
 		Raylib.SetWindowMinSize(width: 1200, height: 800);
 		Raylib.SetWindowIcon(Raylib.LoadImage(fileName: Path.Combine(paths.Executable, "icon.png")));
 
+		Raylib.SetGesturesEnabled(flags: Gesture.PinchIn | Gesture.PinchOut);
 		Rlgl.DisableBackfaceCulling();
 
 		// Raylib.SetExitKey(KeyboardKey.Null);

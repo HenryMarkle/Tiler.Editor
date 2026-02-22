@@ -48,7 +48,8 @@ public class GeoAtlas(Texture texture)
     };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rectangle GetRect((int x, int y) index) => new(index.x * 20f, index.y *20f, 20f, 20f);
+    public static Rectangle GetRect((int x, int y) index) => 
+        new(index.x * 20f, index.y *20f, 20f, 20f);
 }
 
 public class ConnectionAtlas(Texture texture)
