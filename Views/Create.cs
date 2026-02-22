@@ -82,13 +82,13 @@ public class Create : BaseView
 
     public override void GUI()
     {
+        SetNextWindowPos(new Vector2(30, 60), ImGuiCond.Always);
+        SetNextWindowSize(new Vector2(GetWindowViewport().Size.X - 60, GetWindowViewport().Size.Y - 120), ImGuiCond.Always);
+        
         if (Begin(
             name: "Create New Level##CreateNewLevel", 
             flags: ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse
         )) {
-            SetWindowPos(new Vector2(30, 60));
-            SetWindowSize(new Vector2(Raylib.GetScreenWidth() - 60, Raylib.GetScreenHeight() - 120));
-
             if (BeginTable("Table", columns: 2))
             {
                 TableNextRow();

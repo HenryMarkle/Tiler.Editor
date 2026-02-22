@@ -75,7 +75,7 @@ public class Cursor(Context context)
 
             if (deltaLen > 0)
             {
-                var pos = GetScreenToWorld2D(GetMousePosition(), Context.Camera);
+                var pos = GetScreenToWorld2D(GetMousePosition() * GetWindowScaleDPI(), Context.Camera);
                 SetCursor(pos);
             }
 
@@ -86,7 +86,7 @@ public class Cursor(Context context)
 
             if (!IsKeyDown(KeyboardKey.LeftAlt) && !IsKeyDown(KeyboardKey.LeftShift) && !IsKeyDown(KeyboardKey.LeftControl) && wheel != 0)
             {
-                camera.Offset = GetMousePosition();
+                camera.Offset = GetMousePosition() * GetWindowScaleDPI();
                 camera.Target = new Vector2(X, Y);
                 camera.Zoom += wheel * 0.125f;
                 if (camera.Zoom < 0.125f)

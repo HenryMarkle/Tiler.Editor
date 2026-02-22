@@ -61,7 +61,7 @@ public class Context
     public PropDex Props { get; set; } = new();
     public EffectDex Effects { get; set; } = new();
 
-    public Camera2D Camera = new() { Zoom = 1, Target = Vector2.Zero };
+    public Camera2D Camera = new() { Zoom = 1 * Raylib.GetWindowScaleDPI().X, Target = Vector2.Zero };
     public int Layer { get; set; } = 0;
     public required AppConfiguration Config { get; set; }
     public required DebugPrinter DebugPrinter { get; set; }
