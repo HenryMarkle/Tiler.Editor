@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Tiler.Editor;
 
 using System;
@@ -108,6 +110,7 @@ public class RopeModel
         Properties = properties;
         
         Segments = [..segments];
+        SegmentCount = Segments.Length;
 
         List<Vector2> velocities = [];
         List<Vector2> lastPositions = [];
@@ -129,8 +132,9 @@ public class RopeModel
         BezierHandles = [ quad.Center ];
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static (Vector2 a, Vector2 b) GetRopeEnds(Quad quad) => (
-        (quad.TopLeft + quad.TopRight) / 2.0f, 
+        (quad.TopLeft + quad.BottomLeft) / 2.0f, 
         (quad.TopRight + quad.BottomRight) / 2.0f
         );
     
@@ -247,16 +251,16 @@ public class RopeModel
         var level = Level.Geos;
         
         if (x >= 0 && x < level.Width && y >= 0 && y < level.Height)
-            return (int)level[y, x, layer];
+            return (int)level[x, y, layer];
 
         return 1;
     }
 
-    public void Update(Quad quad, int layer)
+    public void Update()
     {
         if (SegmentCount < 3) return;
         
-        var (posA, posB) = GetRopeEnds(quad);
+        var (posA, posB) = GetRopeEnds(Prop.Quad);
         var segments = Segments;
 
         if (Properties.EdgeDirection > 0f)
@@ -368,7 +372,7 @@ public class RopeModel
 
         for (var i = 1 + (Release != RopeRelease.Left ? 1:0); i <= segments.Length - (Release != RopeRelease.Right ? 1:0); i++)
         {
-            PushRopePointOutOfTerrain(i-1, layer);
+            PushRopePointOutOfTerrain(A: i-1, layer: Prop.Depth / 10);
         }
 
         /*
