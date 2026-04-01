@@ -118,20 +118,20 @@ public class Geos : BaseView
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Rectangle GeoMenuRect(Geo g) => g switch
     {
-        Geo.Solid => new Rectangle(0, 0, 20, 20),
-        Geo.Air => new Rectangle(20, 0, 20, 20),
-        Geo.Slab => new Rectangle(20, 20, 20, 20),
-        Geo.Wall => new Rectangle(0, 20, 20, 20),
-        Geo.Platform => new Rectangle(20, 40, 20, 20),
-        Geo.Glass => new Rectangle(0, 40, 20, 20),
-        Geo.Exit => new Rectangle(20, 60, 20, 20),
-        Geo.VerticalPole => new Rectangle(0, 60, 20, 20),
-        Geo.CrossPole => new Rectangle(20, 80, 20, 20),
-        Geo.HorizontalPole => new Rectangle(0, 80, 20, 20),
-        Geo.SlopeNW => new Rectangle(0, 100, 20, 20),
-        Geo.SlopeNE => new Rectangle(20, 100, 20, 20),
-        Geo.SlopeSW => new Rectangle(0, 120, 20, 20),
-        Geo.SlopeSE => new Rectangle(20, 120, 20, 20),
+        Geo.Solid => new Rectangle(x: 0, y: 0, width: 20, height: 20),
+        Geo.Air => new Rectangle(x: 20, y: 0, width: 20, height: 20),
+        Geo.Slab => new Rectangle(x: 20, y: 20, width: 20, height: 20),
+        Geo.Wall => new Rectangle(x: 0, y: 20, width: 20, height: 20),
+        Geo.Platform => new Rectangle(x: 20, y: 40, width: 20, height: 20),
+        Geo.Glass => new Rectangle(x: 0, y: 40, width: 20, height: 20),
+        Geo.Exit => new Rectangle(x: 20, y: 60, width: 20, height: 20),
+        Geo.VerticalPole => new Rectangle(x: 0, y: 60, width: 20, height: 20),
+        Geo.CrossPole => new Rectangle(x: 20, y: 80, width: 20, height: 20),
+        Geo.HorizontalPole => new Rectangle(x: 0, y: 80, width: 20, height: 20),
+        Geo.SlopeNW => new Rectangle(x: 0, y: 100, width: 20, height: 20),
+        Geo.SlopeNE => new Rectangle(x: 20, y: 100, width: 20, height: 20),
+        Geo.SlopeSW => new Rectangle(x: 0, y: 120, width: 20, height: 20),
+        Geo.SlopeSE => new Rectangle(x: 20, y: 120, width: 20, height: 20),
         
         _ => new Rectangle(0, 0, 20, 20),
     };
@@ -167,7 +167,7 @@ public class Geos : BaseView
     private void DrawGeosMenu()
     {
         BeginTextureMode(geosMenu);
-        ClearBackground(new Color(0, 0, 0, 0));
+        ClearBackground(new Color(r: 0, g: 0, b: 0, a: 0));
 
         for (var x = 0; x < 15; x++)
             DrawTexturePro(
@@ -181,10 +181,10 @@ public class Geos : BaseView
 
         DrawRectangleLinesEx(
             rec: new Rectangle(
-                20 * selectedGeoIndex.x, 
-                20 * selectedGeoIndex.y, 
-                20, 
-                20
+                x: 20 * selectedGeoIndex.x, 
+                y: 20 * selectedGeoIndex.y, 
+                width: 20, 
+                height: 20
                 ), 
             lineThick: 1.0f, 
             Color.Red);
@@ -201,7 +201,7 @@ public class Geos : BaseView
         var vp = Context.Viewports.Geos[layer];
 
         BeginTextureMode(vp);
-        ClearBackground(new Color(0, 0, 0, 0));
+        ClearBackground(new Color(r: 0, g: 0, b: 0, a: 0));
         for (var y = 0; y < level.Height; y++)
         {
             for (var x = 0; x < level.Width; x++)
@@ -230,6 +230,8 @@ public class Geos : BaseView
         if (Context.SelectedLevel is not { } level) return;
 
         BeginTextureMode(Context.Viewports.Main);
+        
+        // Not very useful or inspiring.
         switch (Context.Config.GeoColoring)
         {
             case GeometryLayerColoring.Purple:
@@ -389,7 +391,8 @@ public class Geos : BaseView
 
                     toPlace = (cell, toplace: toPlace) switch
                     {
-                        (Geo.VerticalPole, Geo.HorizontalPole) or (Geo.HorizontalPole, Geo.VerticalPole) => Geo
+                        (Geo.VerticalPole, Geo.HorizontalPole) 
+                            or (Geo.HorizontalPole, Geo.VerticalPole) => Geo
                             .CrossPole,
                         _ => toPlace
                     };
@@ -482,12 +485,32 @@ public class Geos : BaseView
         ref var camera = ref Context.Camera;
         
         BeginMode2D(camera);
-        DrawTexture(Context.Viewports.Main.Raw.Texture, posX: 0, posY: 0, tint: Color.White);
-        DrawRectangleLinesEx(new Rectangle(0, 0, width: level.Width *20f, height: level.Height * 20f), lineThick: 4, Color.Black);
-        DrawRectangleLinesEx(new Rectangle(0, 0, width: level.Width *20f, height: level.Height * 20f), lineThick: 2, Color.White);
-
-        cursor.DrawGrid();
-        DrawBrush();
+        {
+            DrawTexture(Context.Viewports.Main.Raw.Texture, posX: 0, posY: 0, tint: Color.White);
+            DrawRectangleLinesEx(
+                new Rectangle(
+                    x: 0, 
+                    y: 0, 
+                    width: level.Width *20f, 
+                    height: level.Height * 20f
+                    ), 
+                lineThick: 4, 
+                Color.Black
+                );
+            DrawRectangleLinesEx(
+                new Rectangle(
+                    x: 0, 
+                    y: 0, 
+                    width: level.Width *20f, 
+                    height: level.Height * 20f
+                    ), 
+                lineThick: 2, 
+                Color.White
+                );
+    
+            cursor.DrawGrid();
+            DrawBrush();
+        }
         EndMode2D();
     }
 

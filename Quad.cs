@@ -6,48 +6,33 @@ using System.Runtime.CompilerServices;
 
 using Raylib_cs;
 
-public class Quad
-{
-    public Vector2 TopLeft;
-    public Vector2 TopRight;
-    public Vector2 BottomRight;
-    public Vector2 BottomLeft;
-
-    public Quad()
-    {
-        TopLeft     = Vector2.Zero;
-        TopRight    = Vector2.Zero;
-        BottomRight = Vector2.Zero;
-        BottomLeft  = Vector2.Zero;
-    }
-
-    public Quad(Quad quad)
-    {
-        TopLeft     = quad.TopLeft;
-        TopRight    = quad.TopRight;
-        BottomRight = quad.BottomRight;
-        BottomLeft  = quad.BottomLeft;
-    }
-
-    public Quad(
-        Vector2 topLeft,
-        Vector2 topRight,
-        Vector2 bottomRight,
-        Vector2 bottomLeft
+public class Quad(
+    Vector2 topLeft,
+    Vector2 topRight,
+    Vector2 bottomRight,
+    Vector2 bottomLeft
     )
+{
+    public Vector2 TopLeft = topLeft;
+    public Vector2 TopRight = topRight;
+    public Vector2 BottomRight = bottomRight;
+    public Vector2 BottomLeft = bottomLeft;
+
+    public Quad() : this(Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero)
     {
-        TopLeft     = topLeft;
-        TopRight    = topRight;
-        BottomRight = bottomRight;
-        BottomLeft  = bottomLeft;
     }
 
-    public Quad(in Rectangle rectangle)
+    public Quad(Quad quad) : this(quad.TopLeft, quad.TopRight, quad.BottomRight, quad.BottomLeft)
     {
-        TopLeft     = rectangle.Position;
-        TopRight    = new Vector2(rectangle.X + rectangle.Width, rectangle.Y);
-        BottomRight = new Vector2(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height);
-        BottomLeft  = new Vector2(rectangle.X, rectangle.Y + rectangle.Height);
+    }
+
+    public Quad(in Rectangle rectangle) : this(
+        topLeft: rectangle.Position, 
+        topRight: new Vector2(rectangle.X + rectangle.Width, rectangle.Y), 
+        bottomRight: new Vector2(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height), 
+        bottomLeft: new Vector2(rectangle.X, rectangle.Y + rectangle.Height)
+        )
+    {
     }
 
     public static Quad operator+(Quad lhs, Quad rhs) => new(
@@ -77,8 +62,54 @@ public class Quad
         bottomRight: lhs.BottomRight - rhs, 
         bottomLeft:  lhs.BottomLeft - rhs
     );
+
+    public static Quad operator *(Quad lhs, int rhs) => new(
+        topLeft:     lhs.TopLeft * rhs, 
+        topRight:    lhs.TopRight * rhs, 
+        bottomRight: lhs.BottomRight * rhs, 
+        bottomLeft:  lhs.BottomLeft * rhs
+        );
+    
+    public static Quad operator /(Quad lhs, int rhs) => new(
+        topLeft:     lhs.TopLeft / rhs, 
+        topRight:    lhs.TopRight / rhs, 
+        bottomRight: lhs.BottomRight / rhs, 
+        bottomLeft:  lhs.BottomLeft / rhs
+    );
+
+    public static Quad operator *(Quad lhs, float rhs) => new(
+        topLeft:     lhs.TopLeft * rhs, 
+        topRight:    lhs.TopRight * rhs, 
+        bottomRight: lhs.BottomRight * rhs, 
+        bottomLeft:  lhs.BottomLeft * rhs
+        );
+    
+    public static Quad operator /(Quad lhs, float rhs) => new(
+        topLeft:     lhs.TopLeft / rhs, 
+        topRight:    lhs.TopRight / rhs, 
+        bottomRight: lhs.BottomRight / rhs, 
+        bottomLeft:  lhs.BottomLeft / rhs
+    );
     
     public Vector2 Center => (TopLeft + TopRight + BottomRight + BottomLeft) / 4;
+
+    public void Deconstruct(out Vector2 topLeft, out Vector2 topRight, out Vector2 bottomRight, out Vector2 bottomLeft)
+    {
+        topLeft     = TopLeft;
+        topRight    = TopRight;
+        bottomRight = BottomRight;
+        bottomLeft  = BottomLeft;
+    }
+
+    public (Vector2 left, Vector2 right) HorizontalPoints => (
+        (TopLeft + BottomLeft) / 2,
+        (TopRight + BottomRight) / 2
+        );
+
+    public (Vector2 top, Vector2 bottom) VerticalPoints => (
+        (TopLeft + TopRight) / 2,
+        (BottomLeft + BottomRight) / 2
+        );
 
     public void Rotate(int degrees, Vector2 center)
     {
@@ -149,7 +180,7 @@ public class Quad
         var maxX = MathF.Max(MathF.Max(TopLeft.X, TopRight.X), MathF.Max(BottomRight.X, BottomLeft.X));
         var maxY = MathF.Max(MathF.Max(TopLeft.Y, TopRight.Y), MathF.Max(BottomRight.Y, BottomLeft.Y));
 
-        return new Rectangle(minX, minY, width: maxX - minX, height: maxY - minY);
+        return new Rectangle(x: minX, y: minY, width: maxX - minX, height: maxY - minY);
     }
 
     public override string ToString() => $"Quad({TopLeft}, {TopRight}, {BottomRight}, {BottomLeft})";
