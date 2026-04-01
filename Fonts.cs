@@ -24,20 +24,20 @@ public class Fonts
 
             List.Add((
                 name,
-                Raylib.LoadFontEx(entry, 24, [], 0),
-                24
+                Raylib.LoadFontEx(entry, fontSize: 24, codepoints: [], codepointCount: 0),
+                size: 24
             ));
 
             List.Add((
                 name,
-                Raylib.LoadFontEx(entry, 20, [], 0),
-                20
+                Raylib.LoadFontEx(entry, fontSize: 20, codepoints: [], codepointCount: 0),
+                size: 20
             ));
 
             List.Add((
                 name,
-                Raylib.LoadFontEx(entry, 16, [], 0),
-                16
+                Raylib.LoadFontEx(entry, fontSize: 16, codepoints: [], codepointCount: 0),
+                size: 16
             ));
         }
     }

@@ -1,5 +1,3 @@
-using System.IO.Compression;
-
 namespace Tiler.Editor;
 
 using System.Collections.Generic;
@@ -8,14 +6,6 @@ using System.IO;
 using Serilog;
 
 using Tiler.Editor.Tile;
-
-public class Dex<T> // Unsused
-{
-    public readonly Dictionary<string, T> Defs = [];
-    public readonly Dictionary<string, List<T>> CategoryDefs = [];
-    public readonly List<string> Categories = [];
-    public readonly List<T> UnCategorizedDefs = [];
-}
 
 public class TileDex
 {

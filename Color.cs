@@ -1,10 +1,11 @@
 namespace Tiler.Editor;
 
+using System;
 using System.Numerics;
+using System.Diagnostics.CodeAnalysis;
+
 using Raylib_cs;
 using ImGuiNET;
-using System.Diagnostics.CodeAnalysis;
-using System;
 
 public struct Color4(byte r, byte g, byte b, byte a = 255) : IEquatable<Color4>
 {

@@ -34,15 +34,9 @@ public class Matrix<T>(int width, int height, int depth)
         var nArray = new T[nWidth, nHeight, Depth];
 
         for (var z = 0; z < Depth; z++)
-        {
             for (var y = 0; y < Math.Max(Height, nHeight); y++)
-            {
                 for (var x = 0; x < Math.Max(Width, nWidth); x++)
-                {
                     nArray[x, y, z] = array[x, y, z];
-                }
-            }
-        }
 
         array = nArray;
     }

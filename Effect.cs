@@ -61,6 +61,7 @@ public class EffectDef(string id, string resourceDir)
 
 public class Effect
 {
+    [Flags]
     public enum TargetLayers : byte
     {
         One   = 2 << 1,
@@ -88,7 +89,8 @@ public class Effect
     {
         TargetLayers targetLayers = 0;
 
-        foreach (var l in layers) targetLayers |= (TargetLayers)l;
+        foreach (var l in layers) 
+            targetLayers |= (TargetLayers)(0b1 << l);
 
         return Targets(targetLayers);
     }
@@ -96,14 +98,14 @@ public class Effect
     public Effect(EffectDef def, int width, int height)
     {
         Def = def;
-        Matrix = new Matrix<float>(width, height, 1);
+        Matrix = new Matrix<float>(width, height, depth: 1);
         OptionIndices = new int[Def.Config.Length];
     }
 
     public Effect(Effect effect)
     {
         Def = effect.Def;
-        Matrix = new Matrix<float>(effect.Matrix.Width, effect.Matrix.Height, 1);
+        Matrix = new Matrix<float>(effect.Matrix.Width, effect.Matrix.Height, depth: 1);
 
         for (var y = 0; y < Matrix.Height; y++)
             for (var x = 0; x < Matrix.Width; x++)

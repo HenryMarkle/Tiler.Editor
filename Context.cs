@@ -32,7 +32,7 @@ public class Context
 
         var level = levels[index];
 
-        Viewports.Resize(level.Width * 20, level.Height * 20);
+        Viewports.Resize(width: level.Width * 20, height: level.Height * 20);
 
         LevelSelected?.Invoke(level);
 
@@ -42,7 +42,7 @@ public class Context
     {
         if (!levels.Contains(level)) return;
 
-        Viewports.Resize(level.Width * 20, level.Height * 20);
+        Viewports.Resize(width: level.Width * 20, height: level.Height * 20);
 
         LevelSelected?.Invoke(level);
         SelectedLevel = level;

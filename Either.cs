@@ -1,6 +1,6 @@
-using System;
-
 namespace Tiler.Editor;
+
+using System;
 
 /// <summary>
 /// Represents a state that can be either <see cref="TLeft"/> or <see cref="TRight"/>.

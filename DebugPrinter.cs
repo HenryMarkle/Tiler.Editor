@@ -7,12 +7,12 @@ using Raylib_cs;
 
 public class DebugPrinter
 {
-    public Color4 TextColor = new(255, 255, 255);
-    public Color4 BackgroundColor = new(100, 100, 100, 100);
+    public Color4 TextColor = new(r: 255, g: 255, b: 255);
+    public Color4 BackgroundColor = new(r: 100, g: 100, b: 100, a: 100);
 
     public required Font Font;
     public required int Size;
-    public Vector2 Margin = new(3, 4);
+    public Vector2 Margin = new(x: 3, y: 4);
     public Vector2 Anchor = Vector2.Zero;
     public Vector2 Cursor = Vector2.Zero;
 
