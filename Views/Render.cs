@@ -415,15 +415,15 @@ void main()
     public override void GUI()
     {
         if (Context.SelectedLevel is not { } level) return;
-
+        
+        ImGui.SetNextWindowPos(new Vector2(30, 60), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(new Vector2(ImGui.GetWindowViewport().Size.X - 60, ImGui.GetWindowViewport().Size.Y - 80), ImGuiCond.Always);
+        
         if (ImGui.Begin("Level Render", 
                 ImGuiWindowFlags.NoMove | 
                 ImGuiWindowFlags.NoResize | 
                 ImGuiWindowFlags.NoCollapse)
         ) {
-            ImGui.SetWindowPos(new Vector2(30, 40));
-            ImGui.SetWindowSize(new Vector2(GetScreenWidth() - 60, GetScreenHeight() - 80));
-
             ImGui.ProgressBar(0);
             ImGui.Columns(2);
             ImGui.SetColumnWidth(0, 200);

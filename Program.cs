@@ -87,11 +87,12 @@ public static class Program {
 		// -------------------------- WINDOW ----------------------------
 
 		Raylib.SetTargetFPS(45);
+		Raylib.SetConfigFlags(ConfigFlags.HighDpiWindow);
 		Raylib.InitWindow(width: 1400, height: 800, title: "Tiler Editor");
 		Raylib.SetWindowState(flag: ConfigFlags.ResizableWindow);
 		Raylib.SetWindowMinSize(width: 1200, height: 800);
 		Raylib.SetWindowIcon(Raylib.LoadImage(fileName: Path.Combine(paths.Executable, "icon.png")));
-
+		
 		Raylib.SetGesturesEnabled(flags: Gesture.PinchIn | Gesture.PinchOut);
 		Rlgl.DisableBackfaceCulling();
 

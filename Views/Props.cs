@@ -411,7 +411,7 @@ public class Props : BaseView
 
         BeginTextureMode(Context.Viewports.Main);
         ClearBackground(new Color(0, 0, 0, 0));
-        for (int l = Context.Viewports.Depth - 1; l > -1; --l)
+        for (var l = Context.Viewports.Depth - 1; l > -1; --l)
         {
             if (l == Context.Layer) continue;
             DrawTexture(Context.Viewports.Geos[l].Raw.Texture, posX: 0, posY: 0, Color.Black with { A = 120 });
@@ -951,11 +951,20 @@ public class Props : BaseView
                 break;
 
             case EditMode.Rope:
-            {
+            if (ropeModel is not null) {
                 // TODO: Complete this
                 if (IsKeyPressed(KeyboardKey.A)) editMode = EditMode.Selection;
+
+                ropeModel.Prop.Quad = new Quad(
+                    topLeft: cursor.Pos - new Vector2(300, 40),
+                    topRight: cursor.Pos + new Vector2(300, -40),
+                    bottomRight: cursor.Pos + new Vector2(300, 40),
+                    bottomLeft: cursor.Pos + new Vector2(-300, 40)
+                );
+
+                ropeModel.Update();
             }
-                break;
+            break;
         }
 
         #endregion
@@ -969,6 +978,8 @@ public class Props : BaseView
             DrawTilesViewport(layer: 0);
             DrawTilesViewport(layer: 1);
             DrawTilesViewport(layer: 2);
+            DrawTilesViewport(layer: 3);
+            DrawTilesViewport(layer: 4);
             DrawMainViewport();
 
             redrawMain = false;
@@ -999,11 +1010,7 @@ public class Props : BaseView
                 break;
         }
 
-        /// TODO: Optimize using redraw queue
-
-        float screenW = GetScreenWidth();
-        float screenH = GetScreenHeight();
-        var screenSize = new Vector2(screenW, screenH);
+        // TODO: Optimize using redraw queue
 
         DrawPlacedProps();
 
@@ -1064,6 +1071,96 @@ public class Props : BaseView
                         break;
                 }
                 break;
+
+            case EditMode.Rope:
+            if (ropeModel is not null) {
+                DrawRectangleLinesEx(rec: ropeModel.Prop.Quad.Enclosed(), lineThick: 1, Color.SkyBlue);
+
+                if (ropeModel.Prop.Preview is null)
+                {
+                    if (level.Props.Find(p => p.Def == selectedProp) is { } replica)
+                    {
+                        ropeModel.Prop.Preview = replica.Preview;
+                    }
+                    else
+                    {
+                        using var rt = new RenderTexture(width: 0, height: 0, new Color4(0,0,0,0));
+                        DrawPropRT(rt, ropeModel.Prop.Def);
+                        ropeModel.Prop.Preview = new HybridImage(LoadImageFromTexture(rt.Texture));
+                    }
+                }
+                
+                ropeModel.Prop.Preview!.ToTexture();
+                
+                var segments = ropeModel.Segments;
+                var propHeight = ropeModel.Prop.Preview!.Height / 2f;
+
+                var prevQuad = new Quad();
+                
+                for (var segPos = 0; segPos < segments.Length - 1; segPos++)
+                {
+                    var pointA = segments[segPos];
+                    var pointB = segments[segPos+1];
+                    
+                    var segmentVec = pointB - pointA;
+                    
+                    // Perpendicular vector (clockwise) 
+                    var permCWVec = Raymath.Vector2Normalize(new Vector2(x: -segmentVec.Y, y: segmentVec.X));
+                    
+                    // Perpendicular vector (counter-clockwise) 
+                    var permCounterCWVec = Raymath.Vector2Normalize(new Vector2(x: segmentVec.Y, y: -segmentVec.X));
+
+                    var segQuad = new Quad(
+                        topLeft: pointA + (propHeight * permCounterCWVec),
+                        topRight: pointB + (propHeight * permCounterCWVec),
+                        bottomRight: pointB + (propHeight * permCWVec),
+                        bottomLeft: pointA + (propHeight * permCWVec)
+                    );
+
+                    if (segPos > 0)
+                    {
+                        segQuad.TopLeft = prevQuad.TopRight;
+                        segQuad.BottomLeft = prevQuad.BottomRight;
+                    }
+                    
+                    prevQuad = new Quad(segQuad);
+                    
+                    DrawLineEx(segQuad.TopLeft, segQuad.TopRight, 1, Color.SkyBlue);
+                    DrawLineEx(segQuad.TopRight, segQuad.BottomRight, 1, Color.SkyBlue);
+                    DrawLineEx(segQuad.BottomRight, segQuad.BottomLeft, 1, Color.SkyBlue);
+                    DrawLineEx(segQuad.BottomLeft, segQuad.TopLeft, 1, Color.SkyBlue);
+                    
+                    BeginShaderMode(invbShader);
+                    
+                    var quadArr = new[]
+                    {
+                        segQuad.TopLeft,
+                        segQuad.TopRight,
+                        segQuad.BottomRight,
+                        segQuad.BottomLeft,
+                    };
+
+                    SetShaderValueV(
+                        invbShader, 
+                        locIndex: GetShaderLocation(invbShader, uniformName: "vertex_pos"), 
+                        quadArr, 
+                        ShaderUniformDataType.Vec2, 
+                        count: 4
+                    );
+                    
+                    var layerTint = (byte)(255 - Math.Abs(ropeModel.Prop.Depth - Context.Layer*10)/49.0f*220);
+
+                    RlUtils.DrawTextureQuad(
+                        texture: ropeModel.Prop.Preview,
+                        source: new Rectangle(0, 0, ropeModel.Prop.Preview.Size),
+                        quad:   segQuad,
+                        tint:   new Color4(layerTint, layerTint, layerTint, layerTint)
+                    );
+
+                    EndShaderMode();
+                }
+            }
+            break;
         }
 
         #endregion
@@ -1240,23 +1337,35 @@ public class Props : BaseView
             {
                 editMode = EditMode.Rope;
 
+                var ropeProp = CreateNewProp();
+                ropeProp.Preview = null; // TODO: Temporary solution
+
                 ropeModel = new RopeModel(
                     level:      Context.SelectedLevel,
-                    prop:       CreateNewProp(),
+                    prop:       ropeProp,
                     properties: ropeModelProperties ??= new RopeProperties( // TODO: Auto-adjust the initial values
-                        segmentLength: 1,
-                        collisionDepth: 1,
-                        segmentRadius: 1,
-                        gravity: 1,
+                        segmentLength: 20,
+                        collisionDepth: 10,
+                        segmentRadius: 20,
+                        gravity: 0.5f,
                         friction: 1,
                         airFriction: 0.1f,
                         stiff: false,
-                        edgeDirection: 0,
-                        rigid: 0.1f,
-                        selfPush: 0.1f,
+                        edgeDirection: 1,
+                        rigid: 0f,
+                        selfPush: 0f,
                         sourcePush: 0
                     ),
-                    segments:   [ cursor.Pos - (Vector2.UnitX * 20), cursor.Pos, cursor.Pos + (Vector2.UnitX * 20) ]
+                    segments:   [ 
+                        ..Enumerable
+                            .Range(0, 6)
+                            .Select(c => Raymath.Vector2Lerp(
+                                v1: (ropeProp.Quad.TopLeft + ropeProp.Quad.BottomLeft)/2,
+                                v2: (ropeProp.Quad.TopRight + ropeProp.Quad.BottomRight)/2, 
+                                amount: c / 10f
+                                )
+                            ) 
+                    ]
                 );
             }
             if (selectedProp is null) ImGui.EndDisabled();
