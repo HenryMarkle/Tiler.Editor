@@ -2,16 +2,19 @@ namespace Tiler.Editor.Views;
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
+
 using ImGuiNET;
 using Raylib_cs;
+using static Raylib_cs.Raylib;
+
 using Serilog;
+
 using Tiler.Editor.Managed;
 using Tiler.Editor.Rendering;
-using static Raylib_cs.Raylib;
 
 public class Render : BaseView
 {
@@ -236,8 +239,9 @@ void main()
 
     private bool showOptions;
     private Renderer.Configuration rendererConfig;
+    private bool exportResources;
 
-    private Managed.HybridImage? selectedPalette;
+    private HybridImage? selectedPalette;
 
     private bool usePalettes;
 
@@ -261,9 +265,9 @@ void main()
 
         DrawTexture(
             texture: render,
-            0,
-            0,
-            Color.White
+            posX: 0,
+            posY: 0,
+            tint: Color.White
         );
 
         EndShaderMode();
@@ -273,7 +277,7 @@ void main()
 
     public override void OnLevelSelected(Level level)
     {
-        rendererConfig = new()
+        rendererConfig = new Renderer.Configuration
         {
             AllCameras = true,
             Cameras = [..level.Cameras.Select(_ => true)]  
@@ -286,7 +290,7 @@ void main()
 
         level.Lightmap = new Managed.Image(LoadImageFromTexture(Context.Viewports.Lightmap.Texture));
 
-        rendererConfig = new()
+        rendererConfig = new Renderer.Configuration
         {
             AllCameras = true,
             Cameras = [..level.Cameras.Select(_ => true)]  
@@ -319,7 +323,7 @@ void main()
         preview.Clear();
 
         BeginTextureMode(preview);
-        for (int l = renderer.Layers.Length - 1; l >= 0; l--)
+        for (var l = renderer.Layers.Length - 1; l >= 0; l--)
         {
             BeginShaderMode(composeShader);
             var layer = renderer.Layers[l];
@@ -379,10 +383,10 @@ void main()
             // Vertical flipping
 
             quad = new Quad(
-                topLeft:     new(quad.BottomLeft.X, preview.Height - quad.BottomLeft.Y),
-                topRight:    new(quad.BottomRight.X, preview.Height - quad.BottomRight.Y),
-                bottomRight: new(quad.TopRight.X, preview.Height - quad.TopRight.Y),
-                bottomLeft:  new(quad.TopLeft.X, preview.Height - quad.TopLeft.Y)
+                topLeft:     new Vector2(quad.BottomLeft.X, preview.Height - quad.BottomLeft.Y),
+                topRight:    new Vector2(quad.BottomRight.X, preview.Height - quad.BottomRight.Y),
+                bottomRight: new Vector2(quad.TopRight.X, preview.Height - quad.TopRight.Y),
+                bottomLeft:  new Vector2(quad.TopLeft.X, preview.Height - quad.TopLeft.Y)
             );
 
             var quadArr = new Vector2[4]
@@ -395,10 +399,10 @@ void main()
 
             SetShaderValueV(
                 composeShader, 
-                GetShaderLocation(composeShader, "vertex_pos"), 
+                locIndex: GetShaderLocation(composeShader, "vertex_pos"), 
                 quadArr, 
                 ShaderUniformDataType.Vec2, 
-                4
+                count: 4
             );
 
             RlUtils.DrawTextureQuad(
@@ -417,28 +421,41 @@ void main()
         if (Context.SelectedLevel is not { } level) return;
         
         ImGui.SetNextWindowPos(new Vector2(30, 60), ImGuiCond.Always);
-        ImGui.SetNextWindowSize(new Vector2(ImGui.GetWindowViewport().Size.X - 60, ImGui.GetWindowViewport().Size.Y - 80), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(
+            new Vector2(
+                ImGui.GetWindowViewport().Size.X - 60, 
+                ImGui.GetWindowViewport().Size.Y - 80
+                ), 
+            ImGuiCond.Always
+            );
         
-        if (ImGui.Begin("Level Render", 
-                ImGuiWindowFlags.NoMove | 
+        if (ImGui.Begin(name: "Level Render", 
+                flags: ImGuiWindowFlags.NoMove | 
                 ImGuiWindowFlags.NoResize | 
                 ImGuiWindowFlags.NoCollapse)
         ) {
-            ImGui.ProgressBar(0);
-            ImGui.Columns(2);
-            ImGui.SetColumnWidth(0, 200);
+            ImGui.ProgressBar(fraction: 0);
+            ImGui.Columns(count: 2);
+            ImGui.SetColumnWidth(column_index: 0, width: 200);
 
             if (ImGui.BeginTabBar("Tabs"))
             {
-                if (ImGui.BeginTabItem("Main"))
+                if (ImGui.BeginTabItem(label: "Main"))
                 {
-                    var isDisabled = renderer?.State is not null and not (Renderer.RenderState.Done or Renderer.RenderState.Idle or Renderer.RenderState.Aborted);
+                    var isDisabled = renderer?.State is 
+                        not null 
+                        and not (
+                            Renderer.RenderState.Done 
+                            or Renderer.RenderState.Idle 
+                            or Renderer.RenderState.Aborted
+                        );
+                    
                     if (isDisabled) ImGui.BeginDisabled();
-                    if (ImGui.Button("Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    if (ImGui.Button(label: "Start", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
                         if (renderer is null or { State: Renderer.RenderState.Done })
                         {
-                            renderer = new(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs)
+                            renderer = new Renderer(Context.SelectedLevel!, Context.Tiles, Context.Props, Context.Dirs)
                             {
                                 Config = rendererConfig
                             };
@@ -447,36 +464,156 @@ void main()
                     }
                     if (isDisabled) ImGui.EndDisabled();
 
-                    if (ImGui.Button("Options", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    if (ImGui.Button(label: "Options", ImGui.GetContentRegionAvail() with { Y = 20 }))
                     {
                         showOptions = true;
                     }
 
                     if (!isDisabled) ImGui.BeginDisabled();
-                    if (ImGui.Button("Abort", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    if (ImGui.Button(label: "Abort", ImGui.GetContentRegionAvail() with { Y = 20 }))
                         renderer?.Abort();
                     if (!isDisabled) ImGui.EndDisabled();
 
-                    isDisabled = renderer is { State: Renderer.RenderState.Done };
+                    var isDone = renderer is { State: Renderer.RenderState.Done };
 
-                    if (!isDisabled) ImGui.BeginDisabled();
-                    if (ImGui.Button("Export", ImGui.GetContentRegionAvail() with { Y = 20 }))
-                        renderer?.Export();
-                    if (!isDisabled) ImGui.EndDisabled();
+                    if (!isDone) ImGui.BeginDisabled();
+                    if (ImGui.Button(label: "Export", ImGui.GetContentRegionAvail() with { Y = 20 }))
+                    {
+                        renderer!.Export();
+
+                        if (exportResources)
+                        {
+                            
+                            if (!Directory.Exists(Context.Dirs.Levels))
+                                Directory.CreateDirectory(Context.Dirs.Levels);
+                
+                            var levelDir = Path.Combine(Context.Dirs.Levels, renderer.Level.Name!);
+                
+                            if (!Directory.Exists(levelDir))
+                                Directory.CreateDirectory(levelDir);
+                
+                            var resourcesDir = Path.Combine(levelDir, "resources");
+                            
+                            if (Directory.Exists(resourcesDir))
+                                Directory.CreateDirectory(resourcesDir);
+                            
+                            //
+                
+                            Task.WaitAll(
+                                Task.Run(() =>
+                                {
+                                    HashSet<Tile.TileDef> tilesUsed = [];
+                                    
+                                    // Populate
+                        
+                                    for (var z = 0; z < renderer.Level.Depth; ++z)
+                                    {
+                                        for (var y = 0; y < renderer.Level.Height; ++y)
+                                        {
+                                            for (var x = 0; x < renderer.Level.Width; ++x)
+                                            {
+                                                if (renderer.Level.Tiles[x, y, z] is { } tile) tilesUsed.Add(tile);
+                                            }
+                                        }
+                                    }
+                
+                                    if (tilesUsed.Count == 0) return;
+                
+                                    var tilesDir = Path.Combine(resourcesDir, "tiles");
+                                    
+                                    Directory.CreateDirectory(tilesDir);
+                
+                                    foreach (var tile in tilesUsed)
+                                    {
+                                        recursiveCopy(
+                                            sourcePath: tile.ResourceDir, 
+                                            targetPath: tilesDir
+                                            );
+                                    }
+                                }),
+                                
+                                Task.Run(() =>
+                                {
+                                    if (renderer.Level.Effects.Count == 0) return;
+                                    
+                                    HashSet<EffectDef> effectsUsed = [];
+                
+                                    foreach (var effect in renderer.Level.Effects)
+                                        effectsUsed.Add(effect.Def);
+                                    
+                                    var effectsDir = Path.Combine(resourcesDir, "effects");
+                                    
+                                    Directory.CreateDirectory(effectsDir);
+                
+                                    foreach (var effect in effectsUsed)
+                                    {
+                                        recursiveCopy(
+                                            sourcePath: effect.ResourceDir,
+                                            targetPath: effectsDir
+                                            );
+                                    }
+                                }),
+                                
+                                Task.Run(() =>
+                                {
+                                    if (renderer.Level.Props.Count == 0) return;
+                                    
+                                    HashSet<PropDef> propsUsed = [];
+                                    
+                                    foreach (var prop in renderer.Level.Props)
+                                        propsUsed.Add(prop.Def);
+                                    
+                                    var propsDir = Path.Combine(resourcesDir, "props");
+                                    
+                                    Directory.CreateDirectory(propsDir);
+                
+                                    foreach (var prop in propsUsed)
+                                    {
+                                        recursiveCopy(
+                                            sourcePath: prop.ResourceDir,
+                                            targetPath: propsDir
+                                        );
+                                    }
+                                })
+                            );
+                        }
+            
+                        void recursiveCopy(string sourcePath, string targetPath)
+                        {
+                            if ((File.GetAttributes(sourcePath) & FileAttributes.Directory) == FileAttributes.Directory)
+                            {
+                                var targetDirPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
+                                if (!Directory.Exists(targetDirPath))
+                                    Directory.CreateDirectory(targetDirPath);
+            
+                                foreach (var entry in Directory.GetFileSystemEntries(sourcePath))
+                                    recursiveCopy(entry, Path.Combine(targetDirPath, Path.GetFileName(entry)));
+                            }
+                            else
+                            {
+                                File.Copy(
+                                    sourceFileName: sourcePath, 
+                                    destFileName:   targetPath, 
+                                    overwrite:      true
+                                );
+                            }
+                        }
+                    }
+                    if (!isDone) ImGui.EndDisabled();
 
                     ImGui.Text($"State: {renderer?.State}");
                 
                     ImGui.EndTabItem();
                 }
 
-                if (ImGui.BeginTabItem("Palettes"))
+                if (ImGui.BeginTabItem(label: "Palettes"))
                 {
-                    if (ImGui.Checkbox("Use Palettes", ref usePalettes))
+                    if (ImGui.Checkbox(label: "Use Palettes", ref usePalettes))
                     {
                         
                     }
 
-                    if (ImGui.BeginListBox("##Palettes", ImGui.GetContentRegionAvail()))
+                    if (ImGui.BeginListBox(label: "##Palettes", size: ImGui.GetContentRegionAvail()))
                     {
                         var space = ImGui.GetContentRegionAvail();
                         var ratio = space with { X = space.X - 10 } / new Vector2(50, 8);
@@ -489,13 +626,16 @@ void main()
                             var selected = rlImGui_cs.rlImGui.ImageButtonSize(
                                 palette.Key, 
                                 palette.Value.Texture, 
-                                new Vector2(palette.Value.Width, palette.Value.Height) * minRatio
+                                size: new Vector2(palette.Value.Width, palette.Value.Height) * minRatio
                             );
 
                             if (ImGui.IsItemHovered())
                             {
                                 ImGui.BeginTooltip();
-                                rlImGui_cs.rlImGui.ImageSize(palette.Value.Texture, new Vector2(palette.Value.Width, palette.Value.Height) * 10);
+                                rlImGui_cs.rlImGui.ImageSize(
+                                    palette.Value.Texture, 
+                                    size: new Vector2(palette.Value.Width, palette.Value.Height) * 10
+                                    );
                                 ImGui.EndTooltip();
                             }
 
@@ -520,58 +660,84 @@ void main()
 
                 if (renderer?.State is Renderer.RenderState.Lighting)
                 {
-                    rlImGui_cs.rlImGui.ImageSize(renderer!.LightRenderer.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                    rlImGui_cs.rlImGui.ImageSize(
+                        renderer!.LightRenderer.Final.Texture, 
+                        size: new Vector2(preview.Width, preview.Height) * minRatio
+                        );
                 }
                 else if (renderer?.State is Renderer.RenderState.Done)
                 {
                     if (usePalettes)
                     {
-                        rlImGui_cs.rlImGui.ImageSize(previewWithPalette.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                        rlImGui_cs.rlImGui.ImageSize(
+                            previewWithPalette.Texture, 
+                            size: new Vector2(preview.Width, preview.Height) * minRatio
+                            );
                     }
                     else
                     {
-                        rlImGui_cs.rlImGui.ImageSize(renderer.Encoder!.Final.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                        rlImGui_cs.rlImGui.ImageSize(
+                            renderer.Encoder!.Final.Texture, 
+                            size: new Vector2(preview.Width, preview.Height) * minRatio
+                            );
                     }
                 }
                 else
                 {
-                    rlImGui_cs.rlImGui.ImageSize(preview.Raw.Texture, new Vector2(preview.Width, preview.Height) * minRatio);
+                    rlImGui_cs.rlImGui.ImageSize(
+                        preview.Raw.Texture, 
+                        size: new Vector2(preview.Width, preview.Height) * minRatio
+                        );
                 }
             }
         }
 
         ImGui.End();
 
-        if (showOptions) ImGui.OpenPopup("Render Options##RendererOptions");
-
-        if (ImGui.BeginPopupModal("Render Options##RendererOptions", ImGuiWindowFlags.NoCollapse))
+        if (showOptions)
         {
-            ImGui.Checkbox("Geometry output", ref rendererConfig.Geometry);
+            showOptions = false;
+            ImGui.OpenPopup("Render Options##RendererOptions");
+        }
 
-            ImGui.SeparatorText("Visuals");
+        if (ImGui.BeginPopupModal(name: "Render Options##RendererOptions", ImGuiWindowFlags.NoCollapse))
+        {
+            ImGui.Checkbox(label: "Geometry output", ref rendererConfig.Geometry);
 
-            ImGui.Checkbox("Tiles", ref rendererConfig.Tiles);
-            ImGui.Checkbox("Props", ref rendererConfig.Props);
-            ImGui.Checkbox("Effects", ref rendererConfig.Effects);
-            ImGui.Checkbox("Light", ref rendererConfig.Light);
+            ImGui.SeparatorText(label: "Visuals");
 
-            ImGui.SeparatorText("Cameras");
+            ImGui.Checkbox(label: "Tiles", ref rendererConfig.Tiles);
+            ImGui.Checkbox(label: "Props", ref rendererConfig.Props);
+            ImGui.Checkbox(label: "Effects", ref rendererConfig.Effects);
+            ImGui.Checkbox(label: "Light", ref rendererConfig.Light);
 
-            ImGui.Checkbox("All", ref rendererConfig.AllCameras);
+            ImGui.SeparatorText(label: "Cameras");
+
+            ImGui.Checkbox(label: "All", ref rendererConfig.AllCameras);
 
             if (rendererConfig.AllCameras) ImGui.BeginDisabled();
             for (var c = 0; c < level.Cameras.Count; c++)
             {
                 var selected = rendererConfig.Cameras[c];
 
-                if (ImGui.Checkbox($"Camera #{c+1}", ref selected))
+                if (ImGui.Checkbox(label: $"Camera #{c+1}", ref selected))
                     rendererConfig.Cameras[c] = selected;
             }
             if (rendererConfig.AllCameras) ImGui.EndDisabled();
 
-            if (ImGui.Button("Close"))
+            ImGui.Checkbox(label: "Export resources", ref exportResources);
+            if (ImGui.IsItemHovered())
             {
-                showOptions = false;
+                ImGui.BeginTooltip();
+                ImGui.Text(
+                    "Export resources such as tiles and props into the project's folder, \n" +
+                    "for easier sharing with other people"
+                    );
+                ImGui.EndTooltip();
+            }
+
+            if (ImGui.Button(label: "Close"))
+            {
                 ImGui.CloseCurrentPopup();
             }
             ImGui.EndPopup();

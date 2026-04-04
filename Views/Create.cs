@@ -13,6 +13,8 @@ using Tiler.Editor;
 
 public class Create : BaseView
 {
+    public override bool AllowGlobalKeybinds => false;
+    
     private int columns;
     private int rows;
     private int layers;

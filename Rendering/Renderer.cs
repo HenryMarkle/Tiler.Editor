@@ -7,6 +7,8 @@ using System.Text;
 using System;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
+using Tiler.Editor.Managed;
 
 namespace Tiler.Editor.Rendering;
 
@@ -15,40 +17,31 @@ public class Renderer
     public const int Width = 1400;
     public const int Height = 800;
 
-    private class ShortcutEntranceAtlas(Managed.Texture texture)
+    private class ShortcutEntranceAtlas(Texture texture)
     {
-        public readonly Managed.Texture Texture = texture;
+        public readonly Texture Texture = texture;
 
         public enum Directions { Left, Top, Right, Bottom }
 
         public const int Width = 5 * 20;
         public const int Height = 5 * 20;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Rectangle GetSource(Directions direction) => new((int)direction * Width, 0, Width, Height);
     }
+    
+    //
 
-    public struct Configuration
+    public struct Configuration()
     {
-        public bool AllCameras;
-        public bool[] Cameras;
-        public bool Geometry;
+        public bool AllCameras = true;
+        public bool[] Cameras = [];
+        public bool Geometry = true;
 
-        public bool Tiles;
-        public bool Props;
-        public bool Effects;
-        public bool Light;
-
-        public Configuration()
-        {
-            AllCameras = true;
-            Cameras = [];
-            Geometry = true;
-            
-            Tiles = true;
-            Props = true;
-            Effects = true;
-            Light = true;
-        }
+        public bool Tiles = true;
+        public bool Props = true;
+        public bool Effects = true;
+        public bool Light = true;
     }
 
     public enum ConnectionTypes
@@ -83,13 +76,13 @@ public class Renderer
     public List<Connection> Connections = [];
 
     private readonly ShortcutEntranceAtlas shortcutEntranceAtlas;
-    private Managed.Texture shortcutHorizontal;
-    private Managed.Texture shortcutVertical;
-    private Managed.Texture shortcutEnd;
+    private Texture shortcutHorizontal;
+    private Texture shortcutVertical;
+    private Texture shortcutEnd;
 
-    public Managed.RenderTexture[] Layers { get; private set; }
-    public Managed.Texture Lightmap { get; private set; }
-    public Managed.RenderTexture[] FinalRenders { get; private set; }
+    public RenderTexture[] Layers { get; private set; }
+    public Texture Lightmap { get; private set; }
+    public RenderTexture[] FinalRenders { get; private set; }
 
     public TileRenderer TileRenderer { get; private set; }
     public PropRenderer PropRenderer { get; private set; }
@@ -104,33 +97,38 @@ public class Renderer
         PropDex props, 
         AppDirectories paths
     ) {
-        Config = new();
+        Config = new Configuration();
         
         Level = level;
         Tiles = tiles;
         Props = props;
         Paths = paths;
 
-        Layers = new Managed.RenderTexture[level.Depth * SublayersPerLayer];
+        Layers = new RenderTexture[level.Depth * SublayersPerLayer];
         for (var l = 0; l < Layers.Length; l++) Layers[l] =
-            new(Width + LayerMargin * 2, Height + LayerMargin * 2, new Color4(0, 0, 0, 0), true);
+            new RenderTexture(
+                width: Width + LayerMargin * 2, 
+                height: Height + LayerMargin * 2, 
+                new Color4(r: 0, g: 0, b: 0, a: 0), 
+                clear: true
+                );
 
-        Lightmap = new Managed.Texture(Level.Lightmap);
+        Lightmap = new Texture(Level.Lightmap);
 
-        FinalRenders = new Managed.RenderTexture[Level.Cameras.Count];
+        FinalRenders = new RenderTexture[Level.Cameras.Count];
 
         var renderingTexturesDir = Path.Combine(paths.Textures, "rendering");
 
         shortcutEntranceAtlas = new ShortcutEntranceAtlas(
-            new Managed.Texture(Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_entrance.png")))
+            new Texture(Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_entrance.png")))
         );
-        shortcutHorizontal = new Managed.Texture(
+        shortcutHorizontal = new Texture(
             Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_horizontal.png"))
         );
-        shortcutVertical = new Managed.Texture(
+        shortcutVertical = new Texture(
             Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_vertical.png"))
         );
-        shortcutEnd = new Managed.Texture(
+        shortcutEnd = new Texture(
             Raylib.LoadTexture(Path.Combine(renderingTexturesDir, "shortcut_end.png"))
         );
 
@@ -203,10 +201,11 @@ public class Renderer
                                     case Geo.VerticalPole:
                                         Raylib.DrawRectangleRec(
                                             rec: new Rectangle(
-                                                    mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X,
-                                                    Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
-                                                    4,
-                                                    20
+                                                    x: mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X,
+                                                    y: Layers[z * SublayersPerLayer + 4].Height 
+                                                       - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                    width: 4,
+                                                    height: 20
                                                 ),
                                             color: Color.Red
                                         );
@@ -215,10 +214,11 @@ public class Renderer
                                     case Geo.HorizontalPole:
                                         Raylib.DrawRectangleRec(
                                             rec: new Rectangle(
-                                                mx * 20 + LayerMargin - SelectedCamera.Position.X,
-                                                Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
-                                                20,
-                                                4
+                                                x: mx * 20 + LayerMargin - SelectedCamera.Position.X,
+                                                y: Layers[z * SublayersPerLayer + 4].Height 
+                                                    - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                width: 20,
+                                                height: 4
                                             ),
                                             color: Color.Red
                                         );
@@ -227,19 +227,21 @@ public class Renderer
                                     case Geo.CrossPole:
                                         Raylib.DrawRectangleRec(
                                             rec: new Rectangle(
-                                                    mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X,
-                                                    Layers[z * SublayersPerLayer + 4].Height - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
-                                                    4,
-                                                    20
+                                                    x: mx * 20 + 8 + LayerMargin - SelectedCamera.Position.X,
+                                                    y: Layers[z * SublayersPerLayer + 4].Height 
+                                                       - 20 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                    width: 4,
+                                                    height: 20
                                                 ),
                                             color: Color.Red
                                         );
                                         Raylib.DrawRectangleRec(
                                             rec: new Rectangle(
-                                                mx * 20 + LayerMargin - SelectedCamera.Position.X,
-                                                Layers[z * SublayersPerLayer + 4].Height - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
-                                                20,
-                                                4
+                                                x: mx * 20 + LayerMargin - SelectedCamera.Position.X,
+                                                y: Layers[z * SublayersPerLayer + 4].Height 
+                                                    - 20 + 8 - (my * 20 + LayerMargin - SelectedCamera.Position.Y),
+                                                width: 20,
+                                                height: 4
                                             ),
                                             color: Color.Red
                                         );
@@ -297,7 +299,7 @@ public class Renderer
 
                                 prevPos = (cx, cy);
 
-                                switch ((left, top, right, bottom))
+                                switch (left, top, right, bottom)
                                 {
                                     case (true, false, false, false): cx--; break;
                                     case (false, true, false, false): cy--; break;
@@ -363,7 +365,7 @@ public class Renderer
                             var direction = ShortcutEntranceAtlas.Directions.Left;
 
                             // A dumb way for checking for direction; may need more validation
-                            switch ((leftCon || rightGeo, topCon || bottomGeo, rightCon || leftGeo, bottomCon || topGeo)) {
+                            switch (leftCon || rightGeo, topCon || bottomGeo, rightCon || leftGeo, bottomCon || topGeo) {
                                 case (false, false, true, false):
                                 direction = ShortcutEntranceAtlas.Directions.Left;
                                 break;
@@ -385,15 +387,15 @@ public class Renderer
 
                             var sourceRect = ShortcutEntranceAtlas.GetSource(direction);
                             var destRect = new Rectangle(
-                                (x - 2) * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                (y - 2) * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                5 * 20, 
-                                5 * 20
+                                x: (x - 2) * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                y: (y - 2) * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                width: 5 * 20, 
+                                height: 5 * 20
                             );
 
                             var depth = 0;
 
-                            for (int l = 0; l < 3; l++)
+                            for (var l = 0; l < 3; l++)
                             {
                                 for (var r = 0; r < shortcutEntranceRepeat[l]; r++)
                                 {
@@ -409,8 +411,8 @@ public class Renderer
                                 }
                             }
                         }
-
-                    skipEntrance:
+                        
+                        skipEntrance:
 
                         foreach (var (x, y) in connection.Path[1..^1])
                         {
@@ -419,7 +421,7 @@ public class Renderer
                             var rightCon  = connects(x + 1, y);
                             var bottomCon = connects(x, y + 1);
 
-                            switch ((leftCon, topCon, rightCon, bottomCon))
+                            switch (leftCon, topCon, rightCon, bottomCon)
                             {
                                 case (true, false, true, false):
                                     RlUtils.DrawTextureRT(
@@ -427,10 +429,10 @@ public class Renderer
                                         texture:     shortcutHorizontal,
                                         source:      new Rectangle(0, 0, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -439,10 +441,10 @@ public class Renderer
                                         texture:     shortcutHorizontal,
                                         source:      new Rectangle(0, 20, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -454,10 +456,10 @@ public class Renderer
                                         texture:     shortcutVertical,
                                         source:      new Rectangle(0, 0, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -466,10 +468,10 @@ public class Renderer
                                         texture:     shortcutVertical,
                                         source:      new Rectangle(0, 20, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -485,10 +487,10 @@ public class Renderer
                                         texture:     shortcutHorizontal,
                                         source:      new Rectangle(0, 0, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -497,10 +499,10 @@ public class Renderer
                                         texture:     shortcutHorizontal,
                                         source:      new Rectangle(0, 20, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -510,10 +512,10 @@ public class Renderer
                                         texture:     shortcutVertical,
                                         source:      new Rectangle(0, 0, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -522,10 +524,10 @@ public class Renderer
                                         texture:     shortcutVertical,
                                         source:      new Rectangle(0, 20, 20, 20),
                                         destination: new Rectangle(
-                                                        x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                        y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                        20, 
-                                                        20
+                                                        x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                        y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                        width: 20, 
+                                                        height: 20
                                                      ),
                                         tint:        Color.White
                                     );
@@ -544,10 +546,10 @@ public class Renderer
                                 texture:     shortcutEnd,
                                 source:      new Rectangle(0, 0, 20, 20),
                                 destination: new Rectangle(
-                                                x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                20, 
-                                                20
+                                                x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                width: 20, 
+                                                height: 20
                                                 ),
                                 tint:        Color.White
                             );
@@ -556,10 +558,10 @@ public class Renderer
                                 texture:     shortcutEnd,
                                 source:      new Rectangle(0, 20, 20, 20),
                                 destination: new Rectangle(
-                                                x * 20 - SelectedCamera.Position.X + LayerMargin, 
-                                                y * 20 - SelectedCamera.Position.Y + LayerMargin, 
-                                                20, 
-                                                20
+                                                x: x * 20 - SelectedCamera.Position.X + LayerMargin, 
+                                                y: y * 20 - SelectedCamera.Position.Y + LayerMargin, 
+                                                width: 20, 
+                                                height: 20
                                                 ),
                                 tint:        Color.White
                             );
@@ -621,6 +623,9 @@ public class Renderer
             break;
 
             case RenderState.Finalizing:
+            {
+                
+            }
 
             State = RenderState.Done;
             break;

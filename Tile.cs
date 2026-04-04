@@ -1,25 +1,34 @@
+using System;
+using IniParser.Model;
+
 namespace Tiler.Editor.Tile;
 
 using System.IO;
 using IniParser;
 
-public abstract class TileDef(string id, string resourceDir)
+public abstract class TileDef(string id, string resourceDir) 
+    : IEquatable<TileDef>, IResource, IIdentifiable<string>, IOrganizable
 {
-    public string ID { get; private set; } = id;
-    public string ResourceDir { get; set; } = resourceDir;
+    public string ID { get; } = id;
+    public string ResourceDir { get; } = resourceDir;
 
     public string? Name { get; set; }
     public string? Category { get; set; }
     public Color4 Color { get; set; }
     public int Depth { get; set; } = 10;
 
-    public static bool operator==(TileDef lhs, TileDef? rhs) => lhs.Equals(rhs);
-    public static bool operator!=(TileDef lhs, TileDef? rhs) => !lhs.Equals(rhs);
+    public static bool operator==(TileDef? lhs, TileDef? rhs) => lhs is not null && lhs.Equals(rhs);
+    public static bool operator!=(TileDef? lhs, TileDef? rhs) => lhs is null || !lhs.Equals(rhs);
 
-    public override bool Equals(object? obj) => obj is TileDef tile && GetHashCode() == tile.GetHashCode();
+    public override bool Equals(object? obj) => obj is TileDef tile && Equals(tile);
+
     public override int GetHashCode() => ID.GetHashCode();
+
     public override string ToString() => $"Tile({ID})";
 
+    protected abstract void OnLoad(KeyDataCollection data, string dir);
+
+    // TODO: re-implement this shit (OCP violation)
     /// <summary>
     /// Parses a tile from a tile entry.
     /// </summary>
@@ -42,34 +51,34 @@ public abstract class TileDef(string id, string resourceDir)
         if (!data.ContainsKey("type"))
             throw new TileParseException("Required 'type' key");
 
-        var id = data["id"];
-        var name = data["name"];
+        var id       = data["id"]!;
+        var name            = data["name"];
         var category = data["category"];
-        Color4 color = data["color"]?.ToColor4() ?? new Color4(120, 120, 120);
-        var depth = data["depth"]?.ToInt() ?? 10;
+        var color           = data["color"]?.ToColor4() ?? new Color4(r: 120, g: 120, b: 120);
+        var depth        = data["depth"]?.ToInt() ?? 10;
 
-        var type = data["type"];
-
-        switch (type)
+        TileDef tile = data["type"] switch
         {
-            case "Custom":
-            {
-                var scriptFile = Path.Combine(dir, "script.lua");
+            "Custom" => new CustomTileDef(id, dir),
+            
+            var type => throw new TileParseException($"Unknown tile type '{type}'"),
+        };
 
-                if (!File.Exists(scriptFile))
-                    throw new TileParseException($"'script.lua' file not found");
+        tile.Name     = name;
+        tile.Category = category;
+        tile.Color    = color;
+        tile.Depth    = depth;
 
-                return new CustomTileDef(id, resourceDir: dir)
-                {
-                    Name = name,
-                    Category = category,
-                    Color = color,
-                    Depth = depth
-                };
-            }
+        tile.OnLoad(data, dir);
 
-            default: throw new TileParseException($"Unknown tile type '{type}'");
-        }
+        return tile;
+    }
+
+    public bool Equals(TileDef? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ID == other.ID;
     }
 }
 
@@ -78,4 +87,10 @@ public sealed class CustomTileDef(string id, string resourceDir) : TileDef(id, r
     public string ScriptFile { get; init; } = Path.Combine(resourceDir, "script.lua");
 
     public override string ToString() => $"CustomTile({ID})";
+
+    protected override void OnLoad(KeyDataCollection data, string dir)
+    {
+        if (!File.Exists(ScriptFile))
+            throw new TileParseException($"'script.lua' file not found");
+    }
 }

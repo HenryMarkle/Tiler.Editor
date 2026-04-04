@@ -25,17 +25,18 @@ public class Level
 
     public string? Name = "New Level";
     public string? Directory;
+    
     public int Width { get; private set; } = DefaultWidth;
     public int Height { get; private set; } = DefaultHeight;
-    public int Depth { get; private set; } = DefaultDepth;
+    public int Depth { get; init; } = DefaultDepth;  // This is now fixed to 5
 
     /// TODO: Use Either instead 
     public TileDef? DefaultTile { get; set; }
     public Managed.Image Lightmap = new(
         Raylib.GenImageColor(
-            DefaultWidth + Viewports.LightmapMargin*2, 
-            DefaultHeight + Viewports.LightmapMargin*2, 
-            new Color(0,0,0,0)
+            width: DefaultWidth + Viewports.LightmapMargin*2, 
+            height: DefaultHeight + Viewports.LightmapMargin*2, 
+            new Color(r: 0, g: 0, b: 0, a: 0)
         )
     );
 
@@ -43,7 +44,7 @@ public class Level
     public int LightDirection { get; set; } = 90;
 
     public Matrix<Geo> Geos = new(DefaultWidth, DefaultHeight, DefaultDepth);
-    public Matrix<ConnectionType> Connections = new(DefaultWidth, DefaultHeight, 1);
+    public Matrix<ConnectionType> Connections = new(DefaultWidth, DefaultHeight, depth: 1);
     public Matrix<TileDef?> Tiles = new(DefaultWidth, DefaultHeight, DefaultDepth);
     public List<LevelCamera> Cameras = [ new LevelCamera(new Vector2(20, 20)) ];
     public List<Effect> Effects = [];
@@ -53,14 +54,14 @@ public class Level
     public Level(int width, int height)
     {
         Geos = new(width, height, DefaultDepth);
-        Connections = new(width, height, 1);
+        Connections = new(width, height, depth: 1);
         Tiles = new(width, height, DefaultDepth);
 
-        Lightmap = new(
+        Lightmap = new Managed.Image(
             Raylib.GenImageColor(
-                width + Viewports.LightmapMargin*2, 
-                height + Viewports.LightmapMargin*2, 
-                new Color(0,0,0,0)
+                width: width + Viewports.LightmapMargin * 2,
+                height: height + Viewports.LightmapMargin*2, 
+                new Color(r: 0, g: 0, b: 0, a: 0)
             )
         );
     
@@ -94,7 +95,7 @@ public class Level
 
         asName ??= Name;
 
-        Log.Information($"Saving level as {asName}");
+        Log.Information("Saving level as {NAME}", asName);
 
         var targetDir = Path.Combine(parentDirectory, asName);
 
@@ -253,15 +254,17 @@ public class Level
 
                 File.WriteAllText(
                     Path.Combine(effectsDir, $"{e}.ini"), 
-                    @$"[effect]
-id = {effect.Def.ID}
+                    $"""
+                     [effect]
+                     id = {effect.Def.ID}
 
-[options]
-{string.Join(Environment.NewLine, effect.Def.Config.Select((c, index) => $"{c.name} = {c.options[effect.OptionIndices[index]]}"))}
+                     [options]
+                     {string.Join(Environment.NewLine, effect.Def.Config.Select((c, index) => $"{c.name} = {c.options[effect.OptionIndices[index]]}"))}
 
-[data]
-matrix = {stringified}
-"
+                     [data]
+                     matrix = {stringified}
+
+                     """
                 );
             }
         });
@@ -281,18 +284,20 @@ matrix = {stringified}
 
                 File.WriteAllText(
                     Path.Combine(propsDir, $"{p}.ini"), 
-                    @$"[prop]
-id = {prop.Def.ID}
-depth = {prop.Depth}
-quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.Quad.TopRight.Y}|{prop.Quad.BottomRight.X}/{prop.Quad.BottomRight.Y}|{prop.Quad.BottomLeft.X}/{prop.Quad.BottomLeft.Y}
+                    $"""
+                     [prop]
+                     id = {prop.Def.ID}
+                     depth = {prop.Depth}
+                     quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.Quad.TopRight.Y}|{prop.Quad.BottomRight.X}/{prop.Quad.BottomRight.Y}|{prop.Quad.BottomLeft.X}/{prop.Quad.BottomLeft.Y}
 
-[settings]
-"
+                     [settings]
+
+                     """
                 );
             }
         });
 
-        Raylib.ExportImage(Lightmap, Path.Combine(targetDir, "lightmap.png"));
+        Raylib.ExportImage(Lightmap, fileName: Path.Combine(targetDir, "lightmap.png"));
 
         Task.WaitAll(geosTask, connectionsTask, tilesTask, camerasTask, effectsTask, propsTask);
 
@@ -319,10 +324,10 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
         var width = levelSec["width"]?.ToInt() ?? DefaultWidth;
         var height = levelSec["height"]?.ToInt() ?? DefaultHeight;
 
-        var def_tile_name = levelSec["default_tile"];
+        var defTileName = levelSec["default_tile"];
 
-        if (!tiles.Tiles.TryGetValue(def_tile_name ?? "", out TileDef? defaultTile) && def_tile_name is not (null or ""))
-            Log.Warning("Default tile '{TILE}' not found", def_tile_name);
+        if (!tiles.Tiles.TryGetValue(defTileName ?? "", out var defaultTile) && defTileName is not (null or ""))
+            Log.Warning("Default tile '{TILE}' not found", defTileName);
 
         var lightSec = data["light"];
 
@@ -356,7 +361,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
 
         var connectionsTask = Task.Run(() =>
         {
-            var matrix = new Matrix<ConnectionType>(width, height, 1);
+            var matrix = new Matrix<ConnectionType>(width, height, depth: 1);
 
             var connectionsFile = Path.Combine(dir, "connections.txt");
 
@@ -367,7 +372,10 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
                 .Split('|')
                 .Select((c, i) => 
                     (
-                        c is "" ? ConnectionType.None : Enum.TryParse<ConnectionType>(c, out var cell) ? cell : ConnectionType.None,
+                        c is "" 
+                            ? ConnectionType.None 
+                            : Enum.TryParse<ConnectionType>(c, out var cell) ? cell 
+                                : ConnectionType.None,
                         i % width,                          // x
                         (i % (width * height)) / width,     // y
                         0                                   // z
@@ -430,23 +438,25 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
                     .Select((cameraText, i) =>
                     {
                         var fields = cameraText.Split('/');
+                        
+                        // Ugly code coming ahead
 
                         if (
-                            fields is not [ 
-                                string posXStr, 
-                                string posYStr, 
+                            fields is not [
+                                { } posXStr, 
+                                { } posYStr, 
                                 
-                                string tldStr,
-                                string tlaStr,
+                                { } tldStr,
+                                { } tlaStr,
                                 
-                                string trdStr,
-                                string traStr,
+                                { } trdStr,
+                                { } traStr,
                                 
-                                string brdStr,
-                                string braStr,
+                                { } brdStr,
+                                { } braStr,
                                 
-                                string bldStr,
-                                string blaStr,
+                                { } bldStr,
+                                { } blaStr,
                             ]
                         ) throw new ParseException($"Failed to parse camera #{i+1}: Missing camera fields");
 
@@ -531,7 +541,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
 
                 Effect.TargetLayers targetLayers = 0;
 
-                if (effectIni["layers"]?.Split(',') is string[] layers)
+                if (effectIni["layers"]?.Split(',') is { } layers)
                 {
                     if (layers is []) targetLayers = (Effect.TargetLayers)0b00011111;
                     else
@@ -630,7 +640,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
 
                     var quadVertices = quadStr.Split('|');
 
-                    if (quadVertices is not [ string topLeft, string topRight, string bottomRight, string bottomLeft ])
+                    if (quadVertices is not [{ } topLeft, { } topRight, { } bottomRight, { } bottomLeft ])
                         throw new PropParseException("Invalid field value 'quad'");
 
                     var quad = new Quad();
@@ -649,7 +659,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
 
                     var configIni = ini["settings"];
 
-                    /// TODO: Complete here
+                    // TODO: Complete here
 
                     parsedProps.Add(new Prop(def, config: def.CreateConfig(), quad, depth));
                 }
@@ -686,10 +696,10 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
             foreach (var und in undefinedTiles) Log.Warning("Undefined tile '{Name}'", und);
 
         using var lightmapRT = new RenderTexture(
-                width * 20 + Viewports.LightmapMargin*2, 
-                height * 20 + Viewports.LightmapMargin*2,
-                new Color4(0,0,0,0),
-                true
+                width: width * 20 + Viewports.LightmapMargin*2, 
+                height: height * 20 + Viewports.LightmapMargin*2,
+                new Color4(r: 0,g: 0,b: 0,a: 0),
+                clear: true
             );
 
         var lightmapFile = Path.Combine(dir, "lightmap.png");
@@ -698,7 +708,7 @@ quad = {prop.Quad.TopLeft.X}/{prop.Quad.TopLeft.Y}|{prop.Quad.TopRight.X}/{prop.
             using var lightmapTexture = new Texture(Raylib.LoadTexture(lightmapFile));
 
             Raylib.BeginTextureMode(lightmapRT);
-            Raylib.DrawTexture(lightmapTexture, 0, 0, Color.White);
+            Raylib.DrawTexture(lightmapTexture, posX: 0, posY: 0, tint: Color.White);
             Raylib.EndTextureMode();
         }
 

@@ -97,7 +97,7 @@ public class TileRenderingScriptRuntime : IDisposable
     
     public Color4 CreateColor(params object[] args) => args switch
     {
-        [] => new(),
+        [] => Color4.Black,
         [Color4 color] => new(color.R, color.G, color.B, color.A),
         [long r, long g, long b] => new((byte)r, (byte)g, (byte)b, 255),
         [long r, long g, long b, long a] => new((byte)r, (byte)g, (byte)b, (byte)a),

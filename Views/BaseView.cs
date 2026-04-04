@@ -6,6 +6,7 @@ public abstract class BaseView
 {
     protected readonly Context Context;
     protected internal ViewKeybinds Keybinds;
+    public virtual bool AllowGlobalKeybinds => true;
 
     protected BaseView(Context context)
     {

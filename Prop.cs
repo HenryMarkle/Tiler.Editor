@@ -15,7 +15,7 @@ public class VoxelStructConfig : PropConfig
 {
     public override VoxelStructConfig Clone()
     {
-        return new();
+        return new VoxelStructConfig();
     }
 }
 public class SoftConfig : PropConfig
@@ -24,7 +24,7 @@ public class SoftConfig : PropConfig
 
     public override SoftConfig Clone()
     {
-        return new()
+        return new SoftConfig
         {
             Depth = Depth
         };
@@ -36,7 +36,7 @@ public class AntimatterConfig : PropConfig
 
     public override AntimatterConfig Clone()
     {
-        return new()
+        return new AntimatterConfig
         {
             Depth = Depth
         };
@@ -46,13 +46,14 @@ public class CustomPropConfig : PropConfig
 {
     public override CustomPropConfig Clone()
     {
-        return new();
+        return new CustomPropConfig();
     }
 }
 
 //
 
-public abstract class PropDef(string id, string resourceDir)
+public abstract class PropDef(string id, string resourceDir) 
+    : IEquatable<PropDef>, IResource, IIdentifiable<string>, IOrganizable
 {
     public string ID { get; } = id;
     public string ResourceDir { get; set; } = resourceDir;
@@ -213,12 +214,21 @@ public abstract class PropDef(string id, string resourceDir)
         }
     }
 
-    public static bool operator==(PropDef lhs, PropDef? rhs) => lhs.Equals(rhs);
-    public static bool operator!=(PropDef lhs, PropDef? rhs) => !lhs.Equals(rhs);
+    public static bool operator==(PropDef? lhs, PropDef? rhs) => lhs is not null && lhs.Equals(rhs);
+    public static bool operator!=(PropDef? lhs, PropDef? rhs) => lhs is null || !lhs.Equals(rhs);
 
-    public override bool Equals(object? obj) => obj is PropDef prop && GetHashCode() == prop.GetHashCode();
+    public override bool Equals(object? obj) => obj is PropDef prop && Equals(prop);
+
     public override int GetHashCode() => ID.GetHashCode();
+
     public override string ToString() => $"PropDef({ID})";
+
+    public bool Equals(PropDef? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ID == other.ID;
+    }
 }
 
 public class VoxelStruct(string id, string resourceDir) : PropDef(id, resourceDir)

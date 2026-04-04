@@ -27,73 +27,77 @@ public class Quad(
     }
 
     public Quad(in Rectangle rectangle) : this(
-        topLeft: rectangle.Position, 
-        topRight: new Vector2(rectangle.X + rectangle.Width, rectangle.Y), 
+        topLeft:     rectangle.Position, 
+        topRight:    new Vector2(rectangle.X + rectangle.Width, rectangle.Y), 
         bottomRight: new Vector2(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height), 
-        bottomLeft: new Vector2(rectangle.X, rectangle.Y + rectangle.Height)
+        bottomLeft:  new Vector2(rectangle.X, rectangle.Y + rectangle.Height)
         )
     {
     }
 
     public static Quad operator+(Quad lhs, Quad rhs) => new(
-        topLeft:     lhs.TopLeft + rhs.TopLeft, 
-        topRight:    lhs.TopRight + rhs.TopRight, 
+        topLeft:     lhs.TopLeft     + rhs.TopLeft, 
+        topRight:    lhs.TopRight    + rhs.TopRight, 
         bottomRight: lhs.BottomRight + rhs.BottomRight, 
-        bottomLeft:  lhs.BottomLeft + rhs.BottomLeft
+        bottomLeft:  lhs.BottomLeft  + rhs.BottomLeft
     );
 
     public static Quad operator-(Quad lhs, Quad rhs) => new(
-        topLeft:     lhs.TopLeft - rhs.TopLeft, 
-        topRight:    lhs.TopRight - rhs.TopRight, 
+        topLeft:     lhs.TopLeft     - rhs.TopLeft, 
+        topRight:    lhs.TopRight    - rhs.TopRight, 
         bottomRight: lhs.BottomRight - rhs.BottomRight, 
-        bottomLeft:  lhs.BottomLeft - rhs.BottomLeft
+        bottomLeft:  lhs.BottomLeft  - rhs.BottomLeft
     );
 
     public static Quad operator+(Quad lhs, Vector2 rhs) => new(
-        topLeft:     lhs.TopLeft + rhs, 
-        topRight:    lhs.TopRight + rhs, 
+        topLeft:     lhs.TopLeft     + rhs, 
+        topRight:    lhs.TopRight    + rhs, 
         bottomRight: lhs.BottomRight + rhs, 
-        bottomLeft:  lhs.BottomLeft + rhs
+        bottomLeft:  lhs.BottomLeft  + rhs
     );
 
     public static Quad operator-(Quad lhs, Vector2 rhs) => new(
-        topLeft:     lhs.TopLeft - rhs, 
-        topRight:    lhs.TopRight - rhs, 
+        topLeft:     lhs.TopLeft     - rhs, 
+        topRight:    lhs.TopRight    - rhs, 
         bottomRight: lhs.BottomRight - rhs, 
-        bottomLeft:  lhs.BottomLeft - rhs
+        bottomLeft:  lhs.BottomLeft  - rhs
     );
 
     public static Quad operator *(Quad lhs, int rhs) => new(
-        topLeft:     lhs.TopLeft * rhs, 
-        topRight:    lhs.TopRight * rhs, 
+        topLeft:     lhs.TopLeft     * rhs, 
+        topRight:    lhs.TopRight    * rhs, 
         bottomRight: lhs.BottomRight * rhs, 
-        bottomLeft:  lhs.BottomLeft * rhs
+        bottomLeft:  lhs.BottomLeft  * rhs
         );
     
     public static Quad operator /(Quad lhs, int rhs) => new(
-        topLeft:     lhs.TopLeft / rhs, 
-        topRight:    lhs.TopRight / rhs, 
+        topLeft:     lhs.TopLeft     / rhs, 
+        topRight:    lhs.TopRight    / rhs, 
         bottomRight: lhs.BottomRight / rhs, 
-        bottomLeft:  lhs.BottomLeft / rhs
+        bottomLeft:  lhs.BottomLeft  / rhs
     );
 
     public static Quad operator *(Quad lhs, float rhs) => new(
-        topLeft:     lhs.TopLeft * rhs, 
-        topRight:    lhs.TopRight * rhs, 
+        topLeft:     lhs.TopLeft     * rhs, 
+        topRight:    lhs.TopRight    * rhs, 
         bottomRight: lhs.BottomRight * rhs, 
-        bottomLeft:  lhs.BottomLeft * rhs
+        bottomLeft:  lhs.BottomLeft  * rhs
         );
     
     public static Quad operator /(Quad lhs, float rhs) => new(
-        topLeft:     lhs.TopLeft / rhs, 
-        topRight:    lhs.TopRight / rhs, 
+        topLeft:     lhs.TopLeft     / rhs, 
+        topRight:    lhs.TopRight    / rhs, 
         bottomRight: lhs.BottomRight / rhs, 
-        bottomLeft:  lhs.BottomLeft / rhs
+        bottomLeft:  lhs.BottomLeft  / rhs
     );
     
     public Vector2 Center => (TopLeft + TopRight + BottomRight + BottomLeft) / 4;
 
-    public void Deconstruct(out Vector2 topLeft, out Vector2 topRight, out Vector2 bottomRight, out Vector2 bottomLeft)
+    public void Deconstruct(
+        out Vector2 topLeft, 
+        out Vector2 topRight, 
+        out Vector2 bottomRight, 
+        out Vector2 bottomLeft)
     {
         topLeft     = TopLeft;
         topRight    = TopRight;
@@ -111,63 +115,41 @@ public class Quad(
         (BottomLeft + BottomRight) / 2
         );
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector2 RotateVector(in Vector2 point, in Vector2 center, float radian)
+    {
+        var sinRotation = (float)Math.Sin(radian);
+        var cosRotation = (float)Math.Cos(radian);
+        
+        var x = point.X;
+        var y = point.Y;
+
+        var dx = x - center.X;
+        var dy = y - center.Y;
+
+        return new Vector2(
+            center.X + dx * cosRotation - dy * sinRotation, 
+            center.Y + dx * sinRotation + dy * cosRotation
+        );
+    }
+
+    /// <summary>
+    /// Rotate the quad around a given center point
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Rotate(int degrees, Vector2 center)
     {
         var radian = float.DegreesToRadians(degrees);
         
-        var sinRotation = (float)Math.Sin(radian);
-        var cosRotation = (float)Math.Cos(radian);
-        
-        { // Rotate the top left corner
-            var x = TopLeft.X;
-            var y = TopLeft.Y;
-
-            var dx = x - center.X;
-            var dy = y - center.Y;
-
-            TopLeft = new Vector2(
-                center.X + dx * cosRotation - dy * sinRotation, 
-                center.Y + dx * sinRotation + dy * cosRotation
-            );
-        }
-        
-        { // Rotate the top right corner
-            var x = TopRight.X;
-            var y = TopRight.Y;
-
-            var dx = x - center.X;
-            var dy = y - center.Y;
-
-            TopRight = new Vector2(
-                center.X + dx * cosRotation - dy * sinRotation, 
-                center.Y + dx * sinRotation + dy * cosRotation);
-        }
-        
-        { // Rotate the bottom right corner
-            var x = BottomRight.X;
-            var y = BottomRight.Y;
-
-            var dx = x - center.X;
-            var dy = y - center.Y;
-
-            BottomRight = new Vector2(
-                center.X + dx * cosRotation - dy * sinRotation, 
-                center.Y + dx * sinRotation + dy * cosRotation);
-        }
-        
-        { // Rotate the bottom left corner
-            var x = BottomLeft.X;
-            var y = BottomLeft.Y;
-
-            var dx = x - center.X;
-            var dy = y - center.Y;
-
-            BottomLeft = new Vector2(
-                center.X + dx * cosRotation - dy * sinRotation, 
-                center.Y + dx * sinRotation + dy * cosRotation);
-        }
+        TopLeft = RotateVector(TopLeft, center, radian);
+        TopRight = RotateVector(TopRight, center, radian);
+        BottomRight = RotateVector(BottomRight, center, radian);
+        BottomLeft = RotateVector(BottomLeft, center, radian);
     }
 
+    /// <summary>
+    /// Rotate the quad around its center
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Rotate(int degrees) => Rotate(degrees, Center);
 

@@ -15,9 +15,9 @@ public class LevelPalette
     public Color3[] SunlitBaseLayers { get; init; } = new Color3[50];
     public Color3[] SunlitHighlightLayers { get; init; } = new Color3[50];
 
-    public Color3 Darkness = new(10, 10, 10);
-    public Color3 Sky = new(200, 200, 200);
-    public Color3 Fog = new(200, 200, 200);
+    public Color3 Darkness = new(r: 10, g: 10, b: 10);
+    public Color3 Sky = new(r: 200, g: 200, b: 200);
+    public Color3 Fog = new(r: 200, g: 200, b: 200);
     public float FogIntensity { get; set => field = Math.Clamp(value, 0, 1f); }
 
     public Image ToImage()
@@ -40,7 +40,7 @@ public class LevelPalette
         Raylib.ImageDrawPixel(ref image, posX: 0, posY: 0, Darkness);
         Raylib.ImageDrawPixel(ref image, posX: 1, posY: 0, Sky);
         Raylib.ImageDrawPixel(ref image, posX: 2, posY: 0, Fog);
-        Raylib.ImageDrawPixel(ref image, posX: 3, posY: 0, new Color((int)(FogIntensity * 256), 0, 0, 255));
+        Raylib.ImageDrawPixel(ref image, posX: 3, posY: 0, new Color(r: (int)(FogIntensity * 256), g: 0, b: 0, a: 255));
 
         return image;
     }

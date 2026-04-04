@@ -16,6 +16,8 @@ using Tiler.Editor;
 
 public class Start : BaseView
 {
+    public override bool AllowGlobalKeybinds => false;
+    
     private byte[] urlBuffer = [];
 
     private readonly string basePath = "";

@@ -20,6 +20,8 @@ using Tiler.Editor.Managed;
 public static class Program {
 	public static void Main(string[] args)
 	{
+		// Parsing CLI arguments
+		
 		var logLevelIndex = Array.FindIndex(args, str => str == "-l") + 1;
 		var logLevel = args.Length > logLevelIndex 
 			? args[logLevelIndex] 
@@ -39,7 +41,8 @@ public static class Program {
 				_ => LogEventLevel.Debug
 			}
 		};
-
+		
+		// This is to avoid printing numerical values differently because of locale.
 		Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
 
 		var paths = new AppDirectories();
@@ -71,6 +74,7 @@ public static class Program {
 		catch (Exception e)
 		{
 			Log.Error("Failed to load configuration file\n{Exception}", e);
+			Log.Verbose("Using default configuration");
 
 			config = new AppConfiguration();
 		}
@@ -123,10 +127,10 @@ public static class Program {
 
 		Log.Information("Loading context");
 
-		var context = new Context()
+		var context = new Context
         {
 			Dirs = paths,
-			Viewports = new(70 * 20, 40 * 20, 5),
+			Viewports = new Viewports(width: 70 * 20, height: 40 * 20, depth: 5),
 			Tiles = tiledex,
 			Props = propdex,
 			Effects = effcdex,
@@ -140,7 +144,8 @@ public static class Program {
 			
 			foreach (var paletteFile in Directory.GetFiles(paths.Palettes).Where(f => f.EndsWith(".png")))
 			{
-				context.Palettes[Path.GetFileNameWithoutExtension(paletteFile)] = new HybridImage(Raylib.LoadImage(paletteFile));
+				context.Palettes[Path.GetFileNameWithoutExtension(paletteFile)] = 
+					new HybridImage(Raylib.LoadImage(paletteFile));
 			}
 		}
 
@@ -168,7 +173,7 @@ public static class Program {
 
 			Unloader.Dequeue(cap: 20);
 
-			if (viewer.SelectedView is not Views.Start and not Views.Create && Raylib.IsKeyDown(KeyboardKey.LeftAlt))
+			if (viewer.SelectedView.AllowGlobalKeybinds && Raylib.IsKeyDown(KeyboardKey.LeftAlt))
 			{
 				if (Raylib.IsKeyPressed(KeyboardKey.One)) viewer.Select(viewer.Geos);
 				else if (Raylib.IsKeyPressed(KeyboardKey.Two)) viewer.Select(viewer.Tiles);
@@ -181,10 +186,11 @@ public static class Program {
 			}
 
 			viewer.SelectedView.Process();
-
+			
+			// -------------------------------------------------------------
+			// -------------------------- DRAW -----------------------------
 			Raylib.BeginDrawing();
 			Raylib.ClearBackground(Color.Gray);
-
 			viewer.SelectedView.Draw();
 
 			// -------------------------------------------------------------
@@ -211,7 +217,7 @@ public static class Program {
 					label: "Save", 
 					shortcut: "CTRL + S", 
 					selected: false, 
-					enabled: viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
+					enabled: viewer.SelectedView.AllowGlobalKeybinds && context.SelectedLevel is not null
 					)
 				) {
 					context.SelectedLevel!.Lightmap = new Managed.Image(
@@ -233,7 +239,7 @@ public static class Program {
 					label: "Save As", 
 					shortcut: "CTRL + SHIFT + S", 
 					selected: false, 
-					enabled: viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null
+					enabled: viewer.SelectedView.AllowGlobalKeybinds && context.SelectedLevel is not null
 				);
 				if (ImGui.MenuItem(label: "Open", shortcut: "CTRL + O")) viewer.Select(viewer.Start);
 				if (ImGui.MenuItem(label: "Create", shortcut: "CTRL + N")) viewer.Select(viewer.Create);
@@ -241,7 +247,7 @@ public static class Program {
 					    label: "Close", 
 					    shortcut: "", 
 					    selected: false, 
-					    enabled: viewer.SelectedView is not Views.Start and not Views.Create && context.SelectedLevel is not null))
+					    enabled: viewer.SelectedView.AllowGlobalKeybinds && context.SelectedLevel is not null))
 				{
 					context.RemoveLevel(context.SelectedLevel!);
 					if (context.Levels.Count == 0) viewer.Select(viewer.Start);
@@ -249,7 +255,7 @@ public static class Program {
 				ImGui.EndMenu();
 			}
 			
-			if (viewer.SelectedView is not Views.Start and not Views.Create)
+			if (viewer.SelectedView.AllowGlobalKeybinds)
             {
 				if (ImGui.MenuItem(label: "Geometry", shortcut: "", viewer.SelectedView is Views.Geos)) 
 					viewer.Select(viewer.Geos);
@@ -316,17 +322,21 @@ public static class Program {
 			if (config.ShowDebugScreen)
 			{
 				printer.Print("Tiler | Debug |" );
-				printer.PrintlnLabel("FPS", Raylib.GetFPS(), new Color4(20, 255, 20));
+				printer.PrintlnLabel("FPS", Raylib.GetFPS(), new Color4(r: 20, g: 255, b: 20));
 	
-				var totalMemUsed = System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1024f / 1024f;
+				// PrivateMemorySize64 is used because of raylib C library's unmanaged memory.
+				var totalMemUsed = System.Diagnostics.Process
+					.GetCurrentProcess()
+					.PrivateMemorySize64 / 1024f / 1024f;
 				
 				printer.PrintlnLabel(
 					"Memory", 
-					$"{(totalMemUsed > 1001 ? totalMemUsed / 1024f : totalMemUsed) :F2} {(totalMemUsed > 1001 ? "GB" : "MB")}", 
+					$"{(totalMemUsed > 1001 ? totalMemUsed / 1024f : totalMemUsed) :F2} " +
+						$"{(totalMemUsed > 1001 ? "GB" : "MB")}", 
 					Color.SkyBlue
 					);
 				
-				printer.PrintlnLabel("View", viewer.SelectedView.GetType().Name, new Color4(245, 70, 110));
+				printer.PrintlnLabel("View", viewer.SelectedView.GetType().Name, new Color4(r: 245, g: 70, b: 110));
 	
 				viewer.SelectedView.Debug();
 			}

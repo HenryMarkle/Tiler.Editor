@@ -7,13 +7,14 @@ using IniParser;
 
 namespace Tiler.Editor;
 
-public class EffectDef(string id, string resourceDir)
+public class EffectDef(string id, string resourceDir) : IResource, IIdentifiable<string>, IOrganizable
 {
     public enum RenderProcess
     {
         AllAtOnce,
         PerCell,
-        PerRow
+        PerRow,
+        PerLayer
     }
 
     public string ID { get; init; } = id;
